@@ -1,0 +1,99 @@
+import { getSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+export async function POST(
+  request: Request,
+  {
+    params,
+  }: {
+    params: Promise<{
+      lessonId: string;
+    }>;
+  },
+) {
+  try {
+    const session = await getSession();
+
+    if (!session) {
+      return Response.json(
+        {
+          message: "ابتدا وارد حساب شوید.",
+        },
+        { status: 401 },
+      );
+    }
+
+    const { lessonId } = await params;
+
+    const lesson = await prisma.lesson.findUnique({
+      where: {
+        id: lessonId,
+      },
+      include: {
+        section: true,
+      },
+    });
+
+    if (!lesson) {
+      return Response.json(
+        {
+          message: "درس پیدا نشد.",
+        },
+        { status: 404 },
+      );
+    }
+
+    const enrollment = await prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId: session.userId,
+          courseId: lesson.section.courseId,
+        },
+      },
+    });
+
+    if (!enrollment || enrollment.status === "CANCELLED") {
+      return Response.json(
+        {
+          message: "شما به این دوره دسترسی ندارید.",
+        },
+        { status: 403 },
+      );
+    }
+
+    const progress = await prisma.lessonProgress.upsert({
+      where: {
+        enrollmentId_lessonId: {
+          enrollmentId: enrollment.id,
+          lessonId,
+        },
+      },
+
+      update: {
+        status: "IN_PROGRESS",
+        startedAt: new Date(),
+      },
+
+      create: {
+        enrollmentId: enrollment.id,
+        lessonId,
+        status: "IN_PROGRESS",
+        startedAt: new Date(),
+      },
+    });
+
+    return Response.json({
+      success: true,
+      progress,
+    });
+  } catch (error) {
+    console.error("START_LESSON_ERROR:", error);
+
+    return Response.json(
+      {
+        message: "شروع درس ناموفق بود.",
+      },
+      { status: 500 },
+    );
+  }
+}
