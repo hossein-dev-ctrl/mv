@@ -134,17 +134,20 @@ model Enrollment {
 }
 
 model LessonProgress {
-  id           String @id @default(cuid())
+  id String @id @default(cuid())
+
   enrollmentId String
-  lessonId     String
+  lessonId String
 
   status LessonProgressStatus @default(NOT_STARTED)
 
-  startedAt   DateTime?
+  startedAt DateTime?
   completedAt DateTime?
 
+  videoCompletedAt DateTime?
+
   enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  lesson     Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   updatedAt DateTime @updatedAt
 
