@@ -56,10 +56,7 @@ export async function POST(
     });
 
     if (!lesson) {
-      return Response.json(
-        { message: "درس پیدا نشد." },
-        { status: 404 },
-      );
+      return Response.json({ message: "درس پیدا نشد." }, { status: 404 });
     }
 
     const courseId = lesson.section.courseId;
@@ -86,18 +83,37 @@ export async function POST(
     }
 
     /*
+     * Progress فعلی Lesson
+     */
+    const existingProgress = await prisma.lessonProgress.findUnique({
+      where: {
+        enrollmentId_lessonId: {
+          enrollmentId: enrollment.id,
+          lessonId,
+        },
+      },
+    });
+
+    /*
+     * اگر Lesson ویدئو دارد،
+     * کاربر باید ابتدا ویدئو را تا انتها مشاهده کرده باشد.
+     */
+    if (lesson.videoUrl && !existingProgress?.videoCompletedAt) {
+      return Response.json(
+        {
+          message: "برای تکمیل این درس، ابتدا ویدئو را تا انتها مشاهده کنید.",
+        },
+        { status: 400 },
+      );
+    }
+
+    /*
      * زمان فعلی را یک بار می‌گیریم
      */
     const now = new Date();
 
     /*
      * ثبت تکمیل Lesson
-     *
-     * اگر رکورد قبلاً وجود داشته باشد:
-     * همان رکورد COMPLETED می‌شود.
-     *
-     * اگر وجود نداشته باشد:
-     * ساخته می‌شود.
      */
     const progress = await prisma.lessonProgress.upsert({
       where: {
@@ -151,8 +167,7 @@ export async function POST(
     });
 
     const courseCompleted =
-      totalLessons > 0 &&
-      completedLessons >= totalLessons;
+      totalLessons > 0 && completedLessons >= totalLessons;
 
     /*
      * اگر تمام Lessonهای دوره تکمیل شده‌اند،
