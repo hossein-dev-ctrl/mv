@@ -117,6 +117,14 @@ export default async function CoursePage({ params }: Props) {
   const firstUnlockedLessonId =
     lessons.find((lesson) => unlockedLessonIds.has(lesson.id))?.id ?? null;
 
+  const formatVideoDuration = (seconds: number | null) => {
+    if (!seconds || seconds <= 0) return null;
+
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  };
   return (
     <main dir="rtl" className="min-h-screen bg-gray-50">
       {/* HERO */}
@@ -296,7 +304,7 @@ export default async function CoursePage({ params }: Props) {
 
                           {lesson.videoDuration && (
                             <div className="mt-1 text-xs text-gray-500">
-                              ⏱️ {lesson.videoDuration} دقیقه
+                              ⏱️ {formatVideoDuration(lesson.videoDuration)}
                             </div>
                           )}
                         </div>
