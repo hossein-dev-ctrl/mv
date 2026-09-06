@@ -5,9 +5,13 @@ import { useRouter } from "next/navigation";
 
 type Props = {
   lessonId: string;
+  videoCompleted: boolean;
 };
 
-export default function CompleteLessonButton({ lessonId }: Props) {
+export default function CompleteLessonButton({
+  lessonId,
+  videoCompleted,
+}: Props) {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
@@ -15,7 +19,7 @@ export default function CompleteLessonButton({ lessonId }: Props) {
   const [error, setError] = useState("");
 
   async function completeLesson() {
-    if (loading || completed) {
+    if (loading || completed || !videoCompleted) {
       return;
     }
 
@@ -53,9 +57,15 @@ export default function CompleteLessonButton({ lessonId }: Props) {
 
   return (
     <div>
+      {!videoCompleted && (
+        <p className="mb-3 text-sm text-amber-600">
+          🎬 برای تکمیل درس، ابتدا ویدئو را تا انتها مشاهده کنید.
+        </p>
+      )}
+
       <button
         onClick={completeLesson}
-        disabled={loading}
+        disabled={loading || !videoCompleted}
         className="rounded-xl bg-indigo-600 px-6 py-3 font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {loading ? "در حال ثبت..." : "✅ تکمیل درس"}

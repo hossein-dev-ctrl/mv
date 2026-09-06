@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getLessonAccess } from "@/lib/lesson-access";
 import LessonView from "@/components/course/lesson-view";
-import CompleteLessonButton from "@/components/course/complete-lesson-button";
+import LessonContent from "@/components/course/lesson-content";
 
 export const dynamic = "force-dynamic";
 
@@ -21,9 +21,7 @@ export default async function LessonPage({ params }: Props) {
   if (!session) {
     const { slug, lessonId } = await params;
 
-    redirect(
-      `/login?redirect=/courses/${slug}/lessons/${lessonId}`,
-    );
+    redirect(`/login?redirect=/courses/${slug}/lessons/${lessonId}`);
   }
 
   const { slug, lessonId } = await params;
@@ -32,10 +30,7 @@ export default async function LessonPage({ params }: Props) {
    * تمام بررسی‌های دسترسی Lesson
    * از یک منبع مرکزی انجام می‌شود.
    */
-  const access = await getLessonAccess(
-    session.userId,
-    lessonId,
-  );
+  const access = await getLessonAccess(session.userId, lessonId);
 
   /*
    * اگر Lesson وجود نداشته باشد
@@ -99,18 +94,12 @@ export default async function LessonPage({ params }: Props) {
   /*
    * درس‌های قبلی و بعدی
    */
-  const currentIndex = lessons.findIndex(
-    (item) => item.id === lesson.id,
-  );
+  const currentIndex = lessons.findIndex((item) => item.id === lesson.id);
 
-  const previousLesson =
-    currentIndex > 0
-      ? lessons[currentIndex - 1]
-      : null;
+  const previousLesson = currentIndex > 0 ? lessons[currentIndex - 1] : null;
 
   const nextLesson =
-    currentIndex >= 0 &&
-    currentIndex < lessons.length - 1
+    currentIndex >= 0 && currentIndex < lessons.length - 1
       ? lessons[currentIndex + 1]
       : null;
 
@@ -120,9 +109,7 @@ export default async function LessonPage({ params }: Props) {
   const completedLessons = enrollment.progresses.filter(
     (item) =>
       item.status === "COMPLETED" &&
-      lessons.some(
-        (lessonItem) => lessonItem.id === item.lessonId,
-      ),
+      lessons.some((lessonItem) => lessonItem.id === item.lessonId),
   ).length;
 
   /*
@@ -131,24 +118,16 @@ export default async function LessonPage({ params }: Props) {
   const totalLessons = lessons.length;
 
   const percentage =
-    totalLessons > 0
-      ? Math.round(
-          (completedLessons / totalLessons) * 100,
-        )
-      : 0;
+    totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
   /*
    * آیا Lesson فعلی تکمیل شده؟
    */
-  const isCompleted =
-    progress?.status === "COMPLETED";
+  const isCompleted = progress?.status === "COMPLETED";
 
   return (
     <LessonView lessonId={lesson.id}>
-      <main
-        dir="rtl"
-        className="min-h-screen bg-gray-50 p-6"
-      >
+      <main dir="rtl" className="min-h-screen bg-gray-50 p-6">
         <div className="mx-auto max-w-6xl">
           {/* Header */}
 
@@ -173,37 +152,16 @@ export default async function LessonPage({ params }: Props) {
 
             <div className="rounded-2xl border bg-white p-6 shadow-sm">
               <div className="mb-6">
-                <p className="text-sm text-gray-500">
-                  {lesson.section.title}
-                </p>
+                <p className="text-sm text-gray-500">{lesson.section.title}</p>
 
-                <h1 className="mt-2 text-3xl font-bold">
-                  {lesson.title}
-                </h1>
+                <h1 className="mt-2 text-3xl font-bold">{lesson.title}</h1>
               </div>
-
-              {/* ویدئو */}
-
-              {lesson.videoUrl ? (
-                <video
-                  controls
-                  controlsList="nodownload"
-                  className="w-full rounded-2xl bg-black"
-                  src={lesson.videoUrl}
-                />
-              ) : (
-                <div className="rounded-xl bg-gray-100 p-12 text-center text-gray-500">
-                  ویدئویی برای این درس ثبت نشده است.
-                </div>
-              )}
 
               {/* توضیحات */}
 
               {lesson.description && (
                 <div className="mt-8">
-                  <h2 className="text-xl font-bold">
-                    توضیحات درس
-                  </h2>
+                  <h2 className="text-xl font-bold">توضیحات درس</h2>
 
                   <p className="mt-4 whitespace-pre-line leading-8 text-gray-600">
                     {lesson.description}
@@ -215,9 +173,7 @@ export default async function LessonPage({ params }: Props) {
 
               {lesson.files.length > 0 && (
                 <div className="mt-8">
-                  <h2 className="text-xl font-bold">
-                    📎 فایل‌های درس
-                  </h2>
+                  <h2 className="text-xl font-bold">📎 فایل‌های درس</h2>
 
                   <div className="mt-4 space-y-2">
                     {lesson.files.map((file) => (
@@ -235,19 +191,11 @@ export default async function LessonPage({ params }: Props) {
                 </div>
               )}
 
-              {/* وضعیت Lesson */}
-
-              <div className="mt-8 border-t pt-6">
-                {isCompleted ? (
-                  <div className="rounded-xl bg-green-50 p-4 font-medium text-green-700">
-                    ✅ این درس را تکمیل کرده‌اید.
-                  </div>
-                ) : (
-                  <CompleteLessonButton
-                    lessonId={lesson.id}
-                  />
-                )}
-              </div>
+              <LessonContent
+                lessonId={lesson.id}
+                videoUrl={lesson.videoUrl}
+                isCompleted={isCompleted}
+              />
 
               {/* Navigation */}
 
@@ -277,9 +225,7 @@ export default async function LessonPage({ params }: Props) {
             {/* Sidebar */}
 
             <aside className="h-fit rounded-2xl border bg-white p-5 shadow-sm">
-              <h2 className="text-lg font-bold">
-                محتوای دوره
-              </h2>
+              <h2 className="text-lg font-bold">محتوای دوره</h2>
 
               <div className="mt-4">
                 <div className="mb-2 flex items-center justify-between text-sm">
@@ -302,26 +248,20 @@ export default async function LessonPage({ params }: Props) {
 
               <div className="mt-6 space-y-2">
                 {lessons.map((item, index) => {
-                  const itemProgress =
-                    enrollment.progresses.find(
-                      (progressItem) =>
-                        progressItem.lessonId === item.id,
-                    );
+                  const itemProgress = enrollment.progresses.find(
+                    (progressItem) => progressItem.lessonId === item.id,
+                  );
 
-                  const itemCompleted =
-                    itemProgress?.status === "COMPLETED";
+                  const itemCompleted = itemProgress?.status === "COMPLETED";
 
-                  const isCurrent =
-                    item.id === lesson.id;
+                  const isCurrent = item.id === lesson.id;
 
                   const isUnlocked =
                     index === 0 ||
                     enrollment.progresses.some(
                       (progressItem) =>
-                        progressItem.lessonId ===
-                          lessons[index - 1]?.id &&
-                        progressItem.status ===
-                          "COMPLETED",
+                        progressItem.lessonId === lessons[index - 1]?.id &&
+                        progressItem.status === "COMPLETED",
                     );
 
                   return (
@@ -337,18 +277,12 @@ export default async function LessonPage({ params }: Props) {
                         >
                           <div className="flex items-center gap-2">
                             <span>
-                              {itemCompleted
-                                ? "✅"
-                                : isCurrent
-                                  ? "▶️"
-                                  : "⭕"}
+                              {itemCompleted ? "✅" : isCurrent ? "▶️" : "⭕"}
                             </span>
 
                             <span
                               className={
-                                isCurrent
-                                  ? "font-bold text-indigo-700"
-                                  : ""
+                                isCurrent ? "font-bold text-indigo-700" : ""
                               }
                             >
                               {index + 1}. {item.title}
