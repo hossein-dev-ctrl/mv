@@ -177,7 +177,10 @@ export async function GET(request: Request) {
         const result = await sendSms({
           type: "pattern",
           phone: user.phone,
-          message: `پرداخت شما برای دوره "${payment.course.title}" با موفقیت انجام شد. ثبت نام شما تکمیل شد. اکنون می توانید دوره را شروع کنید.`,
+          patternCode: "BymlU64xOK",
+          variables: {
+            course: "موفقیت",
+          },
         });
       } catch (smsError) {
         console.error("========== SMS_SEND_ERROR ==========");

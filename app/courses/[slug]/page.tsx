@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-
+export const dynamic = "force-dynamic";
 type Props = {
   params: Promise<{
     slug: string;
@@ -85,38 +85,37 @@ export default async function CoursePage({ params }: Props) {
   );
 
   /*
-   * اولین درس
+   * تعیین درس‌های باز
    */
 
-  const firstLesson = lessons[0];
+  const unlockedLessonIds = new Set<string>();
 
-  /*
-   * پیدا کردن اولین درس قابل مشاهده
-   */
-
-  let unlockedLessonId = firstLesson?.id ?? null;
-
-  if (isEnrolled && enrollment) {
+  if (isEnrolled) {
     for (let i = 0; i < lessons.length; i++) {
+      // اولین درس همیشه باز است
       if (i === 0) {
-        unlockedLessonId = lessons[i].id;
-
-        break;
+        unlockedLessonIds.add(lessons[i].id);
+        continue;
       }
 
       const previousLesson = lessons[i - 1];
 
-      const previousProgress = enrollment.progresses.find(
+      const previousProgress = enrollment?.progresses.find(
         (progress) => progress.lessonId === previousLesson.id,
       );
 
+      // اگر درس قبلی کامل شده باشد، درس فعلی باز می‌شود
       if (previousProgress?.status === "COMPLETED") {
-        unlockedLessonId = lessons[i].id;
+        unlockedLessonIds.add(lessons[i].id);
       } else {
+        // از اینجا به بعد همه درس‌ها قفل هستند
         break;
       }
     }
   }
+
+  const firstUnlockedLessonId =
+    lessons.find((lesson) => unlockedLessonIds.has(lesson.id))?.id ?? null;
 
   return (
     <main dir="rtl" className="min-h-screen bg-gray-50">
@@ -150,8 +149,8 @@ export default async function CoursePage({ params }: Props) {
                 {isEnrolled ? (
                   <Link
                     href={
-                      unlockedLessonId
-                        ? `/courses/${course.slug}/lessons/${unlockedLessonId}`
+                      firstUnlockedLessonId
+                        ? `/courses/${course.slug}/lessons/${firstUnlockedLessonId}`
                         : "#"
                     }
                     className="inline-flex rounded-xl bg-indigo-600 px-7 py-4 font-medium text-white transition hover:bg-indigo-700"
@@ -271,7 +270,8 @@ export default async function CoursePage({ params }: Props) {
 
                   const completed = progress?.status === "COMPLETED";
 
-                  const unlocked = isEnrolled && lesson.id === unlockedLessonId;
+                  const unlocked =
+                    isEnrolled && unlockedLessonIds.has(lesson.id);
 
                   return (
                     <div

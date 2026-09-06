@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendSms } from "@/lib/sms";
+import { getLessonAccess } from "@/lib/lesson-access";
+
 export async function POST(
   request: Request,
   {
@@ -23,24 +24,54 @@ export async function POST(
 
     const { lessonId } = await params;
 
+    /*
+     * بررسی دسترسی واقعی کاربر به Lesson
+     */
+    const access = await getLessonAccess(session.userId, lessonId);
+
+    if (!access.allowed) {
+      return Response.json(
+        {
+          message: "این درس هنوز برای شما باز نشده است.",
+          reason: access.reason,
+        },
+        { status: 403 },
+      );
+    }
+
+    /*
+     * اطلاعات Lesson
+     */
     const lesson = await prisma.lesson.findUnique({
       where: {
         id: lessonId,
       },
       include: {
-        section: true,
+        section: {
+          include: {
+            course: true,
+          },
+        },
       },
     });
 
     if (!lesson) {
-      return Response.json({ message: "درس پیدا نشد." }, { status: 404 });
+      return Response.json(
+        { message: "درس پیدا نشد." },
+        { status: 404 },
+      );
     }
 
+    const courseId = lesson.section.courseId;
+
+    /*
+     * Enrollment کاربر
+     */
     const enrollment = await prisma.enrollment.findUnique({
       where: {
         userId_courseId: {
           userId: session.userId,
-          courseId: lesson.section.courseId,
+          courseId,
         },
       },
     });
@@ -55,9 +86,19 @@ export async function POST(
     }
 
     /*
-     * تکمیل Lesson
+     * زمان فعلی را یک بار می‌گیریم
      */
+    const now = new Date();
 
+    /*
+     * ثبت تکمیل Lesson
+     *
+     * اگر رکورد قبلاً وجود داشته باشد:
+     * همان رکورد COMPLETED می‌شود.
+     *
+     * اگر وجود نداشته باشد:
+     * ساخته می‌شود.
+     */
     const progress = await prisma.lessonProgress.upsert({
       where: {
         enrollmentId_lessonId: {
@@ -68,35 +109,33 @@ export async function POST(
 
       update: {
         status: "COMPLETED",
-        completedAt: new Date(),
+        completedAt: now,
       },
 
       create: {
         enrollmentId: enrollment.id,
         lessonId,
         status: "COMPLETED",
-        startedAt: new Date(),
-        completedAt: new Date(),
+        startedAt: now,
+        completedAt: now,
       },
     });
 
     /*
-     * تمام درس‌های منتشرشده دوره
+     * تعداد تمام Lessonهای Published دوره
      */
-
     const totalLessons = await prisma.lesson.count({
       where: {
         section: {
-          courseId: lesson.section.courseId,
+          courseId,
         },
         status: "PUBLISHED",
       },
     });
 
     /*
-     * درس‌های تکمیل‌شده
+     * تعداد Lessonهای تکمیل‌شده
      */
-
     const completedLessons = await prisma.lessonProgress.count({
       where: {
         enrollmentId: enrollment.id,
@@ -104,55 +143,50 @@ export async function POST(
 
         lesson: {
           status: "PUBLISHED",
+          section: {
+            courseId,
+          },
         },
       },
     });
 
     const courseCompleted =
-      totalLessons > 0 && completedLessons >= totalLessons;
+      totalLessons > 0 &&
+      completedLessons >= totalLessons;
 
     /*
-     * اگر همه درس‌ها تمام شده‌اند
+     * اگر تمام Lessonهای دوره تکمیل شده‌اند،
+     * Enrollment را COMPLETED می‌کنیم.
      */
-
-    if (courseCompleted) {
+    if (courseCompleted && enrollment.status !== "COMPLETED") {
       await prisma.enrollment.update({
         where: {
           id: enrollment.id,
         },
-
         data: {
           status: "COMPLETED",
         },
       });
-      const user = await prisma.user.findUnique({
-        where: {
-          id: session.userId,
-        },
-      });
-
-      const course = await prisma.course.findUnique({
-        where: {
-          id: lesson.section.courseId,
-        },
-      });
-      if (user?.phone && course) {
-        try {
-          await sendSms({
-            phone: user.phone,
-
-            message: `🎓 تبریک! شما دوره "${course.title}" را با موفقیت به پایان رساندید.`,
-          });
-        } catch (smsError) {
-          console.error("COURSE_COMPLETE_SMS_ERROR:", smsError);
-        }
-      }
     }
+
+    /*
+     * درصد پیشرفت
+     */
+    const percentage =
+      totalLessons > 0
+        ? Math.round((completedLessons / totalLessons) * 100)
+        : 0;
 
     return Response.json({
       success: true,
 
-      progress,
+      progress: {
+        id: progress.id,
+        lessonId: progress.lessonId,
+        status: progress.status,
+        startedAt: progress.startedAt,
+        completedAt: progress.completedAt,
+      },
 
       courseCompleted,
 
@@ -160,10 +194,7 @@ export async function POST(
 
       totalLessons,
 
-      percentage:
-        totalLessons > 0
-          ? Math.round((completedLessons / totalLessons) * 100)
-          : 0,
+      percentage,
     });
   } catch (error) {
     console.error("COMPLETE_LESSON_ERROR:", error);

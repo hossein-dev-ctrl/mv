@@ -61,20 +61,33 @@ export async function POST(
       );
     }
 
-    const progress = await prisma.lessonProgress.upsert({
+    const existingProgress = await prisma.lessonProgress.findUnique({
       where: {
         enrollmentId_lessonId: {
           enrollmentId: enrollment.id,
           lessonId,
         },
       },
+    });
 
-      update: {
-        status: "IN_PROGRESS",
-        startedAt: new Date(),
-      },
+    /*
+     * اگر Progress قبلاً وجود داشته باشد،
+     * مخصوصاً اگر COMPLETED باشد،
+     * نباید وضعیت آن تغییر کند.
+     */
+    if (existingProgress) {
+      return Response.json({
+        success: true,
+        progress: existingProgress,
+      });
+    }
 
-      create: {
+    /*
+     * اگر Progress وجود نداشته باشد،
+     * Lesson را در وضعیت IN_PROGRESS شروع می‌کنیم.
+     */
+    const progress = await prisma.lessonProgress.create({
+      data: {
         enrollmentId: enrollment.id,
         lessonId,
         status: "IN_PROGRESS",
