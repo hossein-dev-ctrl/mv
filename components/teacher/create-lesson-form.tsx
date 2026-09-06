@@ -4,10 +4,11 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Props = {
+  courseId: string;
   sectionId: string;
 };
 
-export default function CreateLessonForm({ sectionId }: Props) {
+export default function CreateLessonForm({ courseId, sectionId }: Props) {
   const router = useRouter();
 
   const [title, setTitle] = useState("");

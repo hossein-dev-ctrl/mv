@@ -1,18 +1,15 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 
-export default function MockPaymentPage() {
+function MockPaymentContent() {
   const searchParams = useSearchParams();
-
   const router = useRouter();
 
   const paymentId = searchParams.get("paymentId");
 
   const [loading, setLoading] = useState(false);
-
   const [error, setError] = useState("");
 
   async function pay(success: boolean) {
@@ -80,8 +77,25 @@ export default function MockPaymentPage() {
           </button>
         </div>
 
-        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-4 text-sm text-red-600">❌ {error}</p>}
       </div>
     </main>
+  );
+}
+
+export default function MockPaymentPage() {
+  return (
+    <Suspense
+      fallback={
+        <main
+          dir="rtl"
+          className="flex min-h-screen items-center justify-center bg-gray-100"
+        >
+          <p>در حال بارگذاری درگاه...</p>
+        </main>
+      }
+    >
+      <MockPaymentContent />
+    </Suspense>
   );
 }

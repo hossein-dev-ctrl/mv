@@ -130,7 +130,7 @@ export default async function SectionPage({ params }: PageProps) {
             </div>
           </div>
 
-          <CreateLessonForm sectionId={sectionId} />
+          <CreateLessonForm courseId={courseId} sectionId={sectionId} />
         </div>
       </div>
     </main>
