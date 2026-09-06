@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getLessonAccess } from "@/lib/lesson-access";
 
 export async function POST(
   request: Request,
@@ -25,56 +26,42 @@ export async function POST(
 
     const { lessonId } = await params;
 
-    const lesson = await prisma.lesson.findUnique({
-      where: {
-        id: lessonId,
-      },
-      include: {
-        section: true,
-      },
-    });
+    /*
+     * تمام بررسی‌های دسترسی Lesson
+     * از منطق مرکزی انجام می‌شود.
+     */
+    const access = await getLessonAccess(session.userId, lessonId);
 
-    if (!lesson) {
+    if (!access.allowed) {
       return Response.json(
         {
-          message: "درس پیدا نشد.",
-        },
-        { status: 404 },
-      );
-    }
-
-    const enrollment = await prisma.enrollment.findUnique({
-      where: {
-        userId_courseId: {
-          userId: session.userId,
-          courseId: lesson.section.courseId,
-        },
-      },
-    });
-
-    if (!enrollment || enrollment.status === "CANCELLED") {
-      return Response.json(
-        {
-          message: "شما به این دوره دسترسی ندارید.",
+          message: "این درس برای شما قابل دسترسی نیست.",
+          reason: access.reason,
         },
         { status: 403 },
       );
     }
 
-    const existingProgress = await prisma.lessonProgress.findUnique({
-      where: {
-        enrollmentId_lessonId: {
-          enrollmentId: enrollment.id,
-          lessonId,
+    const enrollment = access.enrollment;
+
+    if (!enrollment) {
+      return Response.json(
+        {
+          message: "ثبت‌نام فعال برای این دوره پیدا نشد.",
         },
-      },
-    });
+        { status: 403 },
+      );
+    }
 
     /*
      * اگر Progress قبلاً وجود داشته باشد،
      * مخصوصاً اگر COMPLETED باشد،
      * نباید وضعیت آن تغییر کند.
      */
+    const existingProgress = enrollment.progresses.find(
+      (progress) => progress.lessonId === lessonId,
+    );
+
     if (existingProgress) {
       return Response.json({
         success: true,
