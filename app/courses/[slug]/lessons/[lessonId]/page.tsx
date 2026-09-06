@@ -169,6 +169,12 @@ export default async function LessonPage({ params }: Props) {
                 </div>
               )}
 
+              <LessonContent
+                lessonId={lesson.id}
+                videoUrl={lesson.videoUrl}
+                isCompleted={isCompleted}
+              />
+
               {/* فایل‌ها */}
 
               {lesson.files.length > 0 && (
@@ -190,12 +196,6 @@ export default async function LessonPage({ params }: Props) {
                   </div>
                 </div>
               )}
-
-              <LessonContent
-                lessonId={lesson.id}
-                videoUrl={lesson.videoUrl}
-                isCompleted={isCompleted}
-              />
 
               {/* Navigation */}
 
