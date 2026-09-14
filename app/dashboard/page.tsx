@@ -3,13 +3,15 @@ import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { calculateProgress } from "@/lib/course-progress";
+import { getLearningSummary } from "@/lib/student-dashboard";
+
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const session = await getSession();
 
   if (!session) {
-    redirect("/login");
+    redirect("/login?redirect=/dashboard");
   }
 
   const enrollments = await prisma.enrollment.findMany({
@@ -88,29 +90,17 @@ export default async function DashboardPage() {
                 (section) => section.lessons,
               );
 
-              const totalLessons = lessons.length;
-
-              const completedLessons = enrollment.progresses.filter(
-                (progress) => progress.status === "COMPLETED",
-              ).length;
-
-              const percentage = calculateProgress(
-                completedLessons,
-                totalLessons,
-              );
-
-              // const progress =
-              //   totalLessons > 0
-              //     ? Math.round((completedLessons / totalLessons) * 100)
-              //     : 0;
-
-              const nextLesson = lessons.find((lesson) => {
-                const lessonProgress = enrollment.progresses.find(
-                  (item) => item.lessonId === lesson.id,
+              const { totalLessons, completedLessons, percentage, nextLesson,
+                state, hasStarted } = getLearningSummary(
+                  lessons, enrollment.progresses, enrollment.course.status,
                 );
-
-                return lessonProgress?.status !== "COMPLETED";
-              });
+              const statusLabels = {
+                unavailable: "فعلاً در دسترس نیست",
+                empty: "در انتظار انتشار درس",
+                completed: "تکمیل‌شده",
+                "in-progress": "در حال یادگیری",
+                "not-started": "آمادهٔ شروع",
+              };
 
               return (
                 <div
@@ -121,10 +111,13 @@ export default async function DashboardPage() {
 
                   <div className="aspect-video bg-gray-100">
                     {enrollment.course.thumbnailUrl ? (
+                      // Course thumbnails may be hosted on teacher-provided domains.
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={enrollment.course.thumbnailUrl}
                         alt={enrollment.course.title}
                         className="h-full w-full object-cover"
+                        loading="lazy"
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-gray-400">
@@ -134,6 +127,11 @@ export default async function DashboardPage() {
                   </div>
 
                   <div className="p-6">
+                    <span className={`mb-3 inline-block rounded-full px-3 py-1 text-xs font-medium ${
+                      state === "completed" ? "bg-green-50 text-green-700" : "bg-indigo-50 text-indigo-700"
+                    }`}>
+                      {statusLabels[state]}
+                    </span>
                     <h2 className="text-xl font-bold">
                       {enrollment.course.title}
                     </h2>
@@ -150,16 +148,19 @@ export default async function DashboardPage() {
                       <div className="mb-2 flex items-center justify-between text-sm">
                         <span className="text-gray-600">پیشرفت دوره</span>
 
-                        <span className="font-bold">{percentage}٪</span>
-                        {/* <span className="font-bold">{progress}٪</span> */}
+                        <span className="font-bold">{percentage.toLocaleString("fa-IR")}٪</span>
                       </div>
 
-                      <div className="h-3 overflow-hidden rounded-full bg-gray-200">
+                      <div
+                        role="progressbar"
+                        aria-label={`پیشرفت ${enrollment.course.title}`}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={percentage}
+                        className="h-3 overflow-hidden rounded-full bg-gray-200"
+                      >
                         <div
                           className="h-full rounded-full bg-indigo-600 transition-all"
-                          // style={{
-                          //   width: `${progress}%`,
-                          // }}
                           style={{
                             width: `${percentage}%`,
                           }}
@@ -168,41 +169,45 @@ export default async function DashboardPage() {
 
                       <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
                         <span>
-                          {completedLessons} از {totalLessons} درس
+                          {completedLessons.toLocaleString("fa-IR")} از {totalLessons.toLocaleString("fa-IR")} درس تکمیل شده
                         </span>
-
-                        {/* <span>{progress}٪</span> */}
-                        <span>{percentage}٪</span>
                       </div>
                     </div>
 
                     {/* ادامه یادگیری */}
 
                     <div className="mt-6">
-                      {/* {nextLesson ? (
-                        <Link
-                          href={`/courses/${enrollment.course.slug}/lessons/${nextLesson.id}`}
-                          className="block rounded-xl bg-indigo-600 px-5 py-3 text-center font-medium text-white hover:bg-indigo-700"
-                        >
-                          ▶️ ادامه یادگیری
-                        </Link>
-                      ) : (
-                        <div className="rounded-xl bg-green-50 px-5 py-3 text-center font-medium text-green-700">
-                          🎉 دوره را کامل کرده‌اید
-                        </div>
-                      )} */}
-                      {enrollment.status === "COMPLETED" ? (
-                        <div className="mt-6 rounded-xl bg-green-50 p-4 text-center font-medium text-green-700">
-                          🎓 تبریک! این دوره را با موفقیت به پایان رساندید.
+                      {state === "completed" ? (
+                        <div className="rounded-xl bg-green-50 p-4 text-center font-medium text-green-700">
+                          تبریک! همهٔ درس‌های منتشرشدهٔ این دوره را تکمیل کرده‌اید.
                         </div>
                       ) : nextLesson ? (
+                        <>
+                          <p className="mb-3 text-sm leading-6 text-gray-600">
+                            درس بعدی: {nextLesson.title}
+                          </p>
+                          <Link
+                            href={`/courses/${enrollment.course.slug}/lessons/${nextLesson.id}`}
+                            className="block rounded-xl bg-indigo-600 px-5 py-3 text-center font-medium text-white hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                          >
+                            {hasStarted ? "ادامهٔ یادگیری" : "شروع یادگیری"}
+                          </Link>
+                        </>
+                      ) : (
+                        <p className="rounded-xl bg-gray-50 p-4 text-sm leading-7 text-gray-600">
+                          {state === "empty"
+                            ? "هنوز درسی برای این دوره منتشر نشده است. پس از انتشار، می‌توانید یادگیری را شروع کنید."
+                            : "این دوره در حال حاضر قابل مشاهده نیست. ثبت‌نام و پیشرفت شما حفظ شده است."}
+                        </p>
+                      )}
+                      {enrollment.course.status === "PUBLISHED" && (
                         <Link
-                          href={`/courses/${enrollment.course.slug}/lessons/${nextLesson.id}`}
-                          className="mt-6 block rounded-xl bg-indigo-600 px-5 py-3 text-center font-medium text-white hover:bg-indigo-700"
+                          href={`/courses/${enrollment.course.slug}`}
+                          className="mt-4 block text-center text-sm font-medium text-indigo-700 hover:underline"
                         >
-                          ▶️ ادامه یادگیری
+                          {state === "completed" ? "مرور درس‌های دوره" : "مشاهدهٔ محتوای دوره"}
                         </Link>
-                      ) : null}
+                      )}
                     </div>
                   </div>
                 </div>
