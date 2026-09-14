@@ -1,5 +1,5 @@
 import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { recordLessonActivity } from "@/lib/lesson-progress";
 import { getLessonAccess } from "@/lib/lesson-access";
 
 export async function POST(
@@ -60,27 +60,7 @@ export async function POST(
       );
     }
 
-    const now = new Date();
-
-    const progress = await prisma.lessonProgress.upsert({
-      where: {
-        enrollmentId_lessonId: {
-          enrollmentId: enrollment.id,
-          lessonId,
-        },
-      },
-      update: {
-        videoCompletedAt: now,
-        status: "IN_PROGRESS",
-      },
-      create: {
-        enrollmentId: enrollment.id,
-        lessonId,
-        status: "IN_PROGRESS",
-        startedAt: now,
-        videoCompletedAt: now,
-      },
-    });
+    const progress = await recordLessonActivity(enrollment.id, lessonId, true);
 
     return Response.json({
       success: true,

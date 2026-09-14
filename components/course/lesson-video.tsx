@@ -6,6 +6,7 @@ type Props = {
   lessonId: string;
   videoUrl: string;
   disabled?: boolean;
+  hasCompletedVideo?: boolean;
   onVideoCompleted: () => void;
 };
 
@@ -13,6 +14,7 @@ export default function LessonVideo({
   lessonId,
   videoUrl,
   disabled = false,
+  hasCompletedVideo = false,
   onVideoCompleted,
 }: Props) {
   const [loading, setLoading] = useState(false);
@@ -20,7 +22,7 @@ export default function LessonVideo({
   const [error, setError] = useState("");
 
   async function handleEnded() {
-    if (loading || completed || disabled) {
+    if (loading || completed || hasCompletedVideo || disabled) {
       return;
     }
 
@@ -61,7 +63,7 @@ export default function LessonVideo({
         <p className="mt-3 text-sm text-gray-500">در حال ثبت پایان ویدئو...</p>
       )}
 
-      {completed && (
+      {(completed || hasCompletedVideo) && (
         <div className="mt-3 rounded-xl bg-green-50 p-3 text-sm font-medium text-green-700">
           ✅ ویدئو به طور کامل مشاهده شد.
         </div>

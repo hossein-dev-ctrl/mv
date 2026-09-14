@@ -170,9 +170,11 @@ export default async function LessonPage({ params }: Props) {
               )}
 
               <LessonContent
+                key={`${lesson.id}:${lesson.videoUrl ?? ""}`}
                 lessonId={lesson.id}
                 videoUrl={lesson.videoUrl}
                 isCompleted={isCompleted}
+                hasCompletedVideo={Boolean(progress?.videoCompletedAt)}
               />
 
               {/* فایل‌ها */}

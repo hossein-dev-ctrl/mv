@@ -1,5 +1,5 @@
 import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { recordLessonActivity } from "@/lib/lesson-progress";
 import { getLessonAccess } from "@/lib/lesson-access";
 
 export async function POST(
@@ -53,34 +53,7 @@ export async function POST(
       );
     }
 
-    /*
-     * اگر Progress قبلاً وجود داشته باشد،
-     * مخصوصاً اگر COMPLETED باشد،
-     * نباید وضعیت آن تغییر کند.
-     */
-    const existingProgress = enrollment.progresses.find(
-      (progress) => progress.lessonId === lessonId,
-    );
-
-    if (existingProgress) {
-      return Response.json({
-        success: true,
-        progress: existingProgress,
-      });
-    }
-
-    /*
-     * اگر Progress وجود نداشته باشد،
-     * Lesson را در وضعیت IN_PROGRESS شروع می‌کنیم.
-     */
-    const progress = await prisma.lessonProgress.create({
-      data: {
-        enrollmentId: enrollment.id,
-        lessonId,
-        status: "IN_PROGRESS",
-        startedAt: new Date(),
-      },
-    });
+    const progress = await recordLessonActivity(enrollment.id, lessonId);
 
     return Response.json({
       success: true,

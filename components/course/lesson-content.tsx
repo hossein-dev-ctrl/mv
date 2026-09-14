@@ -9,14 +9,17 @@ type Props = {
   lessonId: string;
   videoUrl: string | null;
   isCompleted: boolean;
+  hasCompletedVideo: boolean;
 };
 
 export default function LessonContent({
   lessonId,
   videoUrl,
   isCompleted,
+  hasCompletedVideo,
 }: Props) {
-  const [videoCompleted, setVideoCompleted] = useState(!videoUrl);
+  const [watchedThisVisit, setWatchedThisVisit] = useState(false);
+  const videoCompleted = !videoUrl || hasCompletedVideo || watchedThisVisit;
 
   return (
     <div>
@@ -24,7 +27,9 @@ export default function LessonContent({
         <LessonVideo
           lessonId={lessonId}
           videoUrl={videoUrl}
-          onVideoCompleted={() => setVideoCompleted(true)}
+          hasCompletedVideo={hasCompletedVideo}
+          disabled={isCompleted}
+          onVideoCompleted={() => setWatchedThisVisit(true)}
         />
       ) : (
         <div className="rounded-xl bg-gray-100 p-12 text-center text-gray-500">
