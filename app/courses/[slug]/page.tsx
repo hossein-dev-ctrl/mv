@@ -73,6 +73,8 @@ export default async function CoursePage({ params }: Props) {
     });
   }
 
+  const isOwner = session?.userId === course.teacherId;
+
   const isEnrolled =
     enrollment?.status === "ACTIVE" || enrollment?.status === "COMPLETED";
 
@@ -131,6 +133,7 @@ export default async function CoursePage({ params }: Props) {
 
       <section className="bg-white">
         <div className="mx-auto max-w-7xl px-6 py-12">
+          <Link href="/courses" className="mb-6 inline-block text-sm text-indigo-600 hover:underline">← بازگشت به همهٔ دوره‌ها</Link>
           <div className="grid gap-10 lg:grid-cols-2">
             <div>
               <div className="mb-4 inline-flex rounded-full bg-indigo-50 px-4 py-2 text-sm text-indigo-700">
@@ -154,7 +157,9 @@ export default async function CoursePage({ params }: Props) {
               </div>
 
               <div className="mt-8">
-                {isEnrolled ? (
+                {isOwner ? (
+                  <Link href={`/teacher/courses/${course.id}`} className="inline-flex rounded-xl bg-indigo-600 px-7 py-4 font-medium text-white">مدیریت این دوره</Link>
+                ) : isEnrolled ? (
                   <Link
                     href={
                       firstUnlockedLessonId
@@ -174,7 +179,7 @@ export default async function CoursePage({ params }: Props) {
                     }
                     className="inline-flex rounded-xl bg-indigo-600 px-7 py-4 font-medium text-white transition hover:bg-indigo-700"
                   >
-                    💳 خرید و ثبت‌نام
+                    {course.price === 0 ? "ثبت‌نام رایگان" : "خرید و ثبت‌نام"}
                   </Link>
                 )}
               </div>
@@ -271,7 +276,7 @@ export default async function CoursePage({ params }: Props) {
               </div>
 
               <div className="divide-y">
-                {section.lessons.map((lesson) => {
+                {section.lessons.filter((lesson) => lesson.status === "PUBLISHED").map((lesson) => {
                   const progress = enrollment?.progresses.find(
                     (item) => item.lessonId === lesson.id,
                   );
@@ -310,7 +315,9 @@ export default async function CoursePage({ params }: Props) {
                         </div>
                       </div>
 
-                      {completed ? (
+                      {isOwner ? (
+                        <Link href={`/teacher/courses/${course.id}/sections/${section.id}/lessons/${lesson.id}`} className="text-sm font-medium text-indigo-600">مدیریت درس</Link>
+                      ) : completed ? (
                         <Link
                           href={`/courses/${course.slug}/lessons/${lesson.id}`}
                           className="text-sm font-medium text-green-600"

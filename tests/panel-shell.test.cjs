@@ -90,3 +90,49 @@ for (const succeeds of [true,false]) test('logout '+(succeeds?'navigates after s
   if(!succeeds) assert.ok(states.some(value=>typeof value==='string'&&value.includes('خروج انجام نشد')));
  } finally {global.fetch=oldFetch;global.window=oldWindow;}
 });
+
+test('public courses shell allows guests with one header and footer', async () => {
+  const html = await shell({session:false, area:'courses'});
+  assert.equal((html.match(/<header/g)||[]).length,1);
+  assert.equal((html.match(/<footer/g)||[]).length,1);
+  assert.match(html,/href="\/login"/);
+  assert.doesNotMatch(html,/خروج از حساب|href="\/dashboard"/);
+});
+test('teacher navigation separates management from enrolled learning', async () => {
+  const html = await shell({role:'TEACHER',area:'courses'});
+  assert.match(html,/مدیریت دوره‌های من/);
+  assert.match(html,/دوره‌های ثبت‌نام‌شده/);
+});
+for (const file of ['app/api/enrollments/route.ts','app/api/payments/create/route.ts']) {
+  test(file+' blocks own-course enrollment before any payment or writes',async()=>{
+    const {POST}=load(file,{
+      '@/lib/auth':{getSession:async()=>({userId:'owner',role:'TEACHER'})},
+      '@/lib/prisma':{prisma:{course:{findUnique:async()=>({id:'course',teacherId:'owner',status:'PUBLISHED',price:100})}}},
+      '@/lib/zarinpal':{requestPayment:()=>assert.fail('must not request payment')},
+    });
+    const response=await POST(new Request('http://test.local/api',{method:'POST',body:JSON.stringify({courseId:'course'})}));
+    assert.equal(response.status,403);
+  });
+}
+for (const owner of [true,false]) test('course detail '+(owner?'offers management without checkout':'allows another teacher to enroll'),async()=>{
+ const {default:Page}=load('app/courses/[slug]/page.tsx',{
+  'next/link':link,
+  'next/navigation':{notFound:()=>assert.fail('unexpected 404')},
+  '@/lib/auth':{getSession:async()=>({userId:owner?'owner':'other',role:'TEACHER'})},
+  '@/lib/prisma':{prisma:{course:{findUnique:async()=>({id:'c1',slug:'dore',teacherId:'owner',title:'نمونه',teacher:{name:'مدرس'},status:'PUBLISHED',price:100,sections:[]})},enrollment:{findUnique:async()=>null}}},
+ });
+ const html=renderToStaticMarkup(await Page({params:Promise.resolve({slug:'dore'})}));
+ assert.equal(html.includes('href="/teacher/courses/c1"'),owner);
+ assert.equal(html.includes('href="/courses/dore/checkout"'),!owner);
+ assert.match(html,/بازگشت به همهٔ دوره‌ها/);
+});
+test('catalog queries published courses and handles empty results',async()=>{
+ const {default:Page}=load('app/courses/page.tsx',{
+  'next/link':link,
+  '@/lib/auth':{getSession:async()=>null},
+  '@/lib/prisma':{prisma:{course:{findMany:async(query)=>{assert.equal(query.where.status,'PUBLISHED');return [];}}}},
+ });
+ const html=renderToStaticMarkup(await Page());
+ assert.match(html,/هنوز دوره‌ای منتشر نشده است/);
+ assert.doesNotMatch(html,/تست ارسال پیامک/);
+});

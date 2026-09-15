@@ -4,12 +4,12 @@ import { getSession, type UserRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import LogoutButton from "@/components/logout-button";
 
-type Area = "student" | "teacher" | "admin" | "lesson";
+type Area = "student" | "teacher" | "admin" | "lesson" | "courses";
 const roles: Record<UserRole, string> = {
   STUDENT: "دانش‌آموز", TEACHER: "مدرس", ADMIN: "مدیر",
 };
 const areas: Record<Area, string> = {
-  student: "پنل دانش‌آموز", teacher: "پنل مدرس", admin: "پنل مدیر", lesson: "محیط یادگیری",
+  courses: "دوره‌ها", student: "دوره‌های ثبت‌نام‌شده", teacher: "پنل مدرس", admin: "پنل مدیر", lesson: "محیط یادگیری",
 };
 
 export function Brand() {
@@ -31,23 +31,23 @@ export default async function PanelShell({ children, area }: {
   area: Area;
 }) {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session && area !== "courses") redirect("/login");
 
-  const user = await prisma.user.findUnique({
+  const user = session ? await prisma.user.findUnique({
     where: { id: session.userId },
     select: { name: true, email: true, phone: true, role: true },
-  });
+  }) : null;
   // A changed role requires a fresh session so the displayed role and API
   // permissions cannot disagree. This layout does not replace API checks.
-  if (!user || user.role !== session.role || !(user.role in roles)) redirect("/login");
-  if (area === "admin" && user.role !== "ADMIN") redirect("/dashboard");
-  if (area === "teacher" && user.role === "STUDENT") redirect("/dashboard");
+  if (session && (!user || user.role !== session.role || !(user.role in roles))) redirect("/login");
+  if (area === "admin" && user?.role !== "ADMIN") redirect("/dashboard");
+  if (area === "teacher" && (!user || user.role === "STUDENT")) redirect("/dashboard");
 
-  const name = user.name?.trim() || user.email || user.phone || "کاربر";
+  const name = user?.name?.trim() || user?.email || user?.phone || "کاربر";
   const navigation = [
-    ...(user.role === "ADMIN" ? [{ href: "/admin", label: "پنل مدیر", area: "admin" }] : []),
-    ...(user.role !== "STUDENT" ? [{ href: "/teacher", label: "پنل مدرس", area: "teacher" }] : []),
-    { href: "/dashboard", label: "دوره‌های من", area: "student" },
+    ...(user?.role === "ADMIN" ? [{ href: "/admin", label: "پنل مدیر", area: "admin" }] : []),
+    ...(user && user.role !== "STUDENT" ? [{ href: "/teacher", label: "مدیریت دوره‌های من", area: "teacher" }] : []),
+    ...(user ? [{ href: "/dashboard", label: "دوره‌های ثبت‌نام‌شده", area: "student" }] : []),
     { href: "/courses", label: "همهٔ دوره‌ها", area: "courses" },
   ];
 
@@ -61,7 +61,7 @@ export default async function PanelShell({ children, area }: {
           <Link href="/courses" aria-label="آموزش آنلاین، مشاهدهٔ دوره‌ها" className="rounded-lg text-slate-900 focus-visible:outline-2 focus-visible:outline-indigo-600">
             <Brand />
           </Link>
-          <div className="flex w-full min-w-0 items-center justify-between gap-3 sm:w-auto">
+          {user ? <div className="flex w-full min-w-0 items-center justify-between gap-3 sm:w-auto">
             <div className="flex min-w-0 items-center gap-3">
               <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 font-bold text-indigo-700">
                 {Array.from(name)[0]}
@@ -73,7 +73,7 @@ export default async function PanelShell({ children, area }: {
               </div>
             </div>
             <LogoutButton />
-          </div>
+          </div> : <Link href="/login" className="rounded-xl bg-indigo-600 px-5 py-3 text-sm text-white">ورود به حساب کاربری</Link>}
         </div>
         <div className="border-t border-slate-100">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">

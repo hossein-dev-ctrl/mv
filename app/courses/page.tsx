@@ -1,75 +1,52 @@
-"use client";
+import Link from "next/link";
+import { getSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
-import { useState } from "react";
+export const dynamic = "force-dynamic";
 
-export default function TestSmsPage() {
-  const [phone, setPhone] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<unknown>(null);
-
-  async function handleSendSms() {
-    setLoading(true);
-    setResult(null);
-
-    try {
-      const response = await fetch("/api/test-sms", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          phone,
-        }),
-      });
-
-      const data = await response.json();
-
-      setResult(data);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  }
+export default async function CoursesPage() {
+  const session = await getSession();
+  const courses = await prisma.course.findMany({
+    where: { status: "PUBLISHED" },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true, slug: true, title: true, shortDescription: true,
+      thumbnailUrl: true, price: true, teacherId: true,
+      teacher: { select: { name: true } },
+    },
+  });
+  const panel = session?.role === "ADMIN" ? "/admin" : session?.role === "TEACHER" ? "/teacher" : "/dashboard";
 
   return (
-    <main dir="rtl" className="min-h-screen bg-gray-100 p-8">
-      <div className="mx-auto max-w-xl rounded-xl bg-white p-6 shadow">
-        <h1 className="mb-6 text-2xl font-bold">تست ارسال پیامک</h1>
-
-        <label className="mb-2 block font-medium">شماره موبایل</label>
-
-        <input
-          type="text"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="09123456789"
-          className="mb-4 w-full rounded-lg border p-3 text-left"
-          dir="ltr"
-        />
-
-        <button
-          type="button"
-          onClick={handleSendSms}
-          disabled={loading || !phone}
-          className="w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {loading ? "در حال ارسال..." : "ارسال پیامک تست"}
-        </button>
-
-        {result !== null && (
-          <div className="mt-6">
-            <h2 className="mb-2 font-bold">نتیجه:</h2>
-
-            <pre
-              dir="ltr"
-              className="max-h-[500px] overflow-auto rounded-lg bg-gray-900 p-4 text-sm text-white"
-            >
-              {JSON.stringify(result, null, 2)}
-            </pre>
-          </div>
-        )}
-      </div>
+    <main className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6">
+      {session && <Link href={panel} className="text-sm text-indigo-600 hover:underline">← بازگشت به پنل من</Link>}
+      <h1 className="mt-4 text-3xl font-bold text-slate-900">همهٔ دوره‌ها</h1>
+      <p className="mt-3 leading-7 text-slate-600">دورهٔ مورد علاقه‌تان را انتخاب کنید و جزئیات و سرفصل‌های آن را ببینید.</p>
+      {courses.length === 0 ? (
+        <p className="mt-8 rounded-2xl border border-slate-200 bg-white p-8 text-slate-600">هنوز دوره‌ای منتشر نشده است.</p>
+      ) : (
+        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {courses.map((course) => (
+            <article key={course.id} className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              {course.thumbnailUrl ? (
+                // Course images may be served from instructor-configured storage hosts.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={course.thumbnailUrl} alt={course.title} className="aspect-video w-full object-cover" />
+              ) : <div className="flex aspect-video items-center justify-center bg-indigo-50 text-indigo-500">آموزش آنلاین</div>}
+              <div className="flex flex-1 flex-col p-5">
+                <h2 className="text-xl font-bold"><Link href={`/courses/${course.slug}`} className="hover:text-indigo-600">{course.title}</Link></h2>
+                <p className="mt-2 text-sm text-slate-500">مدرس: {course.teacher.name || "مدرس دوره"}</p>
+                {course.shortDescription && <p className="mt-3 line-clamp-3 text-sm leading-7 text-slate-600">{course.shortDescription}</p>}
+                <div className="mt-auto pt-5">
+                  <p className="font-bold">{course.price === 0 ? "رایگان" : `${course.price.toLocaleString("fa-IR")} تومان`}</p>
+                  <Link href={`/courses/${course.slug}`} className="mt-4 inline-block rounded-xl bg-indigo-600 px-4 py-3 text-sm font-medium text-white hover:bg-indigo-700">مشاهدهٔ دوره</Link>
+                  {session?.userId === course.teacherId && <Link href={`/teacher/courses/${course.id}`} className="ms-4 inline-block py-3 text-sm text-indigo-600 hover:underline">مدیریت دورهٔ من</Link>}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </main>
   );
 }

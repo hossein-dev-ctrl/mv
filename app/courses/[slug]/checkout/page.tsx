@@ -35,6 +35,7 @@ export default async function CheckoutPage({ params }: Props) {
 
     select: {
       id: true,
+      teacherId: true,
       title: true,
       slug: true,
       shortDescription: true,
@@ -51,6 +52,10 @@ export default async function CheckoutPage({ params }: Props) {
   /*
    * اگر قبلاً ثبت نام کرده باشد
    */
+
+  if (course.teacherId === session.userId) {
+    redirect(`/teacher/courses/${course.id}`);
+  }
 
   const enrollment = await prisma.enrollment.findUnique({
     where: {

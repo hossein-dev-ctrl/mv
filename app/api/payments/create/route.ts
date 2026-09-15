@@ -43,6 +43,10 @@ export async function POST(request: Request) {
       );
     }
 
+    if (course.teacherId === session.userId) {
+      return Response.json({ message: "شما مدرس این دوره هستید؛ از بخش مدیریت دوره استفاده کنید." }, { status: 403 });
+    }
+
     if (course.status !== "PUBLISHED") {
       return Response.json(
         {
