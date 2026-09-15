@@ -47,6 +47,7 @@ export async function POST(request: Request) {
       return Response.json({ message: "شما مدرس این دوره هستید؛ از بخش مدیریت دوره استفاده کنید." }, { status: 403 });
     }
 
+    if (course.deliveryStatus === "UPCOMING") return Response.json({message:"این دوره فقط پیش‌ثبت‌نام دارد و هنوز قابل خرید نیست."},{status:400});
     if (course.status !== "PUBLISHED") {
       return Response.json(
         {

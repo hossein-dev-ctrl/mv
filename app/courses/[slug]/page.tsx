@@ -1,3 +1,5 @@
+import DeliveryStatus from "@/components/course/delivery-status";
+import InterestForm from "@/components/course/interest-form";
 import CoursePrice from "@/components/course/price";
 import { coursePrice } from "@/lib/course-price";
 import Link from "next/link";
@@ -54,10 +56,12 @@ export default async function CoursePage({ params }: Props) {
     },
   });
 
-  if (!course || course.status !== "PUBLISHED") {
+  const adminPreview=session?.role==="ADMIN" && (await prisma.user.findUnique({where:{id:session.userId},select:{role:true}}))?.role==="ADMIN";
+  if (!course || (course.status !== "PUBLISHED" && !adminPreview)) {
     notFound();
   }
 
+  const interest=session && course.deliveryStatus==="UPCOMING" ? await prisma.courseInterest.findUnique({where:{courseId_userId:{courseId:course.id,userId:session.userId}}}) : null;
   let enrollment = null;
 
   if (session) {
@@ -152,6 +156,7 @@ export default async function CoursePage({ params }: Props) {
                 </p>
               )}
 
+              <div className="mt-5"><DeliveryStatus status={course.deliveryStatus}/>{adminPreview&&<p className="mt-3 text-xs text-amber-800">نمای کاربر برای مدیر · {course.status==="PUBLISHED"?"عمومی":"این دوره برای کاربران عمومی قابل مشاهده نیست"}</p>}</div>
               <div className="mt-6 flex flex-wrap gap-4 text-sm text-gray-500">
                 <span>👨‍🏫 مدرس: {course.teacher.name || "مدرس دوره"}</span>
 
@@ -159,7 +164,7 @@ export default async function CoursePage({ params }: Props) {
               </div>
 
               <div className="mt-8">
-                {isOwner ? (
+                {adminPreview ? <p className="text-sm text-slate-600">پیش‌نمایش دوره؛ عملیات ثبت‌نام برای مدیر نمایش داده نمی‌شود.</p> : course.deliveryStatus==="UPCOMING" && !isOwner && !isEnrolled ? (session ? <InterestForm courseId={course.id} registered={!!interest}/> : <Link href={`/login?redirect=/courses/${course.slug}`} className="rounded-xl bg-indigo-600 px-5 py-3 text-white">ورود برای پیش‌ثبت‌نام رایگان</Link>) : isOwner ? (
                   <Link href={`/teacher/courses/${course.id}`} className="inline-flex rounded-xl bg-indigo-600 px-7 py-4 font-medium text-white">مدیریت این دوره</Link>
                 ) : isEnrolled ? (
                   <Link
@@ -208,7 +213,7 @@ export default async function CoursePage({ params }: Props) {
                 <div className="text-sm text-gray-500">قیمت دوره</div>
 
                 <div className="mt-1 text-3xl font-bold">
-                  <CoursePrice price={course.price} discountPercent={course.discountPercent} />
+                  {course.deliveryStatus==="UPCOMING"?"پیش‌ثبت‌نام بدون پرداخت":<CoursePrice price={course.price} discountPercent={course.discountPercent} />}
                 </div>
               </div>
             </div>
@@ -230,6 +235,7 @@ export default async function CoursePage({ params }: Props) {
         </section>
       )}
 
+      <section className="mx-auto max-w-7xl px-6 pb-8"><div className="rounded-3xl border bg-white p-8"><h2 className="text-2xl font-bold">دربارهٔ مدرس</h2><h3 className="mt-4 font-bold text-indigo-700">{course.teacher.name||"مدرس دوره"}</h3><p className="mt-3 whitespace-pre-line leading-8 text-slate-600">{course.teacherIntro||"معرفی تکمیلی مدرس هنوز ثبت نشده است."}</p></div></section>
       {/* ROADMAP */}
 
       {course.roadmapImageUrl && (
@@ -317,7 +323,7 @@ export default async function CoursePage({ params }: Props) {
                         </div>
                       </div>
 
-                      {isOwner ? (
+                      {adminPreview ? <p className="text-sm text-slate-600">پیش‌نمایش دوره؛ عملیات ثبت‌نام برای مدیر نمایش داده نمی‌شود.</p> : course.deliveryStatus==="UPCOMING" && !isOwner && !isEnrolled ? (session ? <InterestForm courseId={course.id} registered={!!interest}/> : <Link href={`/login?redirect=/courses/${course.slug}`} className="rounded-xl bg-indigo-600 px-5 py-3 text-white">ورود برای پیش‌ثبت‌نام رایگان</Link>) : isOwner ? (
                         <Link href={`/teacher/courses/${course.id}/sections/${section.id}/lessons/${lesson.id}`} className="text-sm font-medium text-indigo-600">مدیریت درس</Link>
                       ) : completed ? (
                         <Link

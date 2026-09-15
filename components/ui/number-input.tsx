@@ -13,6 +13,6 @@ export default function NumberInput({value,defaultValue,onChange,name,min,max,st
     if(onChange)onChange({...event,target:{...event.target,value:next},currentTarget:{...event.currentTarget,value:next}} as ChangeEvent<HTMLInputElement>);
   }} />
   {name&&<input type="hidden" name={name} value={raw} />}
-  <span id={description} className="text-xs font-normal leading-6 text-indigo-600">{words?words+(unit?' '+unit:''):'عدد را وارد کنید'}</span>
+  <span id={description} className="number-words text-xs font-normal leading-6 text-indigo-600" aria-live="polite">{words?words+(unit?' '+unit:''):'عدد را وارد کنید'}</span>
  </span>;
 }

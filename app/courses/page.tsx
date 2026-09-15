@@ -1,3 +1,4 @@
+import DeliveryStatus from "@/components/course/delivery-status";
 import CoursePrice from "@/components/course/price";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
@@ -11,7 +12,7 @@ export default async function CoursesPage() {
     where: { status: "PUBLISHED" },
     orderBy: { createdAt: "desc" },
     select: {
-      id: true, slug: true, title: true, shortDescription: true,
+      deliveryStatus:true, id: true, slug: true, title: true, shortDescription: true,
       thumbnailUrl: true, price: true, discountPercent: true, teacherId: true,
       teacher: { select: { name: true } },
     },
@@ -35,11 +36,11 @@ export default async function CoursesPage() {
                 <img src={course.thumbnailUrl} alt={course.title} className="aspect-video w-full object-cover" />
               ) : <div className="flex aspect-video items-center justify-center bg-indigo-50 text-indigo-500">آموزش آنلاین</div>}
               <div className="flex flex-1 flex-col p-5">
-                <h2 className="text-xl font-bold"><Link href={`/courses/${course.slug}`} className="hover:text-indigo-600">{course.title}</Link></h2>
+                <DeliveryStatus status={course.deliveryStatus}/><h2 className="mt-3 text-xl font-bold"><Link href={`/courses/${course.slug}`} className="hover:text-indigo-600">{course.title}</Link></h2>
                 <p className="mt-2 text-sm text-slate-500">مدرس: {course.teacher.name || "مدرس دوره"}</p>
                 {course.shortDescription && <p className="mt-3 line-clamp-3 text-sm leading-7 text-slate-600">{course.shortDescription}</p>}
                 <div className="mt-auto pt-5">
-                  <p className="font-bold"><CoursePrice price={course.price} discountPercent={course.discountPercent} /></p>
+                  <p className="font-bold">{course.deliveryStatus==="UPCOMING"?"پیش‌ثبت‌نام بدون پرداخت":<CoursePrice price={course.price} discountPercent={course.discountPercent} />}</p>
                   <Link href={`/courses/${course.slug}`} className="mt-4 inline-block rounded-xl bg-indigo-600 px-4 py-3 text-sm font-medium text-white hover:bg-indigo-700">مشاهدهٔ دوره</Link>
                   {session?.userId === course.teacherId && <Link href={`/teacher/courses/${course.id}`} className="ms-4 inline-block py-3 text-sm text-indigo-600 hover:underline">مدیریت دورهٔ من</Link>}
                 </div>

@@ -58,6 +58,8 @@ export default async function EditCoursePage({ params }: PageProps) {
         <EditCourseForm
           course={{
             id: course.id,
+            deliveryStatus:course.deliveryStatus,
+            teacherIntro:course.teacherIntro,
             title: course.title,
             shortDescription: course.shortDescription,
             description: course.description,

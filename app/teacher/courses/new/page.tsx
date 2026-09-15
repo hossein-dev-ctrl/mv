@@ -1,4 +1,5 @@
 "use client";
+import CourseExtraFields from "@/components/teacher/course-extra-fields";
 import NumberInput from "@/components/ui/number-input";
 
 import { FormEvent, useState } from "react";
@@ -19,6 +20,8 @@ export default function NewCoursePage() {
     const form = new FormData(event.currentTarget);
 
     const data = {
+      deliveryStatus:form.get("deliveryStatus"),
+      teacherIntro:form.get("teacherIntro"),
       title: form.get("title"),
       slug: form.get("slug"),
       shortDescription: form.get("shortDescription"),
@@ -161,6 +164,7 @@ export default function NewCoursePage() {
             </div>
           </section>
 
+          <CourseExtraFields/>
           {/* قیمت */}
           <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <h2 className="mb-6 text-lg font-bold">قیمت دوره</h2>

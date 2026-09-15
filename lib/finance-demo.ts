@@ -38,7 +38,8 @@ export async function clearFinanceDemo(ownerId:string) {
   const outside=await tx.course.count({where:{teacherId:{in:userIds},NOT:{demoBatchId:batch.id}}});
   const foreignPayments=await tx.payment.count({where:{OR:[{courseId:{in:courseIds},userId:{notIn:userIds}},{userId:{in:userIds},courseId:{notIn:courseIds}}]}});
   const foreignEnrollments=await tx.enrollment.count({where:{OR:[{courseId:{in:courseIds},userId:{notIn:userIds}},{userId:{in:userIds},courseId:{notIn:courseIds}}]}});
-  if(outside||foreignPayments||foreignEnrollments)throw new Error('بسته به داده‌ای خارج از تست متصل است؛ برای حفظ اطلاعات، حذف انجام نشد.');
+  const foreignInterests=await tx.courseInterest.count({where:{OR:[{courseId:{in:courseIds},userId:{notIn:userIds}},{userId:{in:userIds},courseId:{notIn:courseIds}}]}});
+  if(outside||foreignPayments||foreignEnrollments||foreignInterests)throw new Error('بسته به داده‌ای خارج از تست متصل است؛ برای حفظ اطلاعات، حذف انجام نشد.');
   const payments=await tx.payment.findMany({where:{courseId:{in:courseIds},userId:{in:userIds}},select:{id:true}});const ids=payments.map(p=>p.id);
   await tx.paymentRefund.deleteMany({where:{paymentId:{in:ids}}});await tx.paymentCost.deleteMany({where:{paymentId:{in:ids}}});
   await tx.payout.deleteMany({where:{teacherId:{in:userIds}}});

@@ -1,4 +1,5 @@
 "use client";
+import CourseExtraFields from "@/components/teacher/course-extra-fields";
 import NumberInput from "@/components/ui/number-input";
 
 import { FormEvent, useState } from "react";
@@ -13,6 +14,8 @@ type Course = {
   roadmapImageUrl: string | null;
   price: number;
   discountPercent: number;
+  deliveryStatus?: string;
+  teacherIntro?: string|null;
 };
 
 type Props = {
@@ -47,6 +50,7 @@ export default function EditCourseForm({ course }: Props) {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const extra=new FormData(event.currentTarget);
 
     setLoading(true);
     setError("");
@@ -59,6 +63,8 @@ export default function EditCourseForm({ course }: Props) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          deliveryStatus:extra.get("deliveryStatus"),
+          teacherIntro:extra.get("teacherIntro"),
           title,
           shortDescription,
           description,
@@ -137,6 +143,7 @@ export default function EditCourseForm({ course }: Props) {
         />
       </div>
 
+      <CourseExtraFields status={course.deliveryStatus} intro={course.teacherIntro}/>
       {/* قیمت */}
 
       <div>

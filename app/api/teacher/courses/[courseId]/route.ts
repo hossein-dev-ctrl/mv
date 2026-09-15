@@ -305,6 +305,9 @@ export async function PATCH(
         ? body.roadmapImageUrl.trim()
         : null;
 
+    const deliveryStatus=body.deliveryStatus??course.deliveryStatus;
+    const teacherIntro=body.teacherIntro===undefined?course.teacherIntro:body.teacherIntro;
+    if(!["UPCOMING","ONGOING","COMPLETED"].includes(deliveryStatus)|| (teacherIntro!==null && teacherIntro!==undefined && (typeof teacherIntro!=="string"||teacherIntro.length>3000)))return Response.json({message:"وضعیت برگزاری یا معرفی مدرس نامعتبر است."},{status:400});
     const price = Number(body.price);
     const discountPercent = body.discountPercent === undefined ? course.discountPercent : Number(body.discountPercent);
     if (!Number.isInteger(discountPercent) || discountPercent < 0 || discountPercent > 100) return Response.json({ message: "تخفیف باید از صفر تا صد باشد." }, { status: 400 });
@@ -333,6 +336,7 @@ export async function PATCH(
       },
       data: {
         title,
+        deliveryStatus,teacherIntro,
         shortDescription,
         description,
         thumbnailUrl,

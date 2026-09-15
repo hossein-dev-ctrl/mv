@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth";
 import { z } from "zod";
 
 const createCourseSchema = z.object({
+  deliveryStatus:z.enum(["UPCOMING","ONGOING","COMPLETED"]).default("ONGOING"),
+  teacherIntro:z.string().trim().max(3000).optional().nullable(),
   title: z.string().min(3, "عنوان دوره کوتاه است"),
 
   slug: z
@@ -82,6 +84,8 @@ export async function POST(request: Request) {
     const course = await prisma.course.create({
       data: {
         teacherId: session.userId,
+        deliveryStatus:data.deliveryStatus,
+        teacherIntro:data.teacherIntro,
 
         title: data.title,
         slug: data.slug,

@@ -68,14 +68,14 @@ test('demo cannot create or delete data in production',async()=>{
 });
 test('demo cleanup refuses outside dependencies before any deletion',async()=>{
  const before=process.env.NODE_ENV;process.env.NODE_ENV='development';try {
- const tx={$queryRaw:async()=>[],demoBatch:{findUnique:async()=>({id:'batch',teacherId:'t'})},user:{findMany:async()=>[{id:'t'}]},course:{findMany:async()=>[{id:'c',teacherId:'t'}],count:async()=>1},payment:{count:async()=>0},enrollment:{count:async()=>0}};
+ const tx={courseInterest:{count:async()=>0},$queryRaw:async()=>[],demoBatch:{findUnique:async()=>({id:'batch',teacherId:'t'})},user:{findMany:async()=>[{id:'t'}]},course:{findMany:async()=>[{id:'c',teacherId:'t'}],count:async()=>1},payment:{count:async()=>0},enrollment:{count:async()=>0}};
  await assert.rejects(demo(tx).clearFinanceDemo('admin'),/خارج از تست/);
  }finally{process.env.NODE_ENV=before;}
 });
 test('demo cleanup scopes every deletion and keeps the global minimum',async()=>{
  const before=process.env.NODE_ENV;process.env.NODE_ENV='development';try {
  const calls={};const remove=name=>async q=>{calls[name]=q.where;};
- const tx={$queryRaw:async()=>[],demoBatch:{findUnique:async()=>({id:'batch',teacherId:'t'}),delete:remove('batch')},user:{findMany:async()=>[{id:'t'},{id:'s'}],deleteMany:remove('users')},course:{findMany:async()=>[{id:'c',teacherId:'t'}],count:async()=>0,deleteMany:remove('courses')},payment:{count:async()=>0,findMany:async()=>[{id:'p'}],deleteMany:remove('payments')},enrollment:{count:async()=>0,deleteMany:remove('enrollments')},paymentRefund:{deleteMany:remove('refunds')},paymentCost:{deleteMany:remove('costs')},payout:{deleteMany:remove('payouts')}};
+ const tx={courseInterest:{count:async()=>0},$queryRaw:async()=>[],demoBatch:{findUnique:async()=>({id:'batch',teacherId:'t'}),delete:remove('batch')},user:{findMany:async()=>[{id:'t'},{id:'s'}],deleteMany:remove('users')},course:{findMany:async()=>[{id:'c',teacherId:'t'}],count:async()=>0,deleteMany:remove('courses')},payment:{count:async()=>0,findMany:async()=>[{id:'p'}],deleteMany:remove('payments')},enrollment:{count:async()=>0,deleteMany:remove('enrollments')},paymentRefund:{deleteMany:remove('refunds')},paymentCost:{deleteMany:remove('costs')},payout:{deleteMany:remove('payouts')}};
  await demo(tx).clearFinanceDemo('admin');assert.deepEqual(calls.payments,{id:{in:['p']}});assert.equal(calls.users.demoBatchId,'batch');assert.deepEqual(calls.payouts,{teacherId:{in:['t','s']}});assert.deepEqual(calls.batch,{id:'batch'});
  }finally{process.env.NODE_ENV=before;}
 });

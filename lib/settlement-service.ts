@@ -12,13 +12,16 @@ export const settlementInput=z.discriminatedUnion("action",[
   z.object({action:z.literal("begin"),id:z.string().min(1)}),
   z.object({action:z.literal("pay"),id:z.string().min(1),fee:money,reference:ref,paidAt:date}),
   z.object({action:z.literal("reject"),id:z.string().min(1),reason:z.string().trim().min(3).max(500)}),
+  z.object({action:z.literal("dispute"),id:z.string().min(1),reason:z.string().trim().min(3).max(500)}),
+  z.object({action:z.literal("review"),id:z.string().min(1),reason:z.string().trim().min(3).max(500)}),
+  z.object({action:z.literal("reverse"),id:z.string().min(1),reason:z.string().trim().min(3).max(500)}),
   z.object({action:z.literal("receive"),id:z.string().min(1)}),
   z.object({action:z.literal("refund"),paymentId:z.string().min(1),reference:ref,reason:z.string().trim().min(3).max(500),refundedAt:date}),
   z.object({action:z.literal("cost"),paymentId:z.string().min(1),amount:money}),
 ]);
 type Actor={id:string;role:string};
 export async function executeSettlement(actor:Actor,input:z.infer<typeof settlementInput>) {
-  const teacherAction=input.action==="request"||input.action==="receive";
+  const teacherAction=input.action==="request"||input.action==="receive"||input.action==="dispute";
   if(actor.role!==(teacherAction?"TEACHER":"ADMIN")) throw new Error("این عملیات برای نقش شما مجاز نیست.");
   return prisma.$transaction(async tx=>{
     if(input.action==="settings") {
@@ -27,9 +30,9 @@ export async function executeSettlement(actor:Actor,input:z.infer<typeof settlem
     }
     // All balance-decreasing operations serialize on the same teacher row.
     let teacherId=actor.id;
-    if(input.action==="begin"||input.action==="pay"||input.action==="reject"||input.action==="receive") {
+    if(input.action==="begin"||input.action==="pay"||input.action==="reject"||input.action==="receive"||input.action==="dispute"||input.action==="review"||input.action==="reverse") {
       const target=await tx.payout.findUnique({where:{id:input.id}});
-      if(!target || (input.action==="receive" && target.teacherId!==actor.id)) throw new Error("درخواست پیدا نشد.");
+      if(!target || (["receive","dispute"].includes(input.action) && target.teacherId!==actor.id)) throw new Error("درخواست پیدا نشد.");
       teacherId=target.teacherId;
     }
     if(input.action==="refund"||input.action==="cost") {
@@ -51,8 +54,19 @@ export async function executeSettlement(actor:Actor,input:z.infer<typeof settlem
       await tx.payout.create({data:{teacherId:actor.id,amount:input.amount,iban:input.iban,accountName:input.accountName}});
       return "درخواست برداشت ثبت شد و مبلغ آن رزرو شد.";
     }
-    if(input.action==="begin"||input.action==="pay"||input.action==="reject"||input.action==="receive") {
+    if(input.action==="begin"||input.action==="pay"||input.action==="reject"||input.action==="receive"||input.action==="dispute"||input.action==="review"||input.action==="reverse") {
       const payout=await tx.payout.findUniqueOrThrow({where:{id:input.id}});
+      if(input.action==="dispute"||input.action==="review"||input.action==="reverse") {
+        if(payout.status!=="PAID"||payout.receivedAt)throw new Error("فقط واریز ثبت‌شده و تأییدنشده قابل پیگیری است.");
+        if(input.action!=="dispute"&&!payout.disputedAt)throw new Error("ابتدا گزارش عدم دریافت لازم است.");
+        if(input.action==="dispute") {
+          await tx.payout.update({where:{id:payout.id},data:{disputedAt:new Date(),disputeReason:input.reason,reviewedAt:null,reviewNote:null}});
+        } else {
+          await tx.payout.update({where:{id:payout.id},data:{reviewedAt:new Date(),reviewNote:input.reason,...(input.action==="reverse"?{status:"REJECTED",note:"ثبت واریز پس از بررسی مدیر برگشت خورد: "+input.reason}:{})}});
+        }
+        await tx.payoutReview.create({data:{payoutId:payout.id,actorId:actor.id,action:input.action,message:input.reason}});
+        return input.action==="dispute"?"گزارش عدم دریافت برای مدیر ثبت شد؛ مبلغ دوباره به مانده اضافه نشده است.":input.action==="reverse"?"ثبت واریز برگشت خورد و اثر آن از مانده برداشته شد؛ سابقه حفظ شده است.":"پاسخ بررسی ثبت شد؛ منتظر تأیید دریافت مدرس است.";
+      }
       if(input.action==="receive") {
         if(payout.status!=="PAID")throw new Error("واریز هنوز ثبت نشده است.");
         await tx.payout.updateMany({where:{id:payout.id,receivedAt:null},data:{receivedAt:new Date()}});

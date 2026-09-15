@@ -45,6 +45,7 @@ export default async function CheckoutPage({ params }: Props) {
       price: true,
       discountPercent: true,
       status: true,
+      deliveryStatus:true,
     },
   });
 
@@ -52,6 +53,7 @@ export default async function CheckoutPage({ params }: Props) {
     notFound();
   }
 
+  if(course.deliveryStatus==="UPCOMING")redirect(`/courses/${slug}`);
   /*
    * اگر قبلاً ثبت نام کرده باشد
    */

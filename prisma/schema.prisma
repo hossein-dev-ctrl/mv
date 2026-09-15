@@ -53,6 +53,7 @@ model User {
   passwordHash String?
   role         UserRole @default(STUDENT)
 
+  interests CourseInterest[]
   payouts     Payout[]
   courses     Course[]
   enrollments Enrollment[]
@@ -63,6 +64,9 @@ model User {
 }
 
 model Course {
+  deliveryStatus String @default("ONGOING")
+  teacherIntro String?
+  interests CourseInterest[]
   demoBatchId String?
   discountPercent Int @default(0)
   id        String @id @default(cuid())
@@ -213,6 +217,11 @@ model FinanceSettings {
 }
 
 model Payout {
+  reviews PayoutReview[]
+  disputedAt DateTime?
+  disputeReason String?
+  reviewedAt DateTime?
+  reviewNote String?
   id String @id @default(cuid())
   teacherId String
   teacher User @relation(fields: [teacherId], references: [id], onDelete: Restrict)
@@ -258,4 +267,28 @@ model DemoBatch {
   ownerId String @unique
   teacherId String @unique
   createdAt DateTime @default(now())
+}
+
+model CourseInterest {
+ id String @id @default(cuid())
+ courseId String
+ userId String
+ name String
+ phone String
+ createdAt DateTime @default(now())
+ course Course @relation(fields:[courseId],references:[id],onDelete:Cascade)
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ @@unique([courseId,userId])
+ @@index([courseId,createdAt])
+}
+
+model PayoutReview {
+ id String @id @default(cuid())
+ payoutId String
+ actorId String
+ action String
+ message String
+ createdAt DateTime @default(now())
+ payout Payout @relation(fields:[payoutId],references:[id],onDelete:Cascade)
+ @@index([payoutId,createdAt])
 }

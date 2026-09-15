@@ -73,7 +73,7 @@ export default async function PanelShell({ children, area }: {
             <LogoutButton />
           </div> : <Link href="/login" className="rounded-xl bg-indigo-600 px-5 py-3 text-sm text-white">ورود به حساب کاربری</Link>}
         </div>
-        <div className="border-t border-slate-100">
+        <div className="panel-tabs">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
             <Navigation items={navigation} role={user?.role} />
             <span className="text-xs text-slate-500">بخش فعلی: {areas[area]}</span>
@@ -86,7 +86,7 @@ export default async function PanelShell({ children, area }: {
         {children}
       </div>
 
-      <footer className="border-t border-slate-200 bg-white">
+      <footer className="panel-footer">
         <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:grid-cols-2 sm:px-6">
           <div>
             <Link href="/courses" className="inline-block text-slate-900"><Brand /></Link>
