@@ -47,6 +47,8 @@ export default async function PanelShell({ children, area }: {
   const navigation = [
     ...(user?.role === "ADMIN" ? [{ href: "/admin", label: "پنل مدیر", area: "admin" }] : []),
     ...(user && user.role !== "STUDENT" ? [{ href: "/teacher", label: "مدیریت دوره‌های من", area: "teacher" }] : []),
+    ...(user?.role === "ADMIN" ? [{ href: "/admin/finance", label: "مالی کل", area: "finance-admin" }] : []),
+    ...(user && user.role !== "STUDENT" ? [{ href: "/teacher/finance", label: "درآمد دوره‌های من", area: "finance-teacher" }] : []),
     ...(user ? [{ href: "/dashboard", label: "دوره‌های ثبت‌نام‌شده", area: "student" }] : []),
     ...(user ? [{ href: "/payments", label: "سوابق پرداخت من", area: "payments" }] : []),
     { href: "/courses", label: "همهٔ دوره‌ها", area: "courses" },

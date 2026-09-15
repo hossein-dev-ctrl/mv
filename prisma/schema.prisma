@@ -48,6 +48,7 @@ model User {
   name         String?
   phone        String?  @unique
   email        String?  @unique
+  teacherSharePercent Int?
   passwordHash String?
   role         UserRole @default(STUDENT)
 
@@ -158,6 +159,10 @@ model Payment {
   id       String @id @default(cuid())
   userId   String
   courseId String
+
+  teacherSharePercent Int?
+  teacherShareAmount  Int?
+  isTest             Boolean?
 
   amount        Int
   authority     String? @unique

@@ -1,3 +1,4 @@
+import { finalizePayment } from "@/lib/finalize-payment";
 import { prisma } from "@/lib/prisma";
 import { verifyPayment } from "@/lib/zarinpal";
 import { sendSms } from "@/lib/sms";
@@ -39,6 +40,10 @@ export async function GET(request: Request) {
      * دوباره پردازش نکن.
      */
 
+    if (payment.userId === payment.course.teacherId) {
+      return Response.redirect(`${APP_URL}/payment/failed?reason=own_course`);
+    }
+
     if (payment.status === "SUCCESS") {
       return Response.redirect(
         `${APP_URL}/payment/success?paymentId=${payment.id}`,
@@ -50,9 +55,10 @@ export async function GET(request: Request) {
      */
 
     if (status !== "OK") {
-      await prisma.payment.update({
+      await prisma.payment.updateMany({
         where: {
           id: payment.id,
+          status: { not: "SUCCESS" },
         },
 
         data: {
@@ -82,9 +88,10 @@ export async function GET(request: Request) {
      */
 
     if (code !== 100 && code !== 101) {
-      await prisma.payment.update({
+      await prisma.payment.updateMany({
         where: {
           id: payment.id,
+          status: { not: "SUCCESS" },
         },
 
         data: {
@@ -102,69 +109,8 @@ export async function GET(request: Request) {
      * در یک Transaction
      */
 
-    await prisma.$transaction(async (tx) => {
-      await tx.payment.update({
-        where: {
-          id: payment.id,
-        },
-
-        data: {
-          status: "SUCCESS",
-
-          transactionId: refId ? String(refId) : undefined,
-
-          paidAt: new Date(),
-        },
-      });
-
-      const enrollment = await tx.enrollment.upsert({
-        where: {
-          userId_courseId: {
-            userId: payment.userId,
-            courseId: payment.courseId,
-          },
-        },
-
-        update: {
-          status: "ACTIVE",
-          enrolledAt: new Date(),
-        },
-
-        create: {
-          userId: payment.userId,
-          courseId: payment.courseId,
-          status: "ACTIVE",
-        },
-      });
-
-      const lessons = await tx.lesson.findMany({
-        where: {
-          section: {
-            courseId: payment.courseId,
-          },
-
-          status: "PUBLISHED",
-        },
-
-        select: {
-          id: true,
-        },
-      });
-
-      if (lessons.length > 0) {
-        await tx.lessonProgress.createMany({
-          data: lessons.map((lesson) => ({
-            enrollmentId: enrollment.id,
-
-            lessonId: lesson.id,
-
-            status: "NOT_STARTED",
-          })),
-
-          skipDuplicates: true,
-        });
-      }
-    });
+    if (!refId) throw new Error("شماره تراکنش معتبر دریافت نشد.");
+    const completion = await finalizePayment(payment.id, String(refId));
 
     const user = await prisma.user.findUnique({
       where: {
@@ -172,9 +118,9 @@ export async function GET(request: Request) {
       },
     });
 
-    if (user?.phone) {
+    if (completion.newlyCompleted && user?.phone) {
       try {
-        const result = await sendSms({
+        await sendSms({
           type: "pattern",
           phone: user.phone,
           patternCode: "BymlU64xOK",

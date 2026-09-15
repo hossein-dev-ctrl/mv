@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
     const courseId = body.courseId;
 
-    if (!courseId) {
+    if (typeof courseId !== "string" || !courseId) {
       return Response.json(
         {
           message: "شناسه دوره ارسال نشده است.",
@@ -93,6 +93,7 @@ export async function POST(request: Request) {
         userId: session.userId,
         courseId,
         status: "PENDING",
+        isTest: process.env.ZARINPAL_SANDBOX === "true",
       },
 
       orderBy: {
@@ -106,6 +107,7 @@ export async function POST(request: Request) {
         data: {
           userId: session.userId,
           courseId,
+          isTest: process.env.ZARINPAL_SANDBOX === "true",
           amount: course.price,
           status: "PENDING",
         },
@@ -122,7 +124,7 @@ export async function POST(request: Request) {
      */
 
     const zarinpal = await requestPayment({
-      amount: course.price,
+      amount: payment.amount,
       description: `خرید دوره ${course.title}`,
       email: user?.email || undefined,
       mobile: user?.phone || undefined,

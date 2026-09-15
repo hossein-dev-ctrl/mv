@@ -35,7 +35,7 @@ export default async function TeacherPage() {
   return (
     <main className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-8">
           <div>
             <h1 className="text-3xl font-bold">پنل مدرس</h1>
             <p className="mt-2 text-gray-500">
@@ -43,12 +43,15 @@ export default async function TeacherPage() {
             </p>
           </div>
 
+          <div className="flex flex-wrap gap-3">
+          <Link href="/teacher/finance" className="rounded-xl border border-slate-200 px-5 py-3 text-sm text-slate-600 hover:bg-slate-50">گزارش مالی من</Link>
           <Link
             href="/teacher/courses/new"
-            className="rounded-lg bg-black px-5 py-3 text-sm font-medium text-white transition hover:bg-gray-800"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-indigo-700"
           >
             + ایجاد دوره
           </Link>
+          </div>
         </div>
 
         {courses.length === 0 ? (
@@ -95,7 +98,7 @@ export default async function TeacherPage() {
                     <h2 className="font-bold">{course.title}</h2>
 
                     <span className="rounded-full bg-gray-100 px-2 py-1 text-xs">
-                      {course.status}
+                      {{ DRAFT: "پیش‌نویس", PUBLISHED: "منتشرشده", ARCHIVED: "آرشیوشده" }[course.status]}
                     </span>
                   </div>
 
