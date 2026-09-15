@@ -70,7 +70,7 @@ export default async function CourseManagementPage({ params }: PageProps) {
     <main dir="rtl" className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto max-w-7xl">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
             <Link
               href="/teacher"
@@ -110,11 +110,12 @@ export default async function CourseManagementPage({ params }: PageProps) {
           </div>
 
           <div className="rounded-xl border bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-500">دانشجویان</p>
+            <p className="text-sm text-gray-500">ثبت‌نام‌ها (همهٔ وضعیت‌ها)</p>
 
             <p className="mt-2 text-xl font-bold">
               {course._count.enrollments}
             </p>
+            <Link href={`/teacher/courses/${course.id}/students`} className="mt-3 inline-block text-sm text-indigo-600 hover:underline">مشاهدهٔ دانش‌آموزان و پیشرفت</Link>
           </div>
         </div>
 
