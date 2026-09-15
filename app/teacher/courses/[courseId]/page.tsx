@@ -67,40 +67,46 @@ export default async function CourseManagementPage({ params }: PageProps) {
   }
 
   return (
-    <main dir="rtl" className="min-h-screen bg-gray-50 p-6">
+    <main dir="rtl" className="min-h-screen bg-slate-50 px-4 py-6 sm:p-8">
       <div className="mx-auto max-w-7xl">
-        {/* Header */}
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <Link
-              href="/teacher"
-              className="text-sm text-indigo-600 hover:text-indigo-700"
-            >
-              ← بازگشت به پنل مدرس
-            </Link>
-
-            <h1 className="mt-3 text-3xl font-bold">{course.title}</h1>
-
-            <p className="mt-2 text-gray-500">مدیریت محتوای دوره</p>
-          </div>
-          <Link
-            href={`/teacher/courses/${course.id}/edit`}
-            className="rounded-xl bg-indigo-600 px-4 py-3 text-sm text-white"
-          >
-            ✏️ ویرایش دوره
+        <nav aria-label="مسیر مدیریت دوره" className="mb-5">
+          <Link href="/teacher" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 shadow-sm transition hover:border-indigo-200 hover:text-indigo-700">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4"><path d="m14 6 6 6-6 6M20 12H4" /></svg>
+            بازگشت به دوره‌های من
           </Link>
-          <CourseStatusButton courseId={course.id} status={course.status} />
-          {course._count.payments === 0 && (
-            <DeleteCourseButton courseId={course.id} />
-          )}
-        </div>
+        </nav>
+        <section aria-labelledby="course-heading" className="mb-8 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <div className="mb-3 flex flex-wrap items-center gap-3">
+                <span className="text-xs font-medium text-slate-500">مدیریت دوره</span>
+                <span className={`rounded-full px-3 py-1 text-xs font-medium ${course.status === "PUBLISHED" ? "bg-emerald-50 text-emerald-700" : course.status === "ARCHIVED" ? "bg-amber-50 text-amber-800" : "bg-slate-100 text-slate-600"}`}>
+                  {{ DRAFT: "پیش‌نویس", PUBLISHED: "منتشرشده", ARCHIVED: "آرشیوشده" }[course.status]}
+                </span>
+              </div>
+              <h1 id="course-heading" className="break-words text-2xl font-bold leading-relaxed sm:text-3xl">{course.title}</h1>
+              <p className="mt-2 text-sm text-slate-500">محتوا، انتشار و پیشرفت دانش‌آموزان را از اینجا مدیریت کنید.</p>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-3">
+              <Link href={`/teacher/courses/${course.id}/edit`} className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-indigo-700">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15v5Z" /></svg>
+                ویرایش اطلاعات دوره
+              </Link>
+              {course.status === "PUBLISHED" && <Link href={`/courses/${course.slug}`} className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50">مشاهدهٔ صفحهٔ دوره</Link>}
+            </div>
+          </div>
+          <div className="flex flex-col gap-4 border-t border-slate-100 bg-slate-50/70 px-6 py-5 sm:px-8 lg:flex-row lg:items-center lg:justify-between">
+            <div><h2 className="text-sm font-semibold text-slate-700">تنظیمات انتشار</h2><p className="mt-1 text-xs leading-6 text-slate-500">فقط دورهٔ منتشرشده برای ثبت‌نام و یادگیری در دسترس است.</p></div>
+            <CourseStatusButton courseId={course.id} status={course.status} />
+          </div>
+        </section>
 
         {/* اطلاعات دوره */}
         <div className="mb-8 grid gap-5 md:grid-cols-3">
           <div className="rounded-xl border bg-white p-5 shadow-sm">
             <p className="text-sm text-gray-500">وضعیت دوره</p>
 
-            <p className="mt-2 text-xl font-bold">{course.status}</p>
+            <p className="mt-2 text-xl font-bold">{{ DRAFT: "پیش‌نویس", PUBLISHED: "منتشرشده", ARCHIVED: "آرشیوشده" }[course.status]}</p>
           </div>
 
           <div className="rounded-xl border bg-white p-5 shadow-sm">
@@ -147,7 +153,7 @@ export default async function CourseManagementPage({ params }: PageProps) {
 
         {/* محتوای آموزشی */}
         <section className="rounded-xl border bg-white p-6 shadow-sm">
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-bold">📚 محتوای آموزشی</h2>
 
@@ -177,7 +183,7 @@ export default async function CourseManagementPage({ params }: PageProps) {
                   key={section.id}
                   className="rounded-2xl border bg-white p-5"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 font-bold text-indigo-600">
                         {section.order}
@@ -194,7 +200,7 @@ export default async function CourseManagementPage({ params }: PageProps) {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <ReorderSectionButtons
                         sectionId={section.id}
                         isFirst={index === 0}
@@ -238,6 +244,10 @@ export default async function CourseManagementPage({ params }: PageProps) {
             </div>
           )}
         </section>
+        {course._count.payments === 0 && <section aria-label="حذف دوره" className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-rose-100 bg-white p-6">
+          <div><h2 className="text-sm font-semibold text-rose-700">حذف دائمی دوره</h2><p className="mt-1 text-xs leading-6 text-slate-500">دوره و اطلاعات وابسته حذف می‌شوند؛ این کار قابل بازگشت نیست.</p></div>
+          <DeleteCourseButton courseId={course.id} />
+        </section>}
       </div>
     </main>
   );

@@ -4,12 +4,12 @@ import { getSession, type UserRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import LogoutButton from "@/components/logout-button";
 
-type Area = "student" | "teacher" | "admin" | "lesson" | "courses";
+type Area = "student" | "teacher" | "admin" | "lesson" | "courses" | "payments";
 const roles: Record<UserRole, string> = {
   STUDENT: "دانش‌آموز", TEACHER: "مدرس", ADMIN: "مدیر",
 };
 const areas: Record<Area, string> = {
-  courses: "دوره‌ها", student: "دوره‌های ثبت‌نام‌شده", teacher: "پنل مدرس", admin: "پنل مدیر", lesson: "محیط یادگیری",
+  payments: "سوابق پرداخت", courses: "دوره‌ها", student: "دوره‌های ثبت‌نام‌شده", teacher: "پنل مدرس", admin: "پنل مدیر", lesson: "محیط یادگیری",
 };
 
 export function Brand() {
@@ -48,6 +48,7 @@ export default async function PanelShell({ children, area }: {
     ...(user?.role === "ADMIN" ? [{ href: "/admin", label: "پنل مدیر", area: "admin" }] : []),
     ...(user && user.role !== "STUDENT" ? [{ href: "/teacher", label: "مدیریت دوره‌های من", area: "teacher" }] : []),
     ...(user ? [{ href: "/dashboard", label: "دوره‌های ثبت‌نام‌شده", area: "student" }] : []),
+    ...(user ? [{ href: "/payments", label: "سوابق پرداخت من", area: "payments" }] : []),
     { href: "/courses", label: "همهٔ دوره‌ها", area: "courses" },
   ];
 

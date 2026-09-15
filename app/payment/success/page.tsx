@@ -34,8 +34,8 @@ export default async function PaymentSuccessPage({ searchParams }: Props) {
     },
   });
 
-  if (!payment) {
-    redirect("/dashboard");
+  if (!payment || payment.status !== "SUCCESS") {
+    redirect("/payments");
   }
 
   return (
@@ -51,7 +51,7 @@ export default async function PaymentSuccessPage({ searchParams }: Props) {
         </h1>
 
         <p className="mt-3 text-gray-600">
-          ثبت‌نام شما در دوره با موفقیت انجام شد.
+          پرداخت شما با موفقیت ثبت شده است. وضعیت دسترسی دوره را در بخش دوره‌های ثبت‌نام‌شده ببینید.
         </p>
 
         <div className="mt-6 rounded-2xl bg-gray-50 p-5 text-right">
@@ -74,13 +74,15 @@ export default async function PaymentSuccessPage({ searchParams }: Props) {
           )}
         </div>
 
-        <div className="mt-6 flex gap-3">
-          <Link
+        <Link href="/payments" className="mt-5 inline-block text-sm text-indigo-600 hover:underline">بازگشت به سوابق پرداخت</Link>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          {payment.course.status === "PUBLISHED" && <Link
             href={`/courses/${payment.course.slug}`}
             className="flex-1 rounded-xl bg-indigo-600 px-5 py-3 text-white"
           >
             ورود به دوره
-          </Link>
+          </Link>}
 
           <Link
             href="/dashboard"
