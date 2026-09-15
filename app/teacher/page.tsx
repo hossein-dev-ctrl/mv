@@ -1,5 +1,4 @@
 import Link from "next/link";
-import LogoutButton from "@/components/logout-button";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
@@ -35,16 +34,6 @@ export default async function TeacherPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 p-6">
-      <div className="flex gap-3">
-        <LogoutButton />
-
-        <Link
-          href="/teacher/courses/new"
-          className="rounded-xl bg-indigo-600 px-5 py-3 text-white"
-        >
-          + ایجاد دوره جدید
-        </Link>
-      </div>
       <div className="mx-auto max-w-7xl">
         <div className="mb-8 flex items-center justify-between">
           <div>

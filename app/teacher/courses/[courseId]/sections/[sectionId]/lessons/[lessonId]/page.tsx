@@ -3,7 +3,6 @@ import { notFound, redirect } from "next/navigation";
 import EditLessonForm from "@/components/teacher/edit-lesson-form";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import LogoutButton from "@/components/logout-button";
 import UploadLessonVideoForm from "@/components/teacher/upload-lesson-video-form";
 import UploadLessonFileForm from "@/components/teacher/upload-lesson-file-form";
 import DeleteLessonFileButton from "@/components/teacher/delete-lesson-file-button";
@@ -79,7 +78,6 @@ export default async function LessonManagementPage({ params }: PageProps) {
             <h1 className="mt-2 text-3xl font-bold">{lesson.title}</h1>
           </div>
 
-          <LogoutButton />
         </div>
 
         {/* Lesson Info */}

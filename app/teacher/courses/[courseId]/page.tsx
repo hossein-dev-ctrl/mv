@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 
-import LogoutButton from "@/components/logout-button";
 import CreateSectionForm from "@/components/teacher/create-section-form";
 import ReorderSectionButtons from "@/components/teacher/reorder-section-buttons";
 import DeleteCourseButton from "@/components/teacher/delete-course-button";
@@ -94,7 +93,6 @@ export default async function CourseManagementPage({ params }: PageProps) {
           {course._count.payments === 0 && (
             <DeleteCourseButton courseId={course.id} />
           )}
-          <LogoutButton />
         </div>
 
         {/* اطلاعات دوره */}

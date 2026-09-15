@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 
 import CreateLessonForm from "@/components/teacher/create-lesson-form";
-import LogoutButton from "@/components/logout-button";
 import DeleteLessonButton from "@/components/teacher/delete-lesson-button";
 import ReorderLessonButtons from "@/components/teacher/reorder-lesson-buttons";
 type PageProps = {
@@ -72,7 +71,6 @@ export default async function SectionPage({ params }: PageProps) {
             )}
           </div>
 
-          <LogoutButton />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
