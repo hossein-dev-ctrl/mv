@@ -1,3 +1,4 @@
+import { coursePrice } from "@/lib/course-price";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requestPayment, getPaymentUrl } from "@/lib/zarinpal";
@@ -56,7 +57,8 @@ export async function POST(request: Request) {
       );
     }
 
-    if (course.price <= 0) {
+    const payable = coursePrice(course);
+    if (payable <= 0) {
       return Response.json(
         {
           message: "این دوره رایگان است.",
@@ -93,6 +95,7 @@ export async function POST(request: Request) {
         userId: session.userId,
         courseId,
         status: "PENDING",
+        amount: payable,
         isTest: process.env.ZARINPAL_SANDBOX === "true",
       },
 
@@ -108,7 +111,7 @@ export async function POST(request: Request) {
           userId: session.userId,
           courseId,
           isTest: process.env.ZARINPAL_SANDBOX === "true",
-          amount: course.price,
+          amount: payable,
           status: "PENDING",
         },
       }));

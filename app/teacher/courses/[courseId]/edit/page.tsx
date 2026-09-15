@@ -64,6 +64,7 @@ export default async function EditCoursePage({ params }: PageProps) {
             thumbnailUrl: course.thumbnailUrl,
             roadmapImageUrl: course.roadmapImageUrl,
             price: course.price,
+            discountPercent: course.discountPercent,
           }}
         />
       </div>

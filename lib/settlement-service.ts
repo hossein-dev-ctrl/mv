@@ -38,6 +38,10 @@ export async function executeSettlement(actor:Actor,input:z.infer<typeof settlem
       teacherId=target.course.teacherId;
     }
     await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${teacherId} FOR UPDATE`;
+    if(process.env.NODE_ENV === "production") {
+      const teacher=await tx.user.findUnique({where:{id:teacherId},select:{demoBatchId:true}});
+      if(teacher?.demoBatchId)throw new Error("دادهٔ آزمایشی در این محیط قابل استفاده نیست.");
+    }
     if(input.action==="request") {
       const settings=await tx.financeSettings.findUnique({where:{id:"main"}});
       if(!settings?.minimumPayout)throw new Error("مدیر هنوز حداقل برداشت را تعیین نکرده است.");

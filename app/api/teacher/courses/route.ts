@@ -14,7 +14,8 @@ const createCourseSchema = z.object({
 
   description: z.string().optional().nullable(),
 
-  price: z.number().int().min(0),
+  price: z.number().int().min(0).max(2000000000),
+  discountPercent: z.number().int().min(0).max(100).default(0),
 
   thumbnailUrl: z.string().url().optional().nullable().or(z.literal("")),
 
@@ -90,6 +91,7 @@ export async function POST(request: Request) {
         description: data.description || null,
 
         price: data.price,
+        discountPercent: data.discountPercent,
 
         thumbnailUrl: data.thumbnailUrl || null,
 

@@ -14,7 +14,7 @@ export async function requireFinanceUser(adminOnly = false) {
 
 export async function getFinanceCourses(teacherId?: string) {
   const courses = await prisma.course.findMany({
-    where: teacherId ? { teacherId } : {}, orderBy: { createdAt: "desc" },
+    where: { ...(teacherId ? {teacherId} : {}), ...(process.env.NODE_ENV === "production" ? {demoBatchId:null} : {}) }, orderBy: { createdAt: "desc" },
     select: {
       id: true, title: true, teacherId: true,
       teacher: { select: { role: true, name: true, email: true, phone: true, teacherSharePercent: true } },

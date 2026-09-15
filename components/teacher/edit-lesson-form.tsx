@@ -1,4 +1,5 @@
 "use client";
+import NumberInput from "@/components/ui/number-input";
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -153,21 +154,21 @@ export default function EditLessonForm({
             مدت ویدئو
           </label>
 
-          <input
+          <NumberInput
             id="video-duration"
             type="number"
             min="0"
             step="1"
             value={videoDuration}
             onChange={(event) => setVideoDuration(event.target.value)}
-            placeholder="مثلاً 420"
+            placeholder="مثلاً ۴۲۰"
             className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
           />
 
           <p className="mt-2 text-xs text-gray-400">
             مدت ویدئو را بر حسب ثانیه وارد کنید.
             <br />
-            مثال: 420 ثانیه = 7 دقیقه
+            مثال: ۴۲۰ ثانیه = ۷ دقیقه
           </p>
         </div>
 

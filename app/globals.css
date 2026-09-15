@@ -28,3 +28,10 @@ body {
 button, input, select, textarea {
   font-family: inherit;
 }
+
+/* Subtle alternating surfaces separate adjacent cards without overpowering statuses. */
+main :is(.grid, [class*="space-y-"]) > :is(article, section, details, div, a).bg-white:nth-child(3n+2) { background-color: #f8faff; }
+main :is(.grid, [class*="space-y-"]) > :is(article, section, details, div, a).bg-white:nth-child(3n) { background-color: #f7fbfa; }
+main > section:nth-of-type(even), main form > section:nth-of-type(even) { background-color: #f8faff; }
+main :is(article, section, details)[class*="rounded"] { border-color: #dce3ed; }
+main details[open] > summary { margin-bottom: 1.25rem; color: #4338ca; }

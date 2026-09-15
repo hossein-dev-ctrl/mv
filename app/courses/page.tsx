@@ -1,3 +1,4 @@
+import CoursePrice from "@/components/course/price";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -11,7 +12,7 @@ export default async function CoursesPage() {
     orderBy: { createdAt: "desc" },
     select: {
       id: true, slug: true, title: true, shortDescription: true,
-      thumbnailUrl: true, price: true, teacherId: true,
+      thumbnailUrl: true, price: true, discountPercent: true, teacherId: true,
       teacher: { select: { name: true } },
     },
   });
@@ -38,7 +39,7 @@ export default async function CoursesPage() {
                 <p className="mt-2 text-sm text-slate-500">مدرس: {course.teacher.name || "مدرس دوره"}</p>
                 {course.shortDescription && <p className="mt-3 line-clamp-3 text-sm leading-7 text-slate-600">{course.shortDescription}</p>}
                 <div className="mt-auto pt-5">
-                  <p className="font-bold">{course.price === 0 ? "رایگان" : `${course.price.toLocaleString("fa-IR")} تومان`}</p>
+                  <p className="font-bold"><CoursePrice price={course.price} discountPercent={course.discountPercent} /></p>
                   <Link href={`/courses/${course.slug}`} className="mt-4 inline-block rounded-xl bg-indigo-600 px-4 py-3 text-sm font-medium text-white hover:bg-indigo-700">مشاهدهٔ دوره</Link>
                   {session?.userId === course.teacherId && <Link href={`/teacher/courses/${course.id}`} className="ms-4 inline-block py-3 text-sm text-indigo-600 hover:underline">مدیریت دورهٔ من</Link>}
                 </div>

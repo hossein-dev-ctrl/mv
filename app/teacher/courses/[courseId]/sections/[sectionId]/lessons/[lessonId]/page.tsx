@@ -139,7 +139,7 @@ export default async function LessonManagementPage({ params }: PageProps) {
 
                           <p className="mt-1 text-xs text-gray-400">
                             {file.size
-                              ? `${(file.size / (1024 * 1024)).toFixed(2)} MB`
+                              ? `${(file.size / (1024 * 1024)).toLocaleString("fa-IR", {maximumFractionDigits:2})} MB`
                               : ""}
                           </p>
                         </div>
@@ -193,8 +193,8 @@ export default async function LessonManagementPage({ params }: PageProps) {
 
               {lesson.videoDuration ? (
                 <p className="text-2xl font-bold">
-                  {Math.floor(lesson.videoDuration / 60)}:
-                  {String(lesson.videoDuration % 60).padStart(2, "0")}
+                  {Math.floor(lesson.videoDuration / 60).toLocaleString("fa-IR")}:
+                  {(lesson.videoDuration % 60).toLocaleString("fa-IR",{minimumIntegerDigits:2})}
                 </p>
               ) : (
                 <p className="text-gray-400">ثبت نشده</p>
@@ -205,7 +205,7 @@ export default async function LessonManagementPage({ params }: PageProps) {
             <section className="rounded-2xl border bg-white p-6 shadow-sm">
               <h2 className="mb-4 font-bold">ترتیب درس</h2>
 
-              <p className="text-3xl font-bold">{lesson.order}</p>
+              <p className="text-3xl font-bold">{(lesson.order).toLocaleString("fa-IR")}</p>
             </section>
           </aside>
         </div>

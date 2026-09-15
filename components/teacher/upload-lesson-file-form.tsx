@@ -129,7 +129,7 @@ export default function UploadLessonFileForm({ lessonId }: Props) {
           <p className="mt-1 break-all text-sm text-gray-500">{file.name}</p>
 
           <p className="mt-2 text-xs text-gray-400">
-            حجم: {(file.size / (1024 * 1024)).toFixed(2)} MB
+            حجم: {(file.size / (1024 * 1024)).toLocaleString("fa-IR", {maximumFractionDigits:2})} MB
           </p>
         </div>
       )}

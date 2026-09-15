@@ -37,11 +37,12 @@ export default async function PanelShell({ children, area }: {
 
   const user = session ? await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { name: true, email: true, phone: true, role: true },
+    select: { demoBatchId: true, name: true, email: true, phone: true, role: true },
   }) : null;
   // A changed role requires a fresh session so the displayed role and API
   // permissions cannot disagree. This layout does not replace API checks.
   if (session && (!user || user.role !== session.role || !(user.role in roles))) redirect("/login");
+  if (user?.demoBatchId && process.env.NODE_ENV === "production") redirect("/login");
   if (area === "admin" && user?.role !== "ADMIN") redirect("/dashboard");
   if (area === "teacher" && (!user || user.role === "STUDENT")) redirect("/dashboard");
 
@@ -81,6 +82,7 @@ export default async function PanelShell({ children, area }: {
       </header>
 
       <div id="panel-content" tabIndex={-1} className="flex-1 outline-none [&>main]:min-h-0">
+        {user?.demoBatchId && <p className="bg-amber-100 p-4 text-center text-sm">حساب آزمایشی؛ مبالغ این حساب واقعی نیست و نباید انتقال بانکی انجام شود.</p>}
         {children}
       </div>
 

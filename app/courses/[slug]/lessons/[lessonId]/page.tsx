@@ -142,7 +142,7 @@ export default async function LessonPage({ params }: Props) {
             <div className="rounded-full bg-white px-4 py-2 text-sm shadow-sm">
               پیشرفت دوره:
               <span className="mr-2 font-bold text-indigo-600">
-                {percentage}٪
+                {(percentage).toLocaleString("fa-IR")}٪
               </span>
             </div>
           </div>
@@ -287,7 +287,7 @@ export default async function LessonPage({ params }: Props) {
                                 isCurrent ? "font-bold text-indigo-700" : ""
                               }
                             >
-                              {index + 1}. {item.title}
+                              {(index + 1).toLocaleString("fa-IR")}. {item.title}
                             </span>
                           </div>
                         </Link>
@@ -297,7 +297,7 @@ export default async function LessonPage({ params }: Props) {
                             <span>🔒</span>
 
                             <span>
-                              {index + 1}. {item.title}
+                              {(index + 1).toLocaleString("fa-IR")}. {item.title}
                             </span>
                           </div>
                         </div>

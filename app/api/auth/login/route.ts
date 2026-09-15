@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       where: { phone },
     });
 
-    if (!user || !user.passwordHash) {
+    if (!user || !user.passwordHash || (user.demoBatchId && process.env.NODE_ENV === "production")) {
       return Response.json(
         {
           success: false,

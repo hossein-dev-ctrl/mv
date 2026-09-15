@@ -10,13 +10,13 @@ export default async function SettlementsPage({searchParams}:{searchParams:Promi
  const query=await searchParams;
  const status=typeof query.status==='string'&&['PROCESSING','PAID','REJECTED','ALL'].includes(query.status)?query.status:'REQUESTED';
  const settings=await prisma.financeSettings.findUnique({where:{id:'main'}});
- const where:Prisma.PayoutWhereInput=status==='ALL'?{}:{status};
+ const where:Prisma.PayoutWhereInput={...(status==='ALL'?{}:{status}),...(process.env.NODE_ENV==='production'?{teacher:{demoBatchId:null}}:{})};
  const count=await prisma.payout.count({where});const pages=Math.max(1,Math.ceil(count/20));
  const positive=(value:unknown)=>typeof value==='string'&&Number.isSafeInteger(Number(value))&&Number(value)>0?Number(value):1;
  const page=Math.min(positive(query.page),pages);
  const payouts=await prisma.payout.findMany({where,orderBy:{requestedAt:'desc'},take:20,skip:(page-1)*20,include:{teacher:{select:{name:true,email:true}}}});
  const searchId=typeof query.paymentId==='string'?query.paymentId.trim().slice(0,100):'';
- const paymentWhere:Prisma.PaymentWhereInput={status:'SUCCESS',isTest:false,...(searchId?{id:searchId}:{}),OR:[{transactionId:null},{transactionId:{not:{startsWith:'MOCK-'}}}]};
+ const paymentWhere:Prisma.PaymentWhereInput={status:'SUCCESS',isTest:false,...(process.env.NODE_ENV==='production'?{course:{demoBatchId:null}}:{}),...(searchId?{id:searchId}:{}),OR:[{transactionId:null},{transactionId:{not:{startsWith:'MOCK-'}}}]};
  const paymentCount=await prisma.payment.count({where:paymentWhere});const paymentPages=Math.max(1,Math.ceil(paymentCount/20));const paymentPage=Math.min(positive(query.paymentPage),paymentPages);
  const payments=await prisma.payment.findMany({where:paymentWhere,orderBy:{createdAt:'desc'},take:20,skip:(paymentPage-1)*20,include:{refund:true,cost:true,course:{select:{title:true,teacherId:true}},user:{select:{name:true}}}});
  const url=(p:number,pp:number)=>`/admin/settlements?${new URLSearchParams({status,page:String(p),paymentPage:String(pp),...(searchId?{paymentId:searchId}:{})})}`;

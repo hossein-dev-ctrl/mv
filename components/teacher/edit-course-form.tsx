@@ -1,4 +1,5 @@
 "use client";
+import NumberInput from "@/components/ui/number-input";
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -11,6 +12,7 @@ type Course = {
   thumbnailUrl: string | null;
   roadmapImageUrl: string | null;
   price: number;
+  discountPercent: number;
 };
 
 type Props = {
@@ -34,6 +36,7 @@ export default function EditCourseForm({ course }: Props) {
     course.roadmapImageUrl ?? "",
   );
 
+  const [discount, setDiscount] = useState(String(course.discountPercent));
   const [price, setPrice] = useState(String(course.price));
 
   const [loading, setLoading] = useState(false);
@@ -62,6 +65,7 @@ export default function EditCourseForm({ course }: Props) {
           thumbnailUrl,
           roadmapImageUrl,
           price: Number(price),
+          discountPercent: Number(discount),
         }),
       });
 
@@ -139,9 +143,11 @@ export default function EditCourseForm({ course }: Props) {
         <label className="mb-2 block text-sm font-medium">قیمت دوره</label>
 
         <div className="flex items-center gap-2">
-          <input
+          <NumberInput
             type="number"
             min="0"
+            max="2000000000"
+            unit="تومان"
             value={price}
             onChange={(event) => setPrice(event.target.value)}
             className="w-full rounded-xl border px-4 py-3 outline-none focus:border-indigo-500"
@@ -151,6 +157,7 @@ export default function EditCourseForm({ course }: Props) {
         </div>
       </div>
 
+      <div><label className="mb-2 block text-sm font-medium">درصد تخفیف دوره</label><NumberInput required min="0" max="100" value={discount} onChange={e=>setDiscount(e.target.value)} unit="درصد" className="w-full rounded-xl border px-4 py-3" /></div>
       {/* تصویر دوره */}
 
       <div>

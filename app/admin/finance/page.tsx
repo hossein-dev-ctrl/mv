@@ -11,7 +11,7 @@ import ShareForm from "@/components/finance/share-form";
 export default async function AdminFinancePage() {
   await requireFinanceUser(true);
   const courses = await getFinanceCourses();
-  const teachers = await prisma.user.findMany({ where: { role: "TEACHER" }, orderBy: { createdAt: "desc" }, select: { id: true, name: true, email: true, phone: true, teacherSharePercent: true } });
+  const teachers = await prisma.user.findMany({ where: { role: "TEACHER", ...(process.env.NODE_ENV === "production" ? {demoBatchId:null} : {}) }, orderBy: { createdAt: "desc" }, select: { id: true, name: true, email: true, phone: true, teacherSharePercent: true } });
   const wallets = await Promise.all(teachers.map(teacher=>readWallet(teacher.id)));
   const globalWallet = await readWallet(undefined);
   const {sales,payouts} = globalWallet;
@@ -27,14 +27,14 @@ export default async function AdminFinancePage() {
     {teachers.length === 0 && <p>هنوز مدرسی ثبت نشده است.</p>}
     <div className="space-y-6">{teachers.map((teacher,index) => {
       const owned = courses.filter(course => course.teacherId === teacher.id);
-      return <section key={teacher.id} className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-        <h3 className="text-lg font-bold"><bdi>{teacher.name || teacher.email || teacher.phone || "مدرس بدون نام"}</bdi></h3>
+      return <details key={teacher.id} className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+        <summary className="cursor-pointer text-lg font-bold marker:text-indigo-500"><bdi>{teacher.name || teacher.email || teacher.phone || "مدرس بدون نام"}</bdi></summary>
         <p className="mt-2 text-sm text-slate-500">{owned.length.toLocaleString("fa-IR")} دوره · سهم فعلی: {teacher.teacherSharePercent === null ? "تعیین نشده" : `${teacher.teacherSharePercent.toLocaleString("fa-IR")}٪`}</p>
         <WalletSummary totals={wallets[index].totals} />
         <details><summary className="cursor-pointer text-sm">ثبت‌نام‌ها و فروش ناخالص</summary><FinanceSummary totals={totalFinance(owned)} /></details>
         <div className="flex flex-wrap gap-3">{owned.map(course => <Link key={course.id} href={`/teacher/courses/${course.id}/students`} className="rounded-xl bg-slate-100 px-3 py-2 text-sm text-indigo-700">پیشرفت دانش‌آموزان: {course.title}</Link>)}</div>
         <ShareForm teacherId={teacher.id} percent={teacher.teacherSharePercent} />
-      </section>;
+      </details>;
     })}</div>
   </main>;
 }

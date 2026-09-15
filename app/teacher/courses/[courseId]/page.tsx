@@ -112,14 +112,14 @@ export default async function CourseManagementPage({ params }: PageProps) {
           <div className="rounded-xl border bg-white p-5 shadow-sm">
             <p className="text-sm text-gray-500">تعداد فصل‌ها</p>
 
-            <p className="mt-2 text-xl font-bold">{course._count.sections}</p>
+            <p className="mt-2 text-xl font-bold">{(course._count.sections).toLocaleString("fa-IR")}</p>
           </div>
 
           <div className="rounded-xl border bg-white p-5 shadow-sm">
             <p className="text-sm text-gray-500">ثبت‌نام‌ها (همهٔ وضعیت‌ها)</p>
 
             <p className="mt-2 text-xl font-bold">
-              {course._count.enrollments}
+              {(course._count.enrollments).toLocaleString("fa-IR")}
             </p>
             <Link href={`/teacher/courses/${course.id}/students`} className="mt-3 inline-block text-sm text-indigo-600 hover:underline">مشاهدهٔ دانش‌آموزان و پیشرفت</Link>
           </div>
@@ -186,7 +186,7 @@ export default async function CourseManagementPage({ params }: PageProps) {
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 font-bold text-indigo-600">
-                        {section.order}
+                        {(section.order).toLocaleString("fa-IR")}
                       </div>
 
                       <div>
@@ -225,7 +225,7 @@ export default async function CourseManagementPage({ params }: PageProps) {
                       >
                         <div className="flex items-center gap-3">
                           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs">
-                            {lesson.order}
+                            {(lesson.order).toLocaleString("fa-IR")}
                           </span>
 
                           <span>{lesson.title}</span>

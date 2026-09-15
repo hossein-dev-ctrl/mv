@@ -44,6 +44,7 @@ enum PaymentStatus {
 }
 
 model User {
+  demoBatchId String?
   id           String   @id @default(cuid())
   name         String?
   phone        String?  @unique
@@ -62,6 +63,8 @@ model User {
 }
 
 model Course {
+  demoBatchId String?
+  discountPercent Int @default(0)
   id        String @id @default(cuid())
   teacherId String
 
@@ -248,4 +251,11 @@ model PaymentCost {
   amount Int
   createdAt DateTime @default(now())
   createdBy String
+}
+
+model DemoBatch {
+  id String @id
+  ownerId String @unique
+  teacherId String @unique
+  createdAt DateTime @default(now())
 }

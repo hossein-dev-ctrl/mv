@@ -1,3 +1,5 @@
+import CoursePrice from "@/components/course/price";
+import { coursePrice } from "@/lib/course-price";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -41,6 +43,7 @@ export default async function CheckoutPage({ params }: Props) {
       shortDescription: true,
       thumbnailUrl: true,
       price: true,
+      discountPercent: true,
       status: true,
     },
   });
@@ -154,7 +157,7 @@ export default async function CheckoutPage({ params }: Props) {
                   <span className="text-gray-500">مبلغ قابل پرداخت</span>
 
                   <span className="text-2xl font-bold">
-                    {course.price.toLocaleString("fa-IR")} تومان
+                    <CoursePrice price={course.price} discountPercent={course.discountPercent} />
                   </span>
                 </div>
               </div>
@@ -162,7 +165,7 @@ export default async function CheckoutPage({ params }: Props) {
 
             <EnrollButton
               courseId={course.id}
-              price={course.price}
+              price={coursePrice(course)}
               isLoggedIn={!!session}
             />
 

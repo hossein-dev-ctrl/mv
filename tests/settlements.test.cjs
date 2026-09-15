@@ -42,7 +42,7 @@ test('unknown share is never made withdrawable',()=>{
  const total=walletTotals([{...sale,teacherShareAmount:null}],[]);assert.equal(total.available,0);assert.equal(total.unallocated,1000);assert.equal(total.platformNet,-20);
 });
 test('admin navigation has no personal teaching, enrollment or payment tabs',()=>{
- const items=panelNavigation('ADMIN');assert.deepEqual(items.map(x=>x.href),['/admin','/admin/courses','/admin/finance','/admin/settlements']);
+ const items=panelNavigation('ADMIN');assert.deepEqual(items.map(x=>x.href),['/admin','/admin/courses','/admin/users','/admin/finance','/admin/settlements']);
 });
 for(const [role,path,active] of [['TEACHER','/teacher/finance','/teacher/finance'],['TEACHER','/teacher/courses/c','/teacher'],['ADMIN','/admin/finance','/admin/finance'],['ADMIN','/teacher/courses/c/students/e','/admin/courses'],['STUDENT','/payment/success','/payments']])test('most specific active tab for '+path,()=>{
  assert.equal(activeNavigation(path,panelNavigation(role),role),active);

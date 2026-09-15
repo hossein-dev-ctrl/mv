@@ -91,7 +91,7 @@ export default async function SectionPage({ params }: PageProps) {
                     >
                       <div className="flex items-center gap-4">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 font-bold text-indigo-600">
-                          {lesson.order}
+                          {(lesson.order).toLocaleString("fa-IR")}
                         </div>
 
                         <div>

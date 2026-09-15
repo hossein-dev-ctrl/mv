@@ -2,7 +2,7 @@ export type NavItem = { href: string; label: string };
 export function panelNavigation(role?: string): NavItem[] {
   if (role === "ADMIN") return [
     {href:"/admin",label:"پنل مدیر"}, {href:"/admin/courses",label:"دوره‌ها و پیشرفت"},
-    {href:"/admin/finance",label:"مالی کل"}, {href:"/admin/settlements",label:"تسویه و بازپرداخت"},
+    {href:"/admin/users",label:"کاربران"}, {href:"/admin/finance",label:"مالی کل"}, {href:"/admin/settlements",label:"تسویه و بازپرداخت"},
   ];
   return [
     ...(role === "TEACHER" ? [{href:"/teacher",label:"مدیریت دوره‌های من"},{href:"/teacher/finance",label:"درآمد دوره‌های من"}] : []),

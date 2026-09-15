@@ -250,6 +250,7 @@ export async function PATCH(
 
     if (body.status !== undefined) {
       const status = body.status;
+      if (course.demoBatchId && status === "PUBLISHED") return Response.json({message:"دورهٔ تست مالی قابل انتشار عمومی نیست."},{status:400});
 
       if (
         status !== "DRAFT" &&
@@ -305,6 +306,8 @@ export async function PATCH(
         : null;
 
     const price = Number(body.price);
+    const discountPercent = body.discountPercent === undefined ? course.discountPercent : Number(body.discountPercent);
+    if (!Number.isInteger(discountPercent) || discountPercent < 0 || discountPercent > 100) return Response.json({ message: "تخفیف باید از صفر تا صد باشد." }, { status: 400 });
 
     if (!title) {
       return Response.json(
@@ -315,7 +318,7 @@ export async function PATCH(
       );
     }
 
-    if (Number.isNaN(price) || price < 0) {
+    if (!Number.isSafeInteger(price) || price < 0 || price > 2000000000) {
       return Response.json(
         {
           message: "قیمت دوره باید یک عدد معتبر باشد.",
@@ -335,6 +338,7 @@ export async function PATCH(
         thumbnailUrl,
         roadmapImageUrl,
         price,
+        discountPercent,
       },
     });
 

@@ -123,7 +123,7 @@ export default function UploadLessonVideoForm({
 
     const remainingSeconds = seconds % 60;
 
-    return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
+    return `${minutes.toLocaleString("fa-IR")}:${remainingSeconds.toLocaleString("fa-IR",{minimumIntegerDigits:2})}`;
   }
 
   return (
@@ -183,7 +183,7 @@ export default function UploadLessonVideoForm({
           <p className="mt-1 break-all text-sm text-gray-500">{file.name}</p>
 
           <p className="mt-2 text-xs text-gray-400">
-            حجم: {(file.size / (1024 * 1024)).toFixed(2)} MB
+            حجم: {(file.size / (1024 * 1024)).toLocaleString("fa-IR", {maximumFractionDigits:2})} MB
           </p>
 
           <p className="mt-1 text-xs text-gray-400">

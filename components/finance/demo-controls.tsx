@@ -1,0 +1,8 @@
+"use client";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+export default function DemoControls({exists}:{exists:boolean}) {
+ const [busy,setBusy]=useState(false);const [result,setResult]=useState<{message:string;phone?:string;password?:string;iban?:string}|null>(null);const router=useRouter();
+ async function act(action:string){if(action==='clear'&&!confirm('فقط بستهٔ آزمایشی ساخته‌شده از این صفحه و سوابق تست آن پاک شود؟'))return;setBusy(true);setResult(null);try{const response=await fetch('/api/admin/finance-demo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});const data=await response.json();setResult(data);if(response.ok)router.refresh();}catch{setResult({message:'ارتباط برقرار نشد.'});}finally{setBusy(false);}}
+ return <><div className="my-5 flex flex-wrap gap-3"><button onClick={()=>act('create')} disabled={busy||exists} className="rounded-xl bg-indigo-600 px-5 py-3 text-sm text-white disabled:opacity-40">ساخت شش پرداخت آزمایشی</button><button onClick={()=>act('clear')} disabled={busy||!exists} className="rounded-xl bg-rose-50 px-5 py-3 text-sm text-rose-700 disabled:opacity-40">پاک کردن فقط بستهٔ آزمایشی</button></div>{result&&<div role="status" className="rounded-2xl border bg-white p-5 text-sm leading-8"><p>{result.message}</p>{result.phone&&<><p>موبایل ورود آزمایشی: <bdi>{result.phone}</bdi></p><p>رمز ورود: <bdi>{result.password}</bdi></p><p>شبای نمونه فقط برای تست: <bdi>{result.iban}</bdi></p><p>در مرورگر خصوصی با همین مشخصات وارد شوید. این حساب و شبا برای واریز واقعی نیستند.</p></>}</div>}</>;
+}

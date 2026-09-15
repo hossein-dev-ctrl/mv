@@ -111,9 +111,9 @@ export default async function TeacherPage() {
                   )}
 
                   <div className="mt-5 flex gap-4 text-xs text-gray-500">
-                    <span>{course._count.sections} فصل</span>
+                    <span>{(course._count.sections).toLocaleString("fa-IR")} فصل</span>
 
-                    <span>{course._count.enrollments} دانشجو</span>
+                    <span>{(course._count.enrollments).toLocaleString("fa-IR")} دانشجو</span>
                   </div>
                 </div>
               </Link>

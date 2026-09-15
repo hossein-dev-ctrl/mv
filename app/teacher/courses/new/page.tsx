@@ -1,4 +1,5 @@
 "use client";
+import NumberInput from "@/components/ui/number-input";
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -23,6 +24,7 @@ export default function NewCoursePage() {
       shortDescription: form.get("shortDescription"),
       description: form.get("description"),
       price: Number(form.get("price") || 0),
+      discountPercent: Number(form.get("discountPercent") || 0),
       thumbnailUrl: form.get("thumbnailUrl") || null,
       roadmapImageUrl: form.get("roadmapImageUrl") || null,
     };
@@ -168,8 +170,10 @@ export default function NewCoursePage() {
                 قیمت به تومان
               </label>
 
-              <input
+              <NumberInput
                 name="price"
+                max="2000000000"
+                unit="تومان"
                 type="number"
                 min="0"
                 defaultValue="0"
@@ -178,6 +182,7 @@ export default function NewCoursePage() {
             </div>
           </section>
 
+          <section className="rounded-2xl border bg-white p-6"><label className="mb-3 block font-medium">درصد تخفیف</label><NumberInput name="discountPercent" required min="0" max="100" defaultValue="0" unit="درصد" className="w-full rounded-xl border p-3" /></section>
           {error && (
             <div className="rounded-xl bg-red-50 p-4 text-sm text-red-600">
               {error}

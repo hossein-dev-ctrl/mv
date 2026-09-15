@@ -1,3 +1,5 @@
+import CoursePrice from "@/components/course/price";
+import { coursePrice } from "@/lib/course-price";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -125,7 +127,7 @@ export default async function CoursePage({ params }: Props) {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
 
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+    return `${minutes.toLocaleString("fa-IR")}:${remainingSeconds.toLocaleString("fa-IR",{minimumIntegerDigits:2})}`;
   };
   return (
     <main dir="rtl" className="min-h-screen bg-gray-50">
@@ -153,7 +155,7 @@ export default async function CoursePage({ params }: Props) {
               <div className="mt-6 flex flex-wrap gap-4 text-sm text-gray-500">
                 <span>👨‍🏫 مدرس: {course.teacher.name || "مدرس دوره"}</span>
 
-                <span>📚 {lessons.length} درس</span>
+                <span>📚 {(lessons.length).toLocaleString("fa-IR")} درس</span>
               </div>
 
               <div className="mt-8">
@@ -179,7 +181,7 @@ export default async function CoursePage({ params }: Props) {
                     }
                     className="inline-flex rounded-xl bg-indigo-600 px-7 py-4 font-medium text-white transition hover:bg-indigo-700"
                   >
-                    {course.price === 0 ? "ثبت‌نام رایگان" : "خرید و ثبت‌نام"}
+                    {coursePrice(course) === 0 ? "ثبت‌نام رایگان" : "خرید و ثبت‌نام"}
                   </Link>
                 )}
               </div>
@@ -206,7 +208,7 @@ export default async function CoursePage({ params }: Props) {
                 <div className="text-sm text-gray-500">قیمت دوره</div>
 
                 <div className="mt-1 text-3xl font-bold">
-                  {course.price.toLocaleString("fa-IR")} تومان
+                  <CoursePrice price={course.price} discountPercent={course.discountPercent} />
                 </div>
               </div>
             </div>
@@ -260,7 +262,7 @@ export default async function CoursePage({ params }: Props) {
               <div className="border-b bg-gray-50 p-5">
                 <div className="flex items-center gap-3">
                   <span className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700">
-                    {section.order}
+                    {(section.order).toLocaleString("fa-IR")}
                   </span>
 
                   <div>

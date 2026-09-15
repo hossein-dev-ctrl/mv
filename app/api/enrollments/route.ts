@@ -1,3 +1,4 @@
+import { coursePrice } from "@/lib/course-price";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
      * در مرحله بعد به Payment و درگاه وصل می‌شود.
      */
 
-    if (course.price > 0) {
+    if (coursePrice(course) > 0) {
       return Response.json(
         {
           message: "این دوره نیاز به پرداخت دارد.",
