@@ -1,0 +1,997 @@
+From 087bfb879164051aa05a094f70c952b5567b330d Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Tue, 15 Sep 2026 05:39:03 +0330
+Subject: [PATCH] Add reserved payout ledger, refunds, bank fees, financial
+ charts and role-aware navigation
+
+---
+ app/admin/finance/page.tsx                    |  19 ++-
+ app/admin/page.tsx                            |   9 +-
+ app/admin/settlements/page.tsx                |  40 ++++++
+ .../admin/teachers/[teacherId]/share/route.ts |   4 +-
+ app/api/finance/route.ts                      |  18 +++
+ app/payment/success/page.tsx                  |   5 +-
+ app/payments/page.tsx                         |   4 +-
+ app/teacher/finance/page.tsx                  |  27 +++-
+ app/teacher/page.tsx                          |   2 +
+ components/finance/financial-chart.tsx        |  14 ++
+ components/finance/ledger-form.tsx            |  20 +++
+ components/finance/payout-card.tsx            |  21 +++
+ components/finance/summary.tsx                |   6 +-
+ components/finance/wallet-summary.tsx         |   5 +
+ components/panel/navigation.tsx               |   8 ++
+ components/panel/panel-shell.tsx              |  22 +--
+ lib/finance.ts                                |   6 +-
+ lib/panel-navigation.ts                       |  16 +++
+ lib/settlement-service.ts                     |  96 +++++++++++++
+ lib/wallet-math.ts                            |  19 +++
+ lib/wallet.ts                                 |  13 ++
+ .../migration.sql                             |  87 ++++++++++++
+ prisma/schema.prisma                          |  50 +++++++
+ tests/panel-shell.test.cjs                    |   4 +-
+ tests/settlements.test.cjs                    | 128 ++++++++++++++++++
+ 25 files changed, 599 insertions(+), 44 deletions(-)
+ create mode 100644 app/admin/settlements/page.tsx
+ create mode 100644 app/api/finance/route.ts
+ create mode 100644 components/finance/financial-chart.tsx
+ create mode 100644 components/finance/ledger-form.tsx
+ create mode 100644 components/finance/payout-card.tsx
+ create mode 100644 components/finance/wallet-summary.tsx
+ create mode 100644 components/panel/navigation.tsx
+ create mode 100644 lib/panel-navigation.ts
+ create mode 100644 lib/settlement-service.ts
+ create mode 100644 lib/wallet-math.ts
+ create mode 100644 lib/wallet.ts
+ create mode 100644 prisma/migrations/20260915000200_settlement_ledger/migration.sql
+ create mode 100644 tests/settlements.test.cjs
+
+diff --git a/app/admin/finance/page.tsx b/app/admin/finance/page.tsx
+index e31f8d9..9bcb817 100644
+--- a/app/admin/finance/page.tsx
++++ b/app/admin/finance/page.tsx
+@@ -1,3 +1,7 @@
++import { readWallet } from "@/lib/wallet";
++import { walletTotals } from "@/lib/wallet-math";
++import WalletSummary from "@/components/finance/wallet-summary";
++import FinancialChart from "@/components/finance/financial-chart";
+ import Link from "next/link";
+ import { prisma } from "@/lib/prisma";
+ import { requireFinanceUser, getFinanceCourses, totalFinance } from "@/lib/finance";
+@@ -7,20 +11,27 @@ import ShareForm from "@/components/finance/share-form";
+ export default async function AdminFinancePage() {
+   await requireFinanceUser(true);
+   const courses = await getFinanceCourses();
+-  const teachers = await prisma.user.findMany({ where: { OR: [{ role: "TEACHER" }, { role: "ADMIN" }] }, orderBy: { createdAt: "desc" }, select: { id: true, name: true, email: true, phone: true, teacherSharePercent: true } });
++  const teachers = await prisma.user.findMany({ where: { role: "TEACHER" }, orderBy: { createdAt: "desc" }, select: { id: true, name: true, email: true, phone: true, teacherSharePercent: true } });
++  const wallets = await Promise.all(teachers.map(teacher=>readWallet(teacher.id)));
++  const globalWallet = await readWallet(undefined);
++  const {sales,payouts} = globalWallet;
+   return <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+     <Link href="/admin" className="text-sm text-indigo-600">بازگشت به پنل مدیر</Link>
+     <h1 className="mt-4 text-2xl font-bold">مالی و سهم مدرس‌ها</h1>
+-    <FinanceSummary totals={totalFinance(courses)} />
++    <Link href="/admin/settlements" className="mt-5 inline-block rounded-xl bg-indigo-600 px-5 py-3 text-sm text-white">مدیریت برداشت‌ها، بازپرداخت و کارمزد</Link>
++    <WalletSummary totals={walletTotals(sales,payouts)} />
++    <FinancialChart sales={sales} payouts={payouts} />
++    <details className="my-6"><summary className="cursor-pointer font-bold">آمار ناخالص کل دوره‌ها</summary><FinanceSummary totals={totalFinance(courses)} /></details>
+     <p className="my-6 rounded-xl border border-indigo-100 bg-indigo-50 p-5 text-sm leading-8 text-indigo-900">درصد سهم هر مدرس را از صفر تا صد تعیین کنید. تغییر درصد برای پرداخت‌های بعدی است. برای تعیین سهم پرداخت‌های قبلیِ بدون سهم، گزینهٔ مربوط را انتخاب کنید. سهم‌های قبلاً ثبت‌شده بازنویسی نمی‌شوند. سهم بر مبلغ پرداخت و با گرد کردن رو به پایین به تومان محاسبه می‌شود.</p>
+     <h2 className="mb-5 text-xl font-bold">آمار به تفکیک مدرس</h2>
+     {teachers.length === 0 && <p>هنوز مدرسی ثبت نشده است.</p>}
+-    <div className="space-y-6">{teachers.map(teacher => {
++    <div className="space-y-6">{teachers.map((teacher,index) => {
+       const owned = courses.filter(course => course.teacherId === teacher.id);
+       return <section key={teacher.id} className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+         <h3 className="text-lg font-bold"><bdi>{teacher.name || teacher.email || teacher.phone || "مدرس بدون نام"}</bdi></h3>
+         <p className="mt-2 text-sm text-slate-500">{owned.length.toLocaleString("fa-IR")} دوره · سهم فعلی: {teacher.teacherSharePercent === null ? "تعیین نشده" : `${teacher.teacherSharePercent.toLocaleString("fa-IR")}٪`}</p>
+-        <FinanceSummary totals={totalFinance(owned)} />
++        <WalletSummary totals={wallets[index].totals} />
++        <details><summary className="cursor-pointer text-sm">ثبت‌نام‌ها و فروش ناخالص</summary><FinanceSummary totals={totalFinance(owned)} /></details>
+         <div className="flex flex-wrap gap-3">{owned.map(course => <Link key={course.id} href={`/teacher/courses/${course.id}/students`} className="rounded-xl bg-slate-100 px-3 py-2 text-sm text-indigo-700">پیشرفت دانش‌آموزان: {course.title}</Link>)}</div>
+         <ShareForm teacherId={teacher.id} percent={teacher.teacherSharePercent} />
+       </section>;
+diff --git a/app/admin/page.tsx b/app/admin/page.tsx
+index fcc6853..e5ac983 100644
+--- a/app/admin/page.tsx
++++ b/app/admin/page.tsx
+@@ -8,14 +8,7 @@ export default function AdminPage() {
+       <div className="mt-8 grid gap-5 md:grid-cols-2">
+         <Link href="/admin/finance" className="rounded-2xl border border-indigo-200 bg-indigo-50 p-6"><h2 className="text-lg font-bold text-indigo-700">مالی و سهم مدرس‌ها</h2><p className="mt-3 text-sm leading-7 text-slate-600">آمار کل و به تفکیک مدرس، فروش و تنظیم درصد سهم.</p></Link>
+         <Link href="/admin/courses" className="rounded-2xl border border-slate-200 bg-white p-6"><h2 className="text-lg font-bold text-indigo-700">پیشرفت دانش‌آموزان همهٔ دوره‌ها</h2><p className="mt-3 text-sm leading-7 text-slate-600">ورود به فهرست ثبت‌نام‌ها و گزارش درس‌های هر دانش‌آموز.</p></Link>
+-        <Link href="/teacher" className="rounded-2xl border border-slate-200 bg-white p-6 transition hover:border-indigo-300 hover:shadow-sm">
+-          <h2 className="text-lg font-bold text-indigo-700">مدیریت دوره‌های من</h2>
+-          <p className="mt-3 text-sm leading-7 text-slate-600">ایجاد دوره و مدیریت فصل‌ها، درس‌ها و فایل‌های دوره‌هایی که مدرس آن‌ها هستید.</p>
+-        </Link>
+-        <Link href="/dashboard" className="rounded-2xl border border-slate-200 bg-white p-6 transition hover:border-indigo-300 hover:shadow-sm">
+-          <h2 className="text-lg font-bold text-indigo-700">یادگیری من</h2>
+-          <p className="mt-3 text-sm leading-7 text-slate-600">مشاهدهٔ دوره‌های ثبت‌نام‌شده و ادامهٔ یادگیری.</p>
+-        </Link>
++        <Link href="/admin/settlements" className="rounded-2xl border border-slate-200 bg-white p-6"><h2 className="text-lg font-bold text-indigo-700">تسویه و بازپرداخت</h2><p className="mt-3 text-sm text-slate-600">درخواست برداشت، واریز، کارمزد و بازپرداخت مشتری.</p></Link>
+       </div>
+     </main>
+   );
+diff --git a/app/admin/settlements/page.tsx b/app/admin/settlements/page.tsx
+new file mode 100644
+index 0000000..19f3c39
+--- /dev/null
++++ b/app/admin/settlements/page.tsx
+@@ -0,0 +1,40 @@
++import Link from "next/link";
++import type { Prisma } from "@prisma/client";
++import { prisma } from "@/lib/prisma";
++import { requireFinanceUser } from "@/lib/finance";
++import LedgerForm from "@/components/finance/ledger-form";
++import PayoutCard, { financeDate } from "@/components/finance/payout-card";
++
++export default async function SettlementsPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}) {
++ const actor=await requireFinanceUser(true);
++ const query=await searchParams;
++ const status=typeof query.status==='string'&&['PROCESSING','PAID','REJECTED','ALL'].includes(query.status)?query.status:'REQUESTED';
++ const settings=await prisma.financeSettings.findUnique({where:{id:'main'}});
++ const where:Prisma.PayoutWhereInput=status==='ALL'?{}:{status};
++ const count=await prisma.payout.count({where});const pages=Math.max(1,Math.ceil(count/20));
++ const positive=(value:unknown)=>typeof value==='string'&&Number.isSafeInteger(Number(value))&&Number(value)>0?Number(value):1;
++ const page=Math.min(positive(query.page),pages);
++ const payouts=await prisma.payout.findMany({where,orderBy:{requestedAt:'desc'},take:20,skip:(page-1)*20,include:{teacher:{select:{name:true,email:true}}}});
++ const searchId=typeof query.paymentId==='string'?query.paymentId.trim().slice(0,100):'';
++ const paymentWhere:Prisma.PaymentWhereInput={status:'SUCCESS',isTest:false,...(searchId?{id:searchId}:{}),OR:[{transactionId:null},{transactionId:{not:{startsWith:'MOCK-'}}}]};
++ const paymentCount=await prisma.payment.count({where:paymentWhere});const paymentPages=Math.max(1,Math.ceil(paymentCount/20));const paymentPage=Math.min(positive(query.paymentPage),paymentPages);
++ const payments=await prisma.payment.findMany({where:paymentWhere,orderBy:{createdAt:'desc'},take:20,skip:(paymentPage-1)*20,include:{refund:true,cost:true,course:{select:{title:true,teacherId:true}},user:{select:{name:true}}}});
++ const url=(p:number,pp:number)=>`/admin/settlements?${new URLSearchParams({status,page:String(p),paymentPage:String(pp),...(searchId?{paymentId:searchId}:{})})}`;
++ return <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
++  <Link href="/admin/finance" className="text-sm text-indigo-600">بازگشت به مالی کل</Link><h1 className="my-5 text-2xl font-bold">تسویه و بازپرداخت</h1>
++  <section className="rounded-2xl border bg-white p-5"><h2 className="font-bold">حداقل مبلغ درخواست برداشت</h2><LedgerForm action="settings" label="ذخیرهٔ حداقل برداشت" fields={[{name:'minimum',label:'مبلغ به تومان',type:'number',value:settings?.minimumPayout??undefined,min:1,max:2000000000}]} /><p className="mt-3 text-xs text-slate-500">برای درخواست‌های جدید اعمال می‌شود. افزایش حداقل، درخواست‌های قبلی را لغو نمی‌کند.</p></section>
++  <h2 className="mt-8 text-xl font-bold">درخواست‌های مدرس‌ها</h2>
++  <nav aria-label="وضعیت درخواست برداشت" className="my-5 flex flex-wrap gap-2">{[['REQUESTED','در انتظار'],['PROCESSING','در حال واریز'],['PAID','واریزشده'],['REJECTED','ردشده'],['ALL','همه']].map(([value,label])=><Link key={value} href={`/admin/settlements?status=${value}`} aria-current={status===value?'page':undefined} className={`rounded-xl px-4 py-2 text-sm ${status===value?'bg-indigo-600 text-white':'bg-white text-slate-600'}`}>{label}</Link>)}</nav>
++  <p className="mb-4 text-xs leading-7 text-slate-500">این صفحه انتقال بانکی انجام نمی‌دهد. قبل از ثبت واریز، مبلغ، صاحب حساب و شبا را با انتقال واقعی تطبیق دهید. شمارهٔ پیگیری تکراری پذیرفته نمی‌شود.</p>
++  <div className="space-y-4">{payouts.map(payout=><PayoutCard key={payout.id} payout={payout} admin actorId={actor.id} name={payout.teacher.name||payout.teacher.email||'مدرس'} />)}{payouts.length===0&&<p className="rounded-xl border bg-white p-5">درخواستی با این وضعیت وجود ندارد.</p>}</div>
++  <nav className="my-5 flex justify-center gap-4 text-sm" aria-label="صفحه‌بندی درخواست‌ها">{page>1&&<Link href={url(page-1,paymentPage)}>قبل</Link>}<span>{page.toLocaleString('fa-IR')} از {pages.toLocaleString('fa-IR')}</span>{page<pages&&<Link href={url(page+1,paymentPage)}>بعد</Link>}</nav>
++  <h2 className="mt-10 text-xl font-bold">بازپرداخت مشتری و کارمزد فروش</h2><p className="mt-3 text-sm leading-7 text-slate-600">بازپرداخت در این مرحله کامل است. قبل از برگشت وجه، درخواست در حال واریز مدرس باید تعیین تکلیف شود. پس از برگشت واقعی وجه ثبت کنید؛ سهم فروش برگشت می‌خورد و در صورت نبود خرید معتبر دیگر، دسترسی دوره لغو می‌شود. درخواست باز مدرس برای محاسبهٔ مجدد لغو خواهد شد. کارمزد فروش بر عهدهٔ پلتفرم است.</p>
++  <form action="/admin/settlements" className="my-5 flex flex-wrap items-end gap-3"><label className="text-sm">شناسهٔ پرداخت<input name="paymentId" defaultValue={searchId} className="ms-3 rounded-xl border p-2" /></label><input type="hidden" name="status" value={status}/><button className="rounded-xl bg-indigo-600 px-4 py-2 text-sm text-white">جست‌وجو</button></form>
++  <div className="space-y-4">{payments.map(payment=><article key={payment.id} className="rounded-2xl border bg-white p-5">
++    <h3 className="font-bold">{payment.course.title} · {payment.user.name||'کاربر'} · {payment.amount.toLocaleString('fa-IR')} تومان</h3><p className="mt-2 break-all text-xs text-slate-500">شناسه: <bdi>{payment.id}</bdi> · پیگیری فروش: <bdi>{payment.transactionId||'—'}</bdi></p>
++    {payment.refund?<p className="mt-3 text-sm text-rose-700">بازپرداخت‌شده: {financeDate(payment.refund.refundedAt)} · پیگیری: <bdi>{payment.refund.reference}</bdi> · {payment.refund.reason}</p>:payment.userId!==payment.course.teacherId&&<details className="mt-4"><summary className="cursor-pointer text-sm text-rose-700">ثبت بازپرداخت کامل انجام‌شده</summary><LedgerForm action="refund" fixed={{paymentId:payment.id}} label="ثبت بازپرداخت کامل" fields={[{name:'reference',label:'پیگیری بازپرداخت'},{name:'refundedAt',label:'زمان بازپرداخت',type:'datetime-local'},{name:'reason',label:'علت بازپرداخت'}]} /></details>}
++    {payment.cost?<p className="mt-3 text-sm">کارمزد ثبت‌شدهٔ فروش: {payment.cost.amount.toLocaleString('fa-IR')} تومان</p>:payment.userId!==payment.course.teacherId&&<details className="mt-4"><summary className="cursor-pointer text-sm text-indigo-600">ثبت کارمزد بانکی فروش</summary><LedgerForm action="cost" fixed={{paymentId:payment.id}} label="ثبت کارمزد واقعی" fields={[{name:'amount',label:'کارمزد (تومان)',type:'number',min:0,max:payment.amount}]} /></details>}
++  </article>)}{payments.length===0&&<p>پرداخت موفق واقعی پیدا نشد.</p>}</div>
++  <nav className="my-5 flex justify-center gap-4 text-sm" aria-label="صفحه‌بندی پرداخت‌ها">{paymentPage>1&&<Link href={url(page,paymentPage-1)}>قبل</Link>}<span>{paymentPage.toLocaleString('fa-IR')} از {paymentPages.toLocaleString('fa-IR')}</span>{paymentPage<paymentPages&&<Link href={url(page,paymentPage+1)}>بعد</Link>}</nav>
++ </main>;
++}
+diff --git a/app/api/admin/teachers/[teacherId]/share/route.ts b/app/api/admin/teachers/[teacherId]/share/route.ts
+index 6e16ee0..a5d7c97 100644
+--- a/app/api/admin/teachers/[teacherId]/share/route.ts
++++ b/app/api/admin/teachers/[teacherId]/share/route.ts
+@@ -14,12 +14,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ te
+   }
+   const { teacherId } = await params;
+   const teacher = await prisma.user.findUnique({ where: { id: teacherId }, select: { role: true } });
+-  if (!teacher || !["TEACHER", "ADMIN"].includes(teacher.role)) return Response.json({ message: "مدرس پیدا نشد." }, { status: 404 });
++  if (!teacher || teacher.role !== "TEACHER") return Response.json({ message: "مدرس پیدا نشد." }, { status: 404 });
+   const count = await prisma.$transaction(async tx => {
+     await tx.user.update({ where: { id: teacherId }, data: { teacherSharePercent: body.percent } });
+     if (!body.applyUnallocated) return 0;
+     const payments = await tx.payment.findMany({
+-      where: { course: { teacherId }, userId: { not: teacherId }, status: "SUCCESS", teacherShareAmount: null, isTest: false,
++      where: { course: { teacherId }, userId: { not: teacherId }, status: "SUCCESS", refund: null, teacherShareAmount: null, isTest: false,
+         OR: [{ transactionId: null }, { transactionId: { not: { startsWith: "MOCK-" } } }] },
+       select: { id: true, amount: true },
+     });
+diff --git a/app/api/finance/route.ts b/app/api/finance/route.ts
+new file mode 100644
+index 0000000..fa4cc6b
+--- /dev/null
++++ b/app/api/finance/route.ts
+@@ -0,0 +1,18 @@
++import { getSession } from "@/lib/auth";
++import { prisma } from "@/lib/prisma";
++import { executeSettlement, settlementInput } from "@/lib/settlement-service";
++export async function POST(request:Request) {
++  const session=await getSession();
++  if(!session)return Response.json({message:"ابتدا وارد شوید."},{status:401});
++  const actor=await prisma.user.findUnique({where:{id:session.userId},select:{id:true,role:true}});
++  if(!actor||actor.role!==session.role||actor.role==="STUDENT")return Response.json({message:"دسترسی مجاز نیست."},{status:403});
++  let body;
++  try {body=await request.json();} catch {return Response.json({message:"درخواست نامعتبر است."},{status:400});}
++  const parsed=settlementInput.safeParse(body);
++  if(!parsed.success)return Response.json({message:parsed.error.issues[0]?.message||"اطلاعات نامعتبر است."},{status:400});
++  try {return Response.json({message:await executeSettlement(actor,parsed.data)});}
++  catch(error) {
++    const code=(error as {code?:string}).code;
++    return Response.json({message:code?"عملیات ثبت نشد؛ احتمال درخواست یا شماره پیگیری تکراری وجود دارد. صفحه را تازه کنید.":error instanceof Error?error.message:"عملیات انجام نشد."},{status:409});
++  }
++}
+diff --git a/app/payment/success/page.tsx b/app/payment/success/page.tsx
+index e770ab2..4ed1fd3 100644
+--- a/app/payment/success/page.tsx
++++ b/app/payment/success/page.tsx
+@@ -31,6 +31,7 @@ export default async function PaymentSuccessPage({ searchParams }: Props) {
+ 
+     include: {
+       course: true,
++      refund: true,
+     },
+   });
+ 
+@@ -47,11 +48,11 @@ export default async function PaymentSuccessPage({ searchParams }: Props) {
+         <div className="text-6xl">🎉</div>
+ 
+         <h1 className="mt-5 text-3xl font-bold text-green-600">
+-          پرداخت موفق بود
++          {payment.refund ? "وجه این پرداخت بازگردانده شده است" : "پرداخت موفق بود"}
+         </h1>
+ 
+         <p className="mt-3 text-gray-600">
+-          پرداخت شما با موفقیت ثبت شده است. وضعیت دسترسی دوره را در بخش دوره‌های ثبت‌نام‌شده ببینید.
++          {payment.refund ? `بازپرداخت کامل به مبلغ ${payment.refund.amount.toLocaleString("fa-IR")} تومان ثبت شده است. شماره پیگیری: ${payment.refund.reference}` : "پرداخت شما با موفقیت ثبت شده است. وضعیت دسترسی دوره را در بخش دوره‌های ثبت‌نام‌شده ببینید."}
+         </p>
+ 
+         <div className="mt-6 rounded-2xl bg-gray-50 p-5 text-right">
+diff --git a/app/payments/page.tsx b/app/payments/page.tsx
+index 4440d1c..8949fa7 100644
+--- a/app/payments/page.tsx
++++ b/app/payments/page.tsx
+@@ -31,6 +31,7 @@ export default async function PaymentHistoryPage({ searchParams }: {
+   const payments = await prisma.payment.findMany({
+     where, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 20, skip: (page - 1) * 20,
+     select: {
++      refund: { select: { amount: true, refundedAt: true, reference: true } },
+       id: true, amount: true, status: true, transactionId: true, createdAt: true, paidAt: true,
+       course: { select: { title: true, slug: true, status: true } },
+     },
+@@ -54,13 +55,14 @@ export default async function PaymentHistoryPage({ searchParams }: {
+       <p className="mb-4 text-sm text-slate-500">{total.toLocaleString("fa-IR")} پرداخت</p>
+       {payments.length === 0 ? <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center"><p className="text-slate-600">{status ? "پرداختی با این وضعیت پیدا نشد." : "هنوز پرداختی در حساب شما ثبت نشده است."}</p><Link href="/courses" className="mt-4 inline-block text-sm text-indigo-600">مشاهدهٔ دوره‌ها</Link></div> : (
+         <div className="space-y-4">{payments.map(payment => <article key={payment.id} className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+-          <div className="flex flex-wrap items-start justify-between gap-3"><h2 className="min-w-0 break-words text-lg font-semibold">{payment.course.title}</h2><span className={`rounded-full px-3 py-1 text-xs ${colors[payment.status]}`}>{labels[payment.status]}</span></div>
++          <div className="flex flex-wrap items-start justify-between gap-3"><h2 className="min-w-0 break-words text-lg font-semibold">{payment.course.title}</h2><span className={`rounded-full px-3 py-1 text-xs ${colors[payment.status]}`}>{payment.refund ? "بازپرداخت‌شده" : labels[payment.status]}</span></div>
+           <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+             <div><dt className="text-slate-500">مبلغ</dt><dd className="mt-1 font-semibold">{payment.amount.toLocaleString("fa-IR")} تومان</dd></div>
+             <div><dt className="text-slate-500">تاریخ درخواست</dt><dd className="mt-1">{date(payment.createdAt)}</dd></div>
+             <div><dt className="text-slate-500">تاریخ پرداخت موفق</dt><dd className="mt-1">{payment.status === "SUCCESS" && payment.paidAt ? date(payment.paidAt) : "—"}</dd></div>
+             <div><dt className="text-slate-500">شمارهٔ تراکنش</dt><dd className="mt-1 break-all"><bdi>{payment.status === "SUCCESS" ? payment.transactionId || "ثبت نشده" : "—"}</bdi></dd></div>
+           </dl>
++          {payment.refund && <p className="mt-4 text-sm text-rose-700">بازپرداخت کامل: {payment.refund.amount.toLocaleString("fa-IR")} تومان · {date(payment.refund.refundedAt)} · پیگیری: <bdi>{payment.refund.reference}</bdi></p>}
+           {payment.status === "PENDING" && <p className="mt-4 text-xs leading-6 text-amber-800">تأیید نهایی این پرداخت هنوز ثبت نشده است. این وضعیت به‌تنهایی به معنی پرداخت موفق یا ناموفق نیست.</p>}
+           <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-slate-100 pt-4 text-sm">
+             {payment.status === "SUCCESS" && <Link href={`/payment/success?paymentId=${payment.id}`} className="font-medium text-indigo-600 hover:underline">مشاهدهٔ رسید</Link>}
+diff --git a/app/teacher/finance/page.tsx b/app/teacher/finance/page.tsx
+index a74ef4e..098fbe7 100644
+--- a/app/teacher/finance/page.tsx
++++ b/app/teacher/finance/page.tsx
+@@ -1,3 +1,9 @@
++import { prisma } from "@/lib/prisma";
++import { readWallet } from "@/lib/wallet";
++import WalletSummary from "@/components/finance/wallet-summary";
++import LedgerForm from "@/components/finance/ledger-form";
++import PayoutCard from "@/components/finance/payout-card";
++import FinancialChart from "@/components/finance/financial-chart";
+ import Link from "next/link";
+ import { requireFinanceUser, getFinanceCourses, totalFinance } from "@/lib/finance";
+ import FinanceSummary from "@/components/finance/summary";
+@@ -5,11 +11,30 @@ import FinanceSummary from "@/components/finance/summary";
+ export default async function TeacherFinancePage() {
+   const user = await requireFinanceUser();
+   const courses = await getFinanceCourses(user.id);
++  const wallet = await readWallet(user.id);
++  const settings = await prisma.financeSettings.findUnique({where:{id:"main"}});
++  const minimum = settings?.minimumPayout;
++  const open = wallet.payouts.some(p=>["REQUESTED","PROCESSING"].includes(p.status));
++  const eligible = !!minimum && wallet.totals.available >= minimum && !open;
++
+   return <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+     <Link href="/teacher" className="text-sm text-indigo-600">بازگشت به دوره‌های من</Link>
+     <h1 className="mt-4 text-2xl font-bold">گزارش مالی من</h1>
+     <p className="mt-3 text-sm leading-7 text-slate-600">سهم فعلی شما: {user.teacherSharePercent === null ? "هنوز توسط مدیر تعیین نشده" : `${user.teacherSharePercent.toLocaleString("fa-IR")}٪`}. سهم هر پرداخت هنگام تأیید موفق ذخیره می‌شود.</p>
+-    <FinanceSummary totals={totalFinance(courses)} />
++    <WalletSummary totals={wallet.totals} />
++    <section className="rounded-2xl border border-indigo-200 bg-white p-5">
++      <h2 className="font-bold">درخواست واریز درآمد</h2>
++      <p className="mt-3 text-sm leading-7 text-slate-600">حداقل برداشت: {minimum ? `${minimum.toLocaleString("fa-IR")} تومان` : "هنوز توسط مدیر تعیین نشده"}. مبلغ درخواستی تا رسیدگی رزرو می‌شود. تسویه‌های قبلی از مانده کسر شده‌اند.</p>
++      {open && <p className="mt-2 text-sm text-amber-800">یک درخواست باز دارید؛ منتظر رسیدگی مدیر بمانید.</p>}
++      {wallet.totals.available<0 && <p className="mt-2 text-sm text-rose-700">پس از بازپرداخت، مانده بدهکار شده است؛ درآمد بعدی ابتدا این بدهی را پوشش می‌دهد.</p>}
++      {!eligible&&!open&&minimum&&wallet.totals.available>=0&&<p className="mt-2 text-sm text-slate-500">هنوز به حداقل برداشت نرسیده‌اید.</p>}
++      {eligible && <LedgerForm action="request" label="درخواست واریز وجه" fields={[{name:"amount",label:"مبلغ برداشت (تومان)",type:"number",value:Math.min(wallet.totals.available,2000000000),min:minimum!,max:Math.min(wallet.totals.available,2000000000)},{name:"iban",label:"شماره شبا IR…"},{name:"accountName",label:"نام صاحب حساب"}]} />}
++    </section>
++    <FinancialChart sales={wallet.sales} payouts={wallet.payouts} />
++    <h2 className="my-5 text-lg font-bold">سابقهٔ درخواست و دریافت وجه</h2>
++    <p className="mb-4 text-xs leading-7 text-slate-500">تاریخ مبنا زمان محاسبهٔ ماندهٔ درخواست است؛ برداشت جزئی به معنی تسویهٔ کامل درآمد تا آن تاریخ نیست. مبلغ هر درخواست و ماندهٔ باقی‌مانده ملاک هستند.</p>
++    <div className="space-y-4">{wallet.payouts.map(payout=><PayoutCard key={payout.id} payout={payout} />)}{wallet.payouts.length===0&&<p className="rounded-xl border bg-white p-5 text-sm">هنوز درخواست برداشتی ثبت نشده است.</p>}</div>
++    <details className="mt-8"><summary className="cursor-pointer font-bold">آمار ناخالص ثبت‌نام و فروش</summary><FinanceSummary totals={totalFinance(courses)} /></details>
+     <h2 className="my-5 text-lg font-bold">به تفکیک دوره</h2>
+     {courses.length === 0 && <p className="rounded-xl border bg-white p-6">هنوز دوره‌ای ندارید.</p>}
+     <div className="space-y-5">{courses.map(course => <section key={course.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+diff --git a/app/teacher/page.tsx b/app/teacher/page.tsx
+index 6e4781a..c6e346d 100644
+--- a/app/teacher/page.tsx
++++ b/app/teacher/page.tsx
+@@ -15,6 +15,8 @@ export default async function TeacherPage() {
+     redirect("/dashboard");
+   }
+ 
++  if (session.role === "ADMIN") redirect("/admin/courses");
++
+   const courses = await prisma.course.findMany({
+     where: {
+       teacherId: session.userId,
+diff --git a/components/finance/financial-chart.tsx b/components/finance/financial-chart.tsx
+new file mode 100644
+index 0000000..93abeee
+--- /dev/null
++++ b/components/finance/financial-chart.tsx
+@@ -0,0 +1,14 @@
++type Sale={amount:number;paidAt:Date|null;refund:{amount:number;refundedAt:Date}|null};
++type Payout={amount:number;paidAt:Date|null;status:string};
++export default function FinancialChart({sales,payouts}:{sales:Sale[];payouts:Payout[]}) {
++ const now=new Date();const months=Array.from({length:6},(_,i)=>{const d=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth()-5+i,1));return {key:d.toISOString().slice(0,7),label:new Intl.DateTimeFormat('fa-IR-u-ca-gregory',{month:'short',year:'numeric',timeZone:'UTC'}).format(d),sales:0,paid:0,refunds:0};});
++ for(const sale of sales){const month=months.find(m=>m.key===sale.paidAt?.toISOString().slice(0,7));if(month)month.sales+=sale.amount;const refundMonth=months.find(m=>m.key===sale.refund?.refundedAt.toISOString().slice(0,7));if(refundMonth)refundMonth.refunds+=sale.refund!.amount;}
++ for(const payout of payouts){const month=months.find(m=>m.key===payout.paidAt?.toISOString().slice(0,7));if(month&&payout.status==='PAID')month.paid+=payout.amount;}
++ const max=Math.max(1,...months.flatMap(m=>[m.sales,m.paid,m.refunds]));
++ return <section className="my-6 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="font-bold">روند مالی شش ماه اخیر</h2><p className="mt-2 text-xs text-slate-500">ماه میلادی · تومان · فروش واقعی، تسویه از مانده و بازپرداخت کامل</p>
++ <div className="my-4 flex flex-wrap gap-4 text-xs"><span className="text-indigo-600">■ فروش</span><span className="text-emerald-600">■ تسویه</span><span className="text-rose-600">■ بازپرداخت</span></div>
++ <div aria-hidden="true" className="flex h-52 items-end justify-around gap-2 border-b border-slate-200">{months.map(m=><div key={m.key} className="flex h-full flex-1 items-end justify-center gap-1">{[['sales','bg-indigo-500'],['paid','bg-emerald-500'],['refunds','bg-rose-400']].map(([key,color])=><div key={key} title={`${m.label}: ${m[key as 'sales'].toLocaleString('fa-IR')} تومان`} className={`w-1/5 rounded-t ${color}`} style={{height:`${m[key as 'sales']/max*100}%`}} />)}</div>)}</div>
++ <div className="mt-3 grid grid-cols-6 gap-2 text-center text-[10px] text-slate-500">{months.map(m=><span key={m.key}>{m.label}</span>)}</div>
++ <details className="mt-5 text-xs"><summary className="cursor-pointer text-indigo-600">جدول ارقام نمودار</summary><div className="overflow-x-auto"><table className="mt-3 w-full text-right"><thead><tr>{['ماه','فروش','تسویه','بازپرداخت'].map(x=><th key={x} className="p-2">{x}</th>)}</tr></thead><tbody>{months.map(m=><tr key={m.key}><th className="p-2">{m.label}</th>{[m.sales,m.paid,m.refunds].map((v,i)=><td key={i} className="p-2">{v.toLocaleString('fa-IR')}</td>)}</tr>)}</tbody></table></div></details>
++ </section>;
++}
+diff --git a/components/finance/ledger-form.tsx b/components/finance/ledger-form.tsx
+new file mode 100644
+index 0000000..e65cffe
+--- /dev/null
++++ b/components/finance/ledger-form.tsx
+@@ -0,0 +1,20 @@
++"use client";
++import { useState } from "react";
++import { useRouter } from "next/navigation";
++type Field={name:string;label:string;type?:"text"|"number"|"datetime-local";value?:string|number;min?:number;max?:number};
++export default function LedgerForm({action,fixed={},fields=[],label,disabled=false}:{action:string;fixed?:Record<string,string>;fields?:Field[];label:string;disabled?:boolean}) {
++  const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");const router=useRouter();
++  return <form className="mt-4 flex flex-wrap items-end gap-3" onSubmit={async event=>{
++    event.preventDefault();const form=event.currentTarget;const data=new FormData(form);setBusy(true);setMessage("");
++    try {
++      const body:Record<string,string|number>={action,...fixed};
++      for(const field of fields){const value=String(data.get(field.name)??"");body[field.name]=field.type==="number"?Number(value):field.type==="datetime-local"?new Date(value).toISOString():value;}
++      const result=await fetch('/api/finance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
++      const json=await result.json();if(!result.ok)throw new Error(json.message||"ثبت انجام نشد.");setMessage(json.message);router.refresh();
++    }catch(error){setMessage(error instanceof Error?error.message:"ارتباط برقرار نشد.");}finally{setBusy(false);}
++  }}>
++    {fields.map(field=><label key={field.name} className="flex min-w-0 flex-col gap-2 text-xs text-slate-600">{field.label}<input required name={field.name} type={field.type??"text"} defaultValue={field.value} min={field.min} max={field.max} step={field.type==="number"?1:undefined} maxLength={field.type==="text"||!field.type?500:undefined} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm sm:w-44" /></label>)}
++    <button disabled={busy||disabled} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm text-white disabled:opacity-40">{busy?"در حال ثبت…":label}</button>
++    {message&&<p role="status" className="w-full text-sm text-slate-700">{message}</p>}
++  </form>;
++}
+diff --git a/components/finance/payout-card.tsx b/components/finance/payout-card.tsx
+new file mode 100644
+index 0000000..7bc2e86
+--- /dev/null
++++ b/components/finance/payout-card.tsx
+@@ -0,0 +1,21 @@
++import type { Payout } from "@prisma/client";
++import LedgerForm from "@/components/finance/ledger-form";
++export const financeDate=(value:Date)=>new Intl.DateTimeFormat('fa-IR',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Tehran'}).format(value);
++export default function PayoutCard({payout,admin=false,name,actorId}:{payout:Payout;admin?:boolean;name?:string;actorId?:string}) {
++ return <article className="rounded-2xl border border-slate-200 bg-white p-5">
++  <div className="flex flex-wrap justify-between gap-3"><h3 className="font-bold">{name??'درخواست برداشت'} · {payout.amount.toLocaleString('fa-IR')} تومان</h3><span className="rounded-full bg-slate-100 px-3 py-1 text-xs">{payout.status==='REQUESTED'?'در انتظار واریز':payout.status==='PROCESSING'?'در حال واریز':payout.status==='REJECTED'?'ردشده':payout.receivedAt?'دریافت تأیید شده':'واریزشده؛ منتظر تأیید دریافت'}</span></div>
++  <p className="mt-3 text-xs leading-7 text-slate-500">درخواست: {financeDate(payout.requestedAt)} · مبنای محاسبهٔ درآمد: {financeDate(payout.cutoffAt)}</p>
++  <p className="mt-2 break-all text-sm"><bdi>{payout.accountName}</bdi> · <bdi>{payout.iban}</bdi></p>
++  {payout.paidAt&&<p className="mt-3 text-sm leading-8">واریز: {financeDate(payout.paidAt)} · کارمزد: {payout.fee.toLocaleString('fa-IR')} · خالص دریافتی: {(payout.amount-payout.fee).toLocaleString('fa-IR')} تومان · پیگیری: <bdi>{payout.reference}</bdi></p>}
++  {payout.receivedAt&&<p className="text-xs text-emerald-700">تأیید دریافت مدرس: {financeDate(payout.receivedAt)}</p>}
++  {payout.note&&<p className="mt-3 text-sm text-amber-800">{payout.note}</p>}
++  {!admin&&payout.status==='PAID'&&!payout.receivedAt&&<LedgerForm action="receive" fixed={{id:payout.id}} label="وجه را دریافت کردم" />}
++  {admin&&payout.status==='REQUESTED'&&<LedgerForm action="begin" fixed={{id:payout.id}} label="رزرو درخواست برای واریز" />}
++  {admin&&payout.status==='PROCESSING'&&payout.processedBy!==actorId&&<p className="mt-4 text-sm text-amber-800">مدیر دیگری مسئول این واریز است؛ دوباره وجه واریز نکنید.</p>}
++  {admin&&['REQUESTED','PROCESSING'].includes(payout.status)&&(payout.status==='REQUESTED'||payout.processedBy===actorId)&&<>
++    <p className="mt-4 text-xs leading-7 text-slate-500">پس از واریز واقعی ثبت کنید. کارمزد انتقال از مبلغ درخواست کم می‌شود؛ خالص واریز = مبلغ درخواست − کارمزد.</p>
++    {payout.status==='PROCESSING'&&<LedgerForm action="pay" fixed={{id:payout.id}} label="ثبت واریز انجام‌شده" fields={[{name:'fee',label:'کارمزد انتقال (تومان)',type:'number',value:0,min:0,max:payout.amount-1},{name:'reference',label:'شماره پیگیری بانکی'},{name:'paidAt',label:'تاریخ و ساعت واریز',type:'datetime-local'}]} />}
++    <details className="mt-4 text-sm"><summary className="cursor-pointer text-rose-700">رد درخواست و آزادسازی مبلغ</summary><LedgerForm action="reject" fixed={{id:payout.id}} fields={[{name:'reason',label:'دلیل رد'}]} label="رد درخواست" /></details>
++  </>}
++ </article>;
++}
+diff --git a/components/finance/summary.tsx b/components/finance/summary.tsx
+index 1c08b8a..244e1ad 100644
+--- a/components/finance/summary.tsx
++++ b/components/finance/summary.tsx
+@@ -2,13 +2,13 @@ import type { summarizeFinance } from "@/lib/finance-math";
+ export default function FinanceSummary({ totals }: { totals: ReturnType<typeof summarizeFinance> }) {
+   const items = [
+     ["کل ثبت‌نام‌ها", totals.registrations, ""], ["ثبت‌نام دارای دسترسی", totals.active, ""],
+-    ["ثبت‌نام لغوشده", totals.cancelled, ""], ["فروش موفق واقعی", totals.sales, "تومان"],
+-    ["سهم محاسبه‌شدهٔ مدرس", totals.teacherShare, "تومان"], ["سهم محاسبه‌شدهٔ پلتفرم", totals.platformShare, "تومان"],
++    ["ثبت‌نام لغوشده", totals.cancelled, ""], ["فروش ناخالص واقعی", totals.sales, "تومان"],
++    ["سهم ناخالص مدرس", totals.teacherShare, "تومان"], ["سهم ناخالص پلتفرم", totals.platformShare, "تومان"],
+   ] as const;
+   return <>
+     <dl className="my-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{items.map(([label, value, unit]) => <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5"><dt className="text-xs text-slate-500">{label}</dt><dd className="mt-3 text-xl font-bold">{value.toLocaleString("fa-IR")} <span className="text-xs font-normal">{unit}</span></dd></div>)}</dl>
+     {totals.unallocatedCount > 0 && <p className="mb-4 rounded-xl bg-amber-50 p-4 text-sm leading-7 text-amber-900">سهم {totals.unallocatedCount.toLocaleString("fa-IR")} پرداخت به مبلغ {totals.unallocated.toLocaleString("fa-IR")} تومان هنوز تعیین نشده و در سهم‌های بالا حساب نشده است.</p>}
+-    <p className="mb-4 text-xs leading-7 text-slate-500">پرداخت آزمایشی موفق: {totals.testPayments.toLocaleString("fa-IR")} مورد، {totals.testSales.toLocaleString("fa-IR")} تومان؛ خارج از فروش واقعی. ثبت‌نام رایگان در تعداد ثبت‌نام حساب می‌شود. این ارقام سهم فروش هستند؛ ثبت تسویه، بازپرداخت و کارمزد بانکی در این گزارش لحاظ نشده است.</p>
++    <p className="mb-4 text-xs leading-7 text-slate-500">پرداخت آزمایشی موفق: {totals.testPayments.toLocaleString("fa-IR")} مورد، {totals.testSales.toLocaleString("fa-IR")} تومان؛ خارج از فروش واقعی. ثبت‌نام رایگان در تعداد ثبت‌نام حساب می‌شود. این بخش آمار ناخالص فروش است؛ ماندهٔ قابل برداشت، بازپرداخت و کارمزد در دفتر تسویه نمایش داده می‌شود.</p>
+     {totals.unknownPayments > 0 && <p className="mb-4 rounded-xl bg-amber-50 p-4 text-sm leading-7 text-amber-900">نوع {totals.unknownPayments.toLocaleString("fa-IR")} پرداخت قدیمی به مبلغ {totals.unknownSales.toLocaleString("fa-IR")} تومان مشخص نیست؛ برای جلوگیری از شمارش پرداخت آزمایشی به‌عنوان فروش، در فروش واقعی حساب نشده‌اند.</p>}
+     {totals.selfRegistrations > 0 && <p className="mb-4 text-xs text-slate-500">{totals.selfRegistrations.toLocaleString("fa-IR")} ثبت‌نام قدیمی صاحب دوره از آمار کنار گذاشته شده است.</p>}
+   </>;
+diff --git a/components/finance/wallet-summary.tsx b/components/finance/wallet-summary.tsx
+new file mode 100644
+index 0000000..71983fc
+--- /dev/null
++++ b/components/finance/wallet-summary.tsx
+@@ -0,0 +1,5 @@
++import type { walletTotals } from "@/lib/wallet-math";
++export default function WalletSummary({totals}:{totals:ReturnType<typeof walletTotals>}) {
++ const items=[['درآمد خالص مدرس',totals.netEarned],['تسویه‌شده از مانده',totals.paid],['خالص واریزشده به حساب',totals.received],['کارمزد انتقال به مدرس',totals.payoutFees],['رزرو درخواست‌های باز',totals.reserved],['ماندهٔ قابل درخواست',totals.available],['بازپرداخت به مشتریان',totals.refunds],['کارمزد فروش (سهم پلتفرم)',totals.saleFees],['خالص سهم پلتفرم',totals.platformNet]] as const;
++ return <dl className="my-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{items.map(([label,value])=><div key={label} className={`rounded-2xl border p-4 ${label==='ماندهٔ قابل درخواست'?'border-indigo-200 bg-indigo-50':'border-slate-200 bg-white'}`}><dt className="text-xs text-slate-500">{label}</dt><dd className="mt-2 text-lg font-bold"><bdi>{value.toLocaleString('fa-IR')}</bdi> <small className="font-normal">تومان</small></dd></div>)}</dl>;
++}
+diff --git a/components/panel/navigation.tsx b/components/panel/navigation.tsx
+new file mode 100644
+index 0000000..ca0faa0
+--- /dev/null
++++ b/components/panel/navigation.tsx
+@@ -0,0 +1,8 @@
++"use client";
++import Link from "next/link";
++import { usePathname } from "next/navigation";
++import { activeNavigation, type NavItem } from "@/lib/panel-navigation";
++export default function Navigation({items,role}:{items:NavItem[];role?:string}) {
++  const active = activeNavigation(usePathname(),items,role);
++  return <nav aria-label="ناوبری پنل" className="flex flex-wrap gap-2">{items.map(item=><Link key={item.href} href={item.href} aria-current={item.href===active?"page":undefined} className={`rounded-xl px-3 py-2 text-sm font-medium transition ${item.href===active?"bg-indigo-600 text-white shadow-sm":"text-slate-600 hover:bg-slate-100"}`}>{item.label}</Link>)}</nav>;
++}
+diff --git a/components/panel/panel-shell.tsx b/components/panel/panel-shell.tsx
+index 5b8ae29..61802e6 100644
+--- a/components/panel/panel-shell.tsx
++++ b/components/panel/panel-shell.tsx
+@@ -1,4 +1,6 @@
+ import Link from "next/link";
++import Navigation from "@/components/panel/navigation";
++import { panelNavigation } from "@/lib/panel-navigation";
+ import { redirect } from "next/navigation";
+ import { getSession, type UserRole } from "@/lib/auth";
+ import { prisma } from "@/lib/prisma";
+@@ -44,15 +46,7 @@ export default async function PanelShell({ children, area }: {
+   if (area === "teacher" && (!user || user.role === "STUDENT")) redirect("/dashboard");
+ 
+   const name = user?.name?.trim() || user?.email || user?.phone || "کاربر";
+-  const navigation = [
+-    ...(user?.role === "ADMIN" ? [{ href: "/admin", label: "پنل مدیر", area: "admin" }] : []),
+-    ...(user && user.role !== "STUDENT" ? [{ href: "/teacher", label: "مدیریت دوره‌های من", area: "teacher" }] : []),
+-    ...(user?.role === "ADMIN" ? [{ href: "/admin/finance", label: "مالی کل", area: "finance-admin" }] : []),
+-    ...(user && user.role !== "STUDENT" ? [{ href: "/teacher/finance", label: "درآمد دوره‌های من", area: "finance-teacher" }] : []),
+-    ...(user ? [{ href: "/dashboard", label: "دوره‌های ثبت‌نام‌شده", area: "student" }] : []),
+-    ...(user ? [{ href: "/payments", label: "سوابق پرداخت من", area: "payments" }] : []),
+-    { href: "/courses", label: "همهٔ دوره‌ها", area: "courses" },
+-  ];
++  const navigation = panelNavigation(user?.role);
+ 
+   return (
+     <div dir="rtl" className="flex min-h-screen flex-col bg-slate-50">
+@@ -80,15 +74,7 @@ export default async function PanelShell({ children, area }: {
+         </div>
+         <div className="border-t border-slate-100">
+           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+-            <nav aria-label="ناوبری پنل" className="flex flex-wrap gap-2">
+-              {navigation.map((item) => (
+-                <Link key={item.href} href={item.href}
+-                  aria-current={item.area === area ? "location" : undefined}
+-                  className={`rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-indigo-600 ${item.area === area ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50"}`}>
+-                  {item.label}
+-                </Link>
+-              ))}
+-            </nav>
++            <Navigation items={navigation} role={user?.role} />
+             <span className="text-xs text-slate-500">بخش فعلی: {areas[area]}</span>
+           </div>
+         </div>
+diff --git a/lib/finance.ts b/lib/finance.ts
+index 93e5bd8..fbd1659 100644
+--- a/lib/finance.ts
++++ b/lib/finance.ts
+@@ -8,7 +8,7 @@ export async function requireFinanceUser(adminOnly = false) {
+   if (!session) redirect("/login");
+   const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { id: true, role: true, teacherSharePercent: true } });
+   if (!user || user.role !== session.role) redirect("/login");
+-  if (adminOnly ? user.role !== "ADMIN" : user.role !== "ADMIN" && user.role !== "TEACHER") redirect("/dashboard");
++  if (adminOnly ? user.role !== "ADMIN" : user.role !== "TEACHER") redirect(user.role === "ADMIN" ? "/admin/finance" : "/dashboard");
+   return user;
+ }
+ 
+@@ -17,12 +17,12 @@ export async function getFinanceCourses(teacherId?: string) {
+     where: teacherId ? { teacherId } : {}, orderBy: { createdAt: "desc" },
+     select: {
+       id: true, title: true, teacherId: true,
+-      teacher: { select: { name: true, email: true, phone: true, teacherSharePercent: true } },
++      teacher: { select: { role: true, name: true, email: true, phone: true, teacherSharePercent: true } },
+       enrollments: { select: { userId: true, status: true } },
+       payments: { select: { userId: true, status: true, amount: true, isTest: true, transactionId: true, teacherShareAmount: true } },
+     },
+   });
+-  return courses.map(({ enrollments, payments, ...course }) => ({ ...course, totals: summarizeFinance(course.teacherId, enrollments, payments) }));
++  return courses.map(({ enrollments, payments, ...course }) => ({ ...course, totals: summarizeFinance(course.teacherId, enrollments, course.teacher.role === "ADMIN" ? payments.map(payment=>({...payment,teacherShareAmount:0})) : payments) }));
+ }
+ 
+ export function totalFinance(courses: Awaited<ReturnType<typeof getFinanceCourses>>) {
+diff --git a/lib/panel-navigation.ts b/lib/panel-navigation.ts
+new file mode 100644
+index 0000000..5d53122
+--- /dev/null
++++ b/lib/panel-navigation.ts
+@@ -0,0 +1,16 @@
++export type NavItem = { href: string; label: string };
++export function panelNavigation(role?: string): NavItem[] {
++  if (role === "ADMIN") return [
++    {href:"/admin",label:"پنل مدیر"}, {href:"/admin/courses",label:"دوره‌ها و پیشرفت"},
++    {href:"/admin/finance",label:"مالی کل"}, {href:"/admin/settlements",label:"تسویه و بازپرداخت"},
++  ];
++  return [
++    ...(role === "TEACHER" ? [{href:"/teacher",label:"مدیریت دوره‌های من"},{href:"/teacher/finance",label:"درآمد دوره‌های من"}] : []),
++    ...(role ? [{href:"/dashboard",label:"دوره‌های ثبت‌نام‌شده"},{href:"/payments",label:"سوابق پرداخت من"}] : []),
++    {href:"/courses",label:"همهٔ دوره‌ها"},
++  ];
++}
++export function activeNavigation(path: string, items: NavItem[], role?: string) {
++  const mapped = role === "ADMIN" && path.startsWith("/teacher/courses/") ? "/admin/courses" : path.startsWith("/payment/") ? "/payments" : path;
++  return items.filter(item=>mapped===item.href || mapped.startsWith(item.href+"/")).sort((a,b)=>b.href.length-a.href.length)[0]?.href;
++}
+diff --git a/lib/settlement-service.ts b/lib/settlement-service.ts
+new file mode 100644
+index 0000000..26925e8
+--- /dev/null
++++ b/lib/settlement-service.ts
+@@ -0,0 +1,96 @@
++import { z } from "zod";
++import { prisma } from "@/lib/prisma";
++import { readWallet } from "@/lib/wallet";
++import { validIban } from "@/lib/wallet-math";
++
++const money=z.number().int().min(0).max(2000000000);
++const ref=z.string().trim().min(3).max(100);
++const date=z.string().datetime().refine(value=>new Date(value).getTime()<=Date.now()+60000,"تاریخ آینده مجاز نیست.");
++export const settlementInput=z.discriminatedUnion("action",[
++  z.object({action:z.literal("settings"),minimum:money.positive()}),
++  z.object({action:z.literal("request"),amount:money.positive(),iban:z.string().trim().toUpperCase().refine(validIban,"شماره شبا نامعتبر است."),accountName:z.string().trim().min(3).max(100)}),
++  z.object({action:z.literal("begin"),id:z.string().min(1)}),
++  z.object({action:z.literal("pay"),id:z.string().min(1),fee:money,reference:ref,paidAt:date}),
++  z.object({action:z.literal("reject"),id:z.string().min(1),reason:z.string().trim().min(3).max(500)}),
++  z.object({action:z.literal("receive"),id:z.string().min(1)}),
++  z.object({action:z.literal("refund"),paymentId:z.string().min(1),reference:ref,reason:z.string().trim().min(3).max(500),refundedAt:date}),
++  z.object({action:z.literal("cost"),paymentId:z.string().min(1),amount:money}),
++]);
++type Actor={id:string;role:string};
++export async function executeSettlement(actor:Actor,input:z.infer<typeof settlementInput>) {
++  const teacherAction=input.action==="request"||input.action==="receive";
++  if(actor.role!==(teacherAction?"TEACHER":"ADMIN")) throw new Error("این عملیات برای نقش شما مجاز نیست.");
++  return prisma.$transaction(async tx=>{
++    if(input.action==="settings") {
++      await tx.financeSettings.upsert({where:{id:"main"},create:{id:"main",minimumPayout:input.minimum},update:{minimumPayout:input.minimum}});
++      return "حداقل برداشت ذخیره شد.";
++    }
++    // All balance-decreasing operations serialize on the same teacher row.
++    let teacherId=actor.id;
++    if(input.action==="begin"||input.action==="pay"||input.action==="reject"||input.action==="receive") {
++      const target=await tx.payout.findUnique({where:{id:input.id}});
++      if(!target || (input.action==="receive" && target.teacherId!==actor.id)) throw new Error("درخواست پیدا نشد.");
++      teacherId=target.teacherId;
++    }
++    if(input.action==="refund"||input.action==="cost") {
++      const target=await tx.payment.findUnique({where:{id:input.paymentId},select:{course:{select:{teacherId:true}}}});
++      if(!target)throw new Error("پرداخت پیدا نشد.");
++      teacherId=target.course.teacherId;
++    }
++    await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${teacherId} FOR UPDATE`;
++    if(input.action==="request") {
++      const settings=await tx.financeSettings.findUnique({where:{id:"main"}});
++      if(!settings?.minimumPayout)throw new Error("مدیر هنوز حداقل برداشت را تعیین نکرده است.");
++      const wallet=await readWallet(actor.id,tx);
++      if(wallet.payouts.some(p=>["REQUESTED","PROCESSING"].includes(p.status)))throw new Error("یک درخواست باز دارید؛ ابتدا نتیجهٔ آن مشخص شود.");
++      if(input.amount<settings.minimumPayout || input.amount>wallet.totals.available)throw new Error("مبلغ باید حداقل برداشت را داشته باشد و از مانده بیشتر نباشد.");
++      await tx.payout.create({data:{teacherId:actor.id,amount:input.amount,iban:input.iban,accountName:input.accountName}});
++      return "درخواست برداشت ثبت شد و مبلغ آن رزرو شد.";
++    }
++    if(input.action==="begin"||input.action==="pay"||input.action==="reject"||input.action==="receive") {
++      const payout=await tx.payout.findUniqueOrThrow({where:{id:input.id}});
++      if(input.action==="receive") {
++        if(payout.status!=="PAID")throw new Error("واریز هنوز ثبت نشده است.");
++        await tx.payout.updateMany({where:{id:payout.id,receivedAt:null},data:{receivedAt:new Date()}});
++        return "دریافت وجه تأیید شد.";
++      }
++      if(input.action==="begin") {
++        if(payout.status!=="REQUESTED")throw new Error("این درخواست قبلاً در اختیار مدیر دیگری قرار گرفته است.");
++        const wallet=await readWallet(teacherId,tx);
++        if(wallet.totals.available<0)throw new Error("مانده کافی نیست؛ درخواست را رد کنید.");
++        await tx.payout.update({where:{id:payout.id},data:{status:"PROCESSING",processedBy:actor.id}});
++        return "درخواست برای واریز در اختیار شما قرار گرفت. پس از انتقال بانکی نتیجه را ثبت کنید.";
++      }
++      if(!["REQUESTED","PROCESSING"].includes(payout.status))throw new Error("این درخواست قبلاً رسیدگی شده است.");
++      if(payout.status==="PROCESSING"&&payout.processedBy!==actor.id)throw new Error("مدیر دیگری در حال واریز این درخواست است.");
++      if(input.action==="reject") {
++        await tx.payout.update({where:{id:payout.id},data:{status:"REJECTED",note:input.reason,processedBy:actor.id}});
++        return "درخواست رد شد و مبلغ رزروشده آزاد شد.";
++      }
++      if(payout.status!=="PROCESSING")throw new Error("ابتدا درخواست را برای واریز رزرو کنید.");
++      if(input.fee>=payout.amount)throw new Error("کارمزد باید کمتر از مبلغ تسویه باشد.");
++      if(new Date(input.paidAt)<payout.requestedAt)throw new Error("تاریخ واریز نباید قبل از درخواست باشد.");
++      const wallet=await readWallet(teacherId,tx);
++      if(wallet.totals.available+payout.amount<payout.amount)throw new Error("مانده برای این واریز کافی نیست؛ درخواست را رد کنید.");
++      await tx.payout.update({where:{id:payout.id},data:{status:"PAID",fee:input.fee,reference:input.reference,paidAt:new Date(input.paidAt),processedBy:actor.id}});
++      return "واریز ثبت شد؛ مبلغ از مانده کم شده است.";
++    }
++    const payment=await tx.payment.findUniqueOrThrow({where:{id:input.paymentId},include:{refund:true,cost:true,course:true}});
++    if(payment.status!=="SUCCESS"||payment.isTest!==false||payment.transactionId?.startsWith("MOCK-")||payment.userId===teacherId)throw new Error("فقط پرداخت موفق واقعی قابل ثبت است.");
++    if(input.action==="cost") {
++      if(payment.cost)throw new Error("کارمزد این پرداخت قبلاً ثبت شده است.");
++      if(input.amount>payment.amount)throw new Error("کارمزد از مبلغ پرداخت بیشتر است.");
++      await tx.paymentCost.create({data:{paymentId:payment.id,amount:input.amount,createdBy:actor.id}});
++      return "کارمزد فروش از سهم پلتفرم ثبت شد.";
++    }
++    if(payment.refund)throw new Error("این پرداخت قبلاً بازپرداخت شده است.");
++    if(payment.paidAt && new Date(input.refundedAt)<payment.paidAt)throw new Error("بازپرداخت نمی‌تواند قبل از پرداخت باشد.");
++    if(await tx.payout.count({where:{teacherId,status:"PROCESSING"}}))throw new Error("ابتدا نتیجهٔ واریز در حال انجام این مدرس را مشخص کنید.");
++    // A refund can create a debt after a previous payout, carried into future earnings.
++    await tx.payout.updateMany({where:{teacherId,status:"REQUESTED"},data:{status:"REJECTED",note:"لغو خودکار به دلیل بازپرداخت فروش؛ مانده را بررسی و دوباره درخواست کنید.",processedBy:actor.id}});
++    await tx.paymentRefund.create({data:{paymentId:payment.id,amount:payment.amount,teacherDebit:payment.teacherShareAmount??0,reference:input.reference,reason:input.reason,refundedAt:new Date(input.refundedAt),createdBy:actor.id}});
++    const other=await tx.payment.count({where:{id:{not:payment.id},userId:payment.userId,courseId:payment.courseId,status:"SUCCESS",refund:null}});
++    if(!other)await tx.enrollment.updateMany({where:{userId:payment.userId,courseId:payment.courseId},data:{status:"CANCELLED"}});
++    return "بازپرداخت کامل ثبت و سهم فروش اصلاح شد.";
++  },{timeout:15000});
++}
+diff --git a/lib/wallet-math.ts b/lib/wallet-math.ts
+new file mode 100644
+index 0000000..e5eb269
+--- /dev/null
++++ b/lib/wallet-math.ts
+@@ -0,0 +1,19 @@
++type Sale = { amount: number; teacherShareAmount: number | null; refund: { amount: number; teacherDebit: number } | null; cost: { amount: number } | null };
++type Withdrawal = { amount: number; fee: number; status: string };
++export function walletTotals(sales: Sale[], payouts: Withdrawal[]) {
++  const gross = sales.reduce((sum,p)=>sum+p.amount,0);
++  const earned = sales.reduce((sum,p)=>sum+(p.teacherShareAmount??0),0);
++  const refunds = sales.reduce((sum,p)=>sum+(p.refund?.amount??0),0);
++  const debits = sales.reduce((sum,p)=>sum+(p.refund?.teacherDebit??0),0);
++  const saleFees = sales.reduce((sum,p)=>sum+(p.cost?.amount??0),0);
++  const paid = payouts.filter(p=>p.status==='PAID').reduce((sum,p)=>sum+p.amount,0);
++  const payoutFees = payouts.filter(p=>p.status==='PAID').reduce((sum,p)=>sum+p.fee,0);
++  const reserved = payouts.filter(p=>['REQUESTED','PROCESSING'].includes(p.status)).reduce((sum,p)=>sum+p.amount,0);
++  const unallocated = sales.filter(p=>p.teacherShareAmount===null && !p.refund).reduce((sum,p)=>sum+p.amount,0);
++  return {gross,earned,refunds,debits,saleFees,paid,payoutFees,received:paid-payoutFees,reserved,
++    netEarned:earned-debits, available:earned-debits-paid-reserved,
++    platformNet:gross-refunds-earned+debits-saleFees-unallocated,unallocated};
++}
++export function validIban(iban: string) {
++  return /^IR\d{24}$/.test(iban) && BigInt(iban.slice(4)+'1827'+iban.slice(2,4))%BigInt(97)===BigInt(1);
++}
+diff --git a/lib/wallet.ts b/lib/wallet.ts
+new file mode 100644
+index 0000000..908f6ea
+--- /dev/null
++++ b/lib/wallet.ts
+@@ -0,0 +1,13 @@
++import type { Prisma } from "@prisma/client";
++import { prisma } from "@/lib/prisma";
++import { walletTotals } from "@/lib/wallet-math";
++
++type DB = Pick<Prisma.TransactionClient, "payment" | "payout">;
++export async function readWallet(teacherId: string | undefined, db: DB = prisma) {
++  const rawSales = await db.payment.findMany({ where: { ...(teacherId ? { course: { teacherId }, userId: { not: teacherId } } : {}), status: "SUCCESS", isTest: false,
++    OR: [{ transactionId: null }, { transactionId: { not: { startsWith: "MOCK-" } } }] },
++    select: { id: true, userId: true, amount: true, teacherShareAmount: true, paidAt: true, course: { select: { title: true, teacherId: true, teacher: { select: { role: true } } } }, refund: true, cost: true } });
++  const sales = teacherId ? rawSales : rawSales.filter(sale=>sale.userId!==sale.course.teacherId).map(sale=>sale.course.teacher.role==="TEACHER" ? sale : ({...sale,teacherShareAmount:0,refund:sale.refund?{...sale.refund,teacherDebit:0}:null}));
++  const payouts = await db.payout.findMany({ where: teacherId ? { teacherId } : {}, orderBy: { requestedAt: "desc" } });
++  return {sales,payouts,totals:walletTotals(sales,payouts)};
++}
+diff --git a/prisma/migrations/20260915000200_settlement_ledger/migration.sql b/prisma/migrations/20260915000200_settlement_ledger/migration.sql
+new file mode 100644
+index 0000000..140ed3a
+--- /dev/null
++++ b/prisma/migrations/20260915000200_settlement_ledger/migration.sql
+@@ -0,0 +1,87 @@
++-- CreateTable
++CREATE TABLE "FinanceSettings" (
++    "id" TEXT NOT NULL DEFAULT 'main',
++    "minimumPayout" INTEGER,
++    "updatedAt" TIMESTAMP(3) NOT NULL,
++
++    CONSTRAINT "FinanceSettings_pkey" PRIMARY KEY ("id")
++);
++
++-- CreateTable
++CREATE TABLE "Payout" (
++    "id" TEXT NOT NULL,
++    "teacherId" TEXT NOT NULL,
++    "amount" INTEGER NOT NULL,
++    "status" TEXT NOT NULL DEFAULT 'REQUESTED',
++    "iban" TEXT NOT NULL,
++    "accountName" TEXT NOT NULL,
++    "fee" INTEGER NOT NULL DEFAULT 0,
++    "reference" TEXT,
++    "note" TEXT,
++    "requestedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
++    "cutoffAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
++    "paidAt" TIMESTAMP(3),
++    "receivedAt" TIMESTAMP(3),
++    "processedBy" TEXT,
++
++    CONSTRAINT "Payout_pkey" PRIMARY KEY ("id")
++);
++
++-- CreateTable
++CREATE TABLE "PaymentRefund" (
++    "id" TEXT NOT NULL,
++    "paymentId" TEXT NOT NULL,
++    "amount" INTEGER NOT NULL,
++    "teacherDebit" INTEGER NOT NULL,
++    "reference" TEXT NOT NULL,
++    "reason" TEXT NOT NULL,
++    "refundedAt" TIMESTAMP(3) NOT NULL,
++    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
++    "createdBy" TEXT NOT NULL,
++
++    CONSTRAINT "PaymentRefund_pkey" PRIMARY KEY ("id")
++);
++
++-- CreateTable
++CREATE TABLE "PaymentCost" (
++    "id" TEXT NOT NULL,
++    "paymentId" TEXT NOT NULL,
++    "amount" INTEGER NOT NULL,
++    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
++    "createdBy" TEXT NOT NULL,
++
++    CONSTRAINT "PaymentCost_pkey" PRIMARY KEY ("id")
++);
++
++-- CreateIndex
++CREATE UNIQUE INDEX "Payout_reference_key" ON "Payout"("reference");
++
++-- CreateIndex
++CREATE INDEX "Payout_teacherId_status_idx" ON "Payout"("teacherId", "status");
++
++-- CreateIndex
++CREATE UNIQUE INDEX "PaymentRefund_paymentId_key" ON "PaymentRefund"("paymentId");
++
++-- CreateIndex
++CREATE UNIQUE INDEX "PaymentRefund_reference_key" ON "PaymentRefund"("reference");
++
++-- CreateIndex
++CREATE UNIQUE INDEX "PaymentCost_paymentId_key" ON "PaymentCost"("paymentId");
++
++-- AddForeignKey
++ALTER TABLE "Payout" ADD CONSTRAINT "Payout_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
++
++-- AddForeignKey
++ALTER TABLE "PaymentRefund" ADD CONSTRAINT "PaymentRefund_paymentId_fkey" FOREIGN KEY ("paymentId") REFERENCES "Payment"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
++
++-- AddForeignKey
++ALTER TABLE "PaymentCost" ADD CONSTRAINT "PaymentCost_paymentId_fkey" FOREIGN KEY ("paymentId") REFERENCES "Payment"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
++
++CREATE UNIQUE INDEX "Payout_one_open_per_teacher" ON "Payout"("teacherId") WHERE "status" IN ('REQUESTED','PROCESSING');
++ALTER TABLE "Payout" ADD CONSTRAINT "Payout_amount_check" CHECK ("amount" > 0 AND "fee" >= 0 AND "fee" < "amount"),
++ADD CONSTRAINT "Payout_status_check" CHECK ("status" IN ('REQUESTED','PROCESSING','PAID','REJECTED')),
++ADD CONSTRAINT "Payout_paid_check" CHECK ("status" <> 'PAID' OR ("reference" IS NOT NULL AND "paidAt" IS NOT NULL)),
++ADD CONSTRAINT "Payout_received_check" CHECK ("receivedAt" IS NULL OR "status" = 'PAID');
++ALTER TABLE "FinanceSettings" ADD CONSTRAINT "minimumPayout_check" CHECK ("minimumPayout" > 0);
++ALTER TABLE "PaymentRefund" ADD CONSTRAINT "refund_amount_check" CHECK ("amount" > 0 AND "teacherDebit" >= 0 AND "teacherDebit" <= "amount");
++ALTER TABLE "PaymentCost" ADD CONSTRAINT "cost_amount_check" CHECK ("amount" >= 0);
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index c1b57ee..7552504 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -52,6 +52,7 @@ model User {
+   passwordHash String?
+   role         UserRole @default(STUDENT)
+ 
++  payouts     Payout[]
+   courses     Course[]
+   enrollments Enrollment[]
+   payments    Payment[]
+@@ -160,6 +161,8 @@ model Payment {
+   userId   String
+   courseId String
+ 
++  refund PaymentRefund?
++  cost PaymentCost?
+   teacherSharePercent Int?
+   teacherShareAmount  Int?
+   isTest             Boolean?
+@@ -199,3 +202,50 @@ model Lesson {
+ 
+   @@unique([sectionId, order])
+ }
++
++model FinanceSettings {
++  id String @id @default("main")
++  minimumPayout Int?
++  updatedAt DateTime @updatedAt
++}
++
++model Payout {
++  id String @id @default(cuid())
++  teacherId String
++  teacher User @relation(fields: [teacherId], references: [id], onDelete: Restrict)
++  amount Int
++  status String @default("REQUESTED")
++  iban String
++  accountName String
++  fee Int @default(0)
++  reference String? @unique
++  note String?
++  requestedAt DateTime @default(now())
++  cutoffAt DateTime @default(now())
++  paidAt DateTime?
++  receivedAt DateTime?
++  processedBy String?
++  @@index([teacherId, status])
++}
++
++model PaymentRefund {
++  id String @id @default(cuid())
++  paymentId String @unique
++  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
++  amount Int
++  teacherDebit Int
++  reference String @unique
++  reason String
++  refundedAt DateTime
++  createdAt DateTime @default(now())
++  createdBy String
++}
++
++model PaymentCost {
++  id String @id @default(cuid())
++  paymentId String @unique
++  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
++  amount Int
++  createdAt DateTime @default(now())
++  createdBy String
++}
+diff --git a/tests/panel-shell.test.cjs b/tests/panel-shell.test.cjs
+index 1d29087..5b43923 100644
+--- a/tests/panel-shell.test.cjs
++++ b/tests/panel-shell.test.cjs
+@@ -32,7 +32,7 @@ const link = {default:({href,children,...props})=>React.createElement('a',{href,
+ async function shell({role='STUDENT',sessionRole=role,name='سارا احمدی',email=null,phone=null,area='student',session=true,exists=true}={}) {
+   const {default: Shell}=load('components/panel/panel-shell.tsx',{
+     'next/link':link,
+-    'next/navigation':{redirect:(url)=>{throw new Error('REDIRECT '+url);}},
++    'next/navigation':{usePathname:()=>area==='teacher'?'/teacher':area==='admin'?'/admin':'/dashboard',redirect:(url)=>{throw new Error('REDIRECT '+url);}},
+     '@/lib/auth':{getSession:async()=>session?{userId:'user',role:sessionRole}:null},
+     '@/lib/prisma':{prisma:{user:{findUnique:async(query)=>{
+       assert.equal(query.where.id,'user');
+@@ -48,7 +48,7 @@ for(const [role,label] of [['STUDENT','دانش‌آموز'],['TEACHER','مدر
+   assert.match(html,/<header/); assert.match(html,/<footer/);
+   assert.match(html,/سارا احمدی/); assert.ok(html.includes('سطح دسترسی: '+label));
+   assert.equal((html.match(/خروج از حساب/g)||[]).length,1);
+-  assert.equal(html.includes('href="/teacher"'),role!=='STUDENT');
++  assert.equal(html.includes('href="/teacher"'),role==='TEACHER');
+   assert.equal(html.includes('href="/admin"'),role==='ADMIN');
+   assert.match(html,/<main>محتوای پنل/);
+  });
+diff --git a/tests/settlements.test.cjs b/tests/settlements.test.cjs
+new file mode 100644
+index 0000000..a2808a3
+--- /dev/null
++++ b/tests/settlements.test.cjs
+@@ -0,0 +1,128 @@
++const test = require('node:test');
++const assert = require('node:assert/strict');
++const fs = require('node:fs');
++const path = require('node:path');
++const ts = require('typescript');
++const React = require('react');
++const { renderToStaticMarkup } = require('react-dom/server');
++
++// Load the real TypeScript handlers/components with isolated boundary doubles.
++// These tests require no credentials and never contact a real database.
++function load(file, mocks = {}) {
++  const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
++  const { outputText } = ts.transpileModule(source, {
++    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
++  });
++  const module = { exports: {} };
++  const resolve = (name) => {
++    if (name in mocks) return mocks[name];
++    if (name.startsWith('@/')) {
++      const base = name.slice(2);
++      const ext = fs.existsSync(path.join(__dirname, '..', `${base}.tsx`)) ? '.tsx' : '.ts';
++      return load(base + ext, mocks);
++    }
++    return require(name);
++  };
++  new Function('require', 'module', 'exports', outputText)(resolve, module, module.exports);
++  return module.exports;
++}
++
++const {walletTotals,validIban}=load('lib/wallet-math.ts');
++const {panelNavigation,activeNavigation}=load('lib/panel-navigation.ts');
++const sale={amount:1000,teacherShareAmount:700,refund:null,cost:{amount:20}};
++test('wallet subtracts paid and both kinds of reservation, without deducting transfer fee twice',()=>{
++ const total=walletTotals([sale],[{amount:200,fee:10,status:'PAID'},{amount:100,fee:0,status:'PROCESSING'},{amount:50,fee:0,status:'REJECTED'}]);
++ assert.equal(total.available,400);assert.equal(total.received,190);assert.equal(total.paid,200);assert.equal(total.platformNet,280);
++});
++test('refund after payout creates carried debt instead of resetting paid history',()=>{
++ const total=walletTotals([{...sale,refund:{amount:1000,teacherDebit:700}}],[{amount:700,fee:0,status:'PAID'}]);
++ assert.equal(total.available,-700);assert.equal(total.platformNet,-20);assert.equal(total.paid,700);
++});
++test('unknown share is never made withdrawable',()=>{
++ const total=walletTotals([{...sale,teacherShareAmount:null}],[]);assert.equal(total.available,0);assert.equal(total.unallocated,1000);assert.equal(total.platformNet,-20);
++});
++test('admin navigation has no personal teaching, enrollment or payment tabs',()=>{
++ const items=panelNavigation('ADMIN');assert.deepEqual(items.map(x=>x.href),['/admin','/admin/courses','/admin/finance','/admin/settlements']);
++});
++for(const [role,path,active] of [['TEACHER','/teacher/finance','/teacher/finance'],['TEACHER','/teacher/courses/c','/teacher'],['ADMIN','/admin/finance','/admin/finance'],['ADMIN','/teacher/courses/c/students/e','/admin/courses'],['STUDENT','/payment/success','/payments']])test('most specific active tab for '+path,()=>{
++ assert.equal(activeNavigation(path,panelNavigation(role),role),active);
++});
++test('IBAN validation rejects wrong check digits and accepts valid checksum',()=>{
++ assert.equal(validIban('IR062960000000100324200001'),true);assert.equal(validIban('IR002960000000100324200001'),false);assert.equal(validIban('oops'),false);
++});
++const teacher={id:'teacher',role:'TEACHER'},admin={id:'admin',role:'ADMIN'};
++const payout={id:'p',teacherId:'teacher',amount:500,fee:0,status:'REQUESTED',requestedAt:new Date('2026-01-01'),processedBy:null};
++function service(overrides={}) {
++ const events=[];
++ const tx={
++  $queryRaw:async()=>{events.push('lock');return [{id:'teacher'}];},
++  financeSettings:{findUnique:async()=>({minimumPayout:100})},
++  payment:{findMany:async()=>[sale]},
++  payout:{findMany:async()=>[],create:async({data})=>{events.push(data);return data;}},
++  ...overrides,
++ };
++ return {events,tx,...load('lib/settlement-service.ts',{'@/lib/prisma':{prisma:{$transaction:fn=>fn(tx)}}})};
++}
++const request={action:'request',amount:500,iban:'IR062960000000100324200001',accountName:'نام آزمایشی'};
++test('request reserves verified balance after teacher lock',async()=>{
++ const {executeSettlement,events}=service();await executeSettlement(teacher,request);assert.equal(events[0],'lock');assert.equal(events[1].teacherId,'teacher');assert.equal(events[1].amount,500);
++});
++test('requests below minimum, above balance or while open are blocked',async()=>{
++ for(const amount of [99,701])await assert.rejects(service().executeSettlement(teacher,{...request,amount}));
++ await assert.rejects(service({payout:{findMany:async()=>[payout]}}).executeSettlement(teacher,request));
++ await assert.rejects(service({financeSettings:{findUnique:async()=>null}}).executeSettlement(teacher,request));
++});
++test('only designated roles can execute ledger operations',async()=>{
++ await assert.rejects(service().executeSettlement(admin,request),/نقش/);
++ await assert.rejects(service().executeSettlement(teacher,{action:'settings',minimum:100}),/نقش/);
++});
++test('second admin cannot complete a claimed payout',async()=>{
++ const target={...payout,status:'PROCESSING',processedBy:'other-admin'};
++ const svc=service({payout:{findUnique:async()=>target,findUniqueOrThrow:async()=>target}});
++ await assert.rejects(svc.executeSettlement(admin,{action:'pay',id:'p',fee:0,reference:'r123',paidAt:'2026-09-01T12:00:00Z'}),/مدیر دیگری/);
++});
++test('completed payouts cannot be paid again',async()=>{
++ const target={...payout,status:'PAID'};
++ const svc=service({payout:{findUnique:async()=>target,findUniqueOrThrow:async()=>target}});
++ await assert.rejects(svc.executeSettlement(admin,{action:'pay',id:'p',fee:0,reference:'r123',paidAt:'2026-09-01T12:00:00Z'}),/قبلاً/);
++});
++test('acknowledgment is own-only and does not alter amount or paid status',async()=>{
++ let data;
++ const target={...payout,status:'PAID'};
++ const svc=service({payout:{findUnique:async()=>target,findUniqueOrThrow:async()=>target,updateMany:async query=>{data=query;}}});
++ await assert.rejects(svc.executeSettlement({id:'other',role:'TEACHER'},{action:'receive',id:'p'}),/پیدا نشد/);
++ await svc.executeSettlement(teacher,{action:'receive',id:'p'});
++ assert.deepEqual(Object.keys(data.data),['receivedAt']);assert.equal(data.where.receivedAt,null);
++});
++test('full refund reverses frozen share and releases pending requests',async()=>{
++ let refund,cancelled=false,released=false;
++ const payment={id:'sale',userId:'student',courseId:'c',amount:1000,teacherShareAmount:700,status:'SUCCESS',isTest:false,transactionId:'real',paidAt:new Date('2026-01-01'),refund:null,course:{teacherId:'teacher'}};
++ const svc=service({payment:{findUnique:async()=>payment,findUniqueOrThrow:async()=>payment,count:async()=>0},payout:{count:async()=>0,updateMany:async({where,data})=>{assert.equal(where.status,'REQUESTED');assert.equal(data.status,'REJECTED');released=true;}},paymentRefund:{create:async({data})=>{refund=data;}},enrollment:{updateMany:async({data})=>{cancelled=data.status==='CANCELLED';}}});
++ await svc.executeSettlement(admin,{action:'refund',paymentId:'sale',reference:'refund1',reason:'لغو دوره',refundedAt:'2026-09-01T12:00:00Z'});
++ assert.equal(refund.teacherDebit,700);assert.equal(refund.amount,1000);assert.ok(cancelled&&released);
++});
++test('invalid money and future payment dates fail input validation',()=>{
++ const {settlementInput}=service();
++ assert.equal(settlementInput.safeParse({action:'settings',minimum:0}).success,false);
++ assert.equal(settlementInput.safeParse({action:'settings',minimum:100.5}).success,false);
++ assert.equal(settlementInput.safeParse({action:'pay',id:'p',fee:0,reference:'ref',paidAt:'2999-01-01T00:00:00Z'}).success,false);
++});
++test('admin claims then records only the reserved gross amount and explicit fee',async()=>{
++ let current={...payout};
++ const db={findUnique:async()=>current,findUniqueOrThrow:async()=>current,findMany:async()=>[current],update:async({data})=>{current={...current,...data};return current;}};
++ const svc=service({payout:db});
++ await svc.executeSettlement(admin,{action:'begin',id:'p'});assert.equal(current.status,'PROCESSING');assert.equal(current.processedBy,'admin');
++ await svc.executeSettlement(admin,{action:'pay',id:'p',fee:10,reference:'bank123',paidAt:'2026-09-01T12:00:00Z'});
++ assert.equal(current.status,'PAID');assert.equal(current.amount,500);assert.equal(current.fee,10);
++ const total=walletTotals([sale],[current]);assert.equal(total.available,200);assert.equal(total.received,490);
++});
++test('refund cannot interfere with an in-flight bank transfer',async()=>{
++ const payment={id:'sale',userId:'student',amount:1000,status:'SUCCESS',isTest:false,transactionId:'real',refund:null,paidAt:new Date('2026-01-01'),course:{teacherId:'teacher'}};
++ const svc=service({payment:{findUnique:async()=>payment,findUniqueOrThrow:async()=>payment},payout:{count:async()=>1},paymentRefund:{create:()=>assert.fail('do not change ledger')}});
++ await assert.rejects(svc.executeSettlement(admin,{action:'refund',paymentId:'sale',reference:'r123',reason:'برگشت',refundedAt:'2026-09-01T12:00:00Z'}),/واریز در حال انجام/);
++});
++test('recorded refund cannot be recorded again',async()=>{
++ const payment={id:'sale',userId:'student',amount:1000,status:'SUCCESS',isTest:false,refund:{id:'old'},course:{teacherId:'teacher'}};
++ const svc=service({payment:{findUnique:async()=>payment,findUniqueOrThrow:async()=>payment}});
++ await assert.rejects(svc.executeSettlement(admin,{action:'refund',paymentId:'sale',reference:'r123',reason:'برگشت',refundedAt:'2026-09-01T12:00:00Z'}),/قبلاً بازپرداخت/);
++});
+-- 
+2.51.1
+

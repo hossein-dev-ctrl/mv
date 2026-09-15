@@ -31,6 +31,7 @@ export default async function PaymentSuccessPage({ searchParams }: Props) {
 
     include: {
       course: true,
+      refund: true,
     },
   });
 
@@ -47,11 +48,11 @@ export default async function PaymentSuccessPage({ searchParams }: Props) {
         <div className="text-6xl">🎉</div>
 
         <h1 className="mt-5 text-3xl font-bold text-green-600">
-          پرداخت موفق بود
+          {payment.refund ? "وجه این پرداخت بازگردانده شده است" : "پرداخت موفق بود"}
         </h1>
 
         <p className="mt-3 text-gray-600">
-          پرداخت شما با موفقیت ثبت شده است. وضعیت دسترسی دوره را در بخش دوره‌های ثبت‌نام‌شده ببینید.
+          {payment.refund ? `بازپرداخت کامل به مبلغ ${payment.refund.amount.toLocaleString("fa-IR")} تومان ثبت شده است. شماره پیگیری: ${payment.refund.reference}` : "پرداخت شما با موفقیت ثبت شده است. وضعیت دسترسی دوره را در بخش دوره‌های ثبت‌نام‌شده ببینید."}
         </p>
 
         <div className="mt-6 rounded-2xl bg-gray-50 p-5 text-right">

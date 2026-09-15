@@ -15,6 +15,8 @@ export default async function TeacherPage() {
     redirect("/dashboard");
   }
 
+  if (session.role === "ADMIN") redirect("/admin/courses");
+
   const courses = await prisma.course.findMany({
     where: {
       teacherId: session.userId,

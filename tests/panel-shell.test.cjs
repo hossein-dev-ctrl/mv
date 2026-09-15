@@ -32,7 +32,7 @@ const link = {default:({href,children,...props})=>React.createElement('a',{href,
 async function shell({role='STUDENT',sessionRole=role,name='سارا احمدی',email=null,phone=null,area='student',session=true,exists=true}={}) {
   const {default: Shell}=load('components/panel/panel-shell.tsx',{
     'next/link':link,
-    'next/navigation':{redirect:(url)=>{throw new Error('REDIRECT '+url);}},
+    'next/navigation':{usePathname:()=>area==='teacher'?'/teacher':area==='admin'?'/admin':'/dashboard',redirect:(url)=>{throw new Error('REDIRECT '+url);}},
     '@/lib/auth':{getSession:async()=>session?{userId:'user',role:sessionRole}:null},
     '@/lib/prisma':{prisma:{user:{findUnique:async(query)=>{
       assert.equal(query.where.id,'user');
@@ -48,7 +48,7 @@ for(const [role,label] of [['STUDENT','دانش‌آموز'],['TEACHER','مدر�
   assert.match(html,/<header/); assert.match(html,/<footer/);
   assert.match(html,/سارا احمدی/); assert.ok(html.includes('سطح دسترسی: '+label));
   assert.equal((html.match(/خروج از حساب/g)||[]).length,1);
-  assert.equal(html.includes('href="/teacher"'),role!=='STUDENT');
+  assert.equal(html.includes('href="/teacher"'),role==='TEACHER');
   assert.equal(html.includes('href="/admin"'),role==='ADMIN');
   assert.match(html,/<main>محتوای پنل/);
  });

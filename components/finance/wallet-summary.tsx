@@ -1,0 +1,5 @@
+import type { walletTotals } from "@/lib/wallet-math";
+export default function WalletSummary({totals}:{totals:ReturnType<typeof walletTotals>}) {
+ const items=[['درآمد خالص مدرس',totals.netEarned],['تسویه‌شده از مانده',totals.paid],['خالص واریزشده به حساب',totals.received],['کارمزد انتقال به مدرس',totals.payoutFees],['رزرو درخواست‌های باز',totals.reserved],['ماندهٔ قابل درخواست',totals.available],['بازپرداخت به مشتریان',totals.refunds],['کارمزد فروش (سهم پلتفرم)',totals.saleFees],['خالص سهم پلتفرم',totals.platformNet]] as const;
+ return <dl className="my-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{items.map(([label,value])=><div key={label} className={`rounded-2xl border p-4 ${label==='ماندهٔ قابل درخواست'?'border-indigo-200 bg-indigo-50':'border-slate-200 bg-white'}`}><dt className="text-xs text-slate-500">{label}</dt><dd className="mt-2 text-lg font-bold"><bdi>{value.toLocaleString('fa-IR')}</bdi> <small className="font-normal">تومان</small></dd></div>)}</dl>;
+}

@@ -14,12 +14,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ te
   }
   const { teacherId } = await params;
   const teacher = await prisma.user.findUnique({ where: { id: teacherId }, select: { role: true } });
-  if (!teacher || !["TEACHER", "ADMIN"].includes(teacher.role)) return Response.json({ message: "مدرس پیدا نشد." }, { status: 404 });
+  if (!teacher || teacher.role !== "TEACHER") return Response.json({ message: "مدرس پیدا نشد." }, { status: 404 });
   const count = await prisma.$transaction(async tx => {
     await tx.user.update({ where: { id: teacherId }, data: { teacherSharePercent: body.percent } });
     if (!body.applyUnallocated) return 0;
     const payments = await tx.payment.findMany({
-      where: { course: { teacherId }, userId: { not: teacherId }, status: "SUCCESS", teacherShareAmount: null, isTest: false,
+      where: { course: { teacherId }, userId: { not: teacherId }, status: "SUCCESS", refund: null, teacherShareAmount: null, isTest: false,
         OR: [{ transactionId: null }, { transactionId: { not: { startsWith: "MOCK-" } } }] },
       select: { id: true, amount: true },
     });

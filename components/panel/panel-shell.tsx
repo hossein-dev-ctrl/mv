@@ -1,4 +1,6 @@
 import Link from "next/link";
+import Navigation from "@/components/panel/navigation";
+import { panelNavigation } from "@/lib/panel-navigation";
 import { redirect } from "next/navigation";
 import { getSession, type UserRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -44,15 +46,7 @@ export default async function PanelShell({ children, area }: {
   if (area === "teacher" && (!user || user.role === "STUDENT")) redirect("/dashboard");
 
   const name = user?.name?.trim() || user?.email || user?.phone || "کاربر";
-  const navigation = [
-    ...(user?.role === "ADMIN" ? [{ href: "/admin", label: "پنل مدیر", area: "admin" }] : []),
-    ...(user && user.role !== "STUDENT" ? [{ href: "/teacher", label: "مدیریت دوره‌های من", area: "teacher" }] : []),
-    ...(user?.role === "ADMIN" ? [{ href: "/admin/finance", label: "مالی کل", area: "finance-admin" }] : []),
-    ...(user && user.role !== "STUDENT" ? [{ href: "/teacher/finance", label: "درآمد دوره‌های من", area: "finance-teacher" }] : []),
-    ...(user ? [{ href: "/dashboard", label: "دوره‌های ثبت‌نام‌شده", area: "student" }] : []),
-    ...(user ? [{ href: "/payments", label: "سوابق پرداخت من", area: "payments" }] : []),
-    { href: "/courses", label: "همهٔ دوره‌ها", area: "courses" },
-  ];
+  const navigation = panelNavigation(user?.role);
 
   return (
     <div dir="rtl" className="flex min-h-screen flex-col bg-slate-50">
@@ -80,15 +74,7 @@ export default async function PanelShell({ children, area }: {
         </div>
         <div className="border-t border-slate-100">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-            <nav aria-label="ناوبری پنل" className="flex flex-wrap gap-2">
-              {navigation.map((item) => (
-                <Link key={item.href} href={item.href}
-                  aria-current={item.area === area ? "location" : undefined}
-                  className={`rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-indigo-600 ${item.area === area ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50"}`}>
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
+            <Navigation items={navigation} role={user?.role} />
             <span className="text-xs text-slate-500">بخش فعلی: {areas[area]}</span>
           </div>
         </div>

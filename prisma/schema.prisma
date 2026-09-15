@@ -52,6 +52,7 @@ model User {
   passwordHash String?
   role         UserRole @default(STUDENT)
 
+  payouts     Payout[]
   courses     Course[]
   enrollments Enrollment[]
   payments    Payment[]
@@ -160,6 +161,8 @@ model Payment {
   userId   String
   courseId String
 
+  refund PaymentRefund?
+  cost PaymentCost?
   teacherSharePercent Int?
   teacherShareAmount  Int?
   isTest             Boolean?
@@ -198,4 +201,51 @@ model Lesson {
   updatedAt DateTime @updatedAt
 
   @@unique([sectionId, order])
+}
+
+model FinanceSettings {
+  id String @id @default("main")
+  minimumPayout Int?
+  updatedAt DateTime @updatedAt
+}
+
+model Payout {
+  id String @id @default(cuid())
+  teacherId String
+  teacher User @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  amount Int
+  status String @default("REQUESTED")
+  iban String
+  accountName String
+  fee Int @default(0)
+  reference String? @unique
+  note String?
+  requestedAt DateTime @default(now())
+  cutoffAt DateTime @default(now())
+  paidAt DateTime?
+  receivedAt DateTime?
+  processedBy String?
+  @@index([teacherId, status])
+}
+
+model PaymentRefund {
+  id String @id @default(cuid())
+  paymentId String @unique
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  amount Int
+  teacherDebit Int
+  reference String @unique
+  reason String
+  refundedAt DateTime
+  createdAt DateTime @default(now())
+  createdBy String
+}
+
+model PaymentCost {
+  id String @id @default(cuid())
+  paymentId String @unique
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  amount Int
+  createdAt DateTime @default(now())
+  createdBy String
 }
