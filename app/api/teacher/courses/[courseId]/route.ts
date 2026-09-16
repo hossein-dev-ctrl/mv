@@ -79,6 +79,8 @@ export async function DELETE(
      * چون سابقه مالی نباید از بین برود.
      */
 
+    if(await prisma.submission.count({where:{assignment:{lesson:{section:{courseId}}}}}))return Response.json({message:"این محتوا پاسخ تکلیف دارد؛ برای حفظ کارنامه، به‌جای حذف آن را از انتشار خارج کنید."},{status:409});
+
     const paymentCount = await prisma.payment.count({
       where: {
         courseId,

@@ -1,3 +1,4 @@
+import LessonAssignment from "@/components/assignments/lesson-assignment";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -177,6 +178,8 @@ export default async function LessonPage({ params }: Props) {
                 hasCompletedVideo={Boolean(progress?.videoCompletedAt)}
               />
 
+              <LessonAssignment lessonId={lesson.id} enrollmentId={enrollment.id}/>
+              <Link href={`/dashboard/courses/${course.id}/grades`} className="mt-4 inline-block text-sm text-indigo-600">کارنامهٔ تکلیف‌های این دوره</Link>
               {/* فایل‌ها */}
 
               {lesson.files.length > 0 && (

@@ -175,6 +175,7 @@ export default async function DashboardPage() {
                       </div>
                     </div>
 
+                    <Link href={`/dashboard/courses/${enrollment.courseId}/grades`} className="mt-4 inline-block text-sm text-indigo-600">کارنامهٔ تکلیف‌ها</Link>
                     {/* ادامه یادگیری */}
 
                     <div className="mt-6">

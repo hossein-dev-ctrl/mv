@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 
-export async function getLessonAccess(userId: string, lessonId: string) {
-  const lesson = await prisma.lesson.findUnique({
+type AccessDB=Pick<import("@prisma/client").Prisma.TransactionClient,"lesson"|"enrollment">;
+export async function getLessonAccess(userId: string, lessonId: string, db:AccessDB=prisma) {
+  const lesson = await db.lesson.findUnique({
     where: {
       id: lessonId,
     },
@@ -47,7 +48,7 @@ include: {
     };
   }
 
-  const enrollment = await prisma.enrollment.findUnique({
+  const enrollment = await db.enrollment.findUnique({
     where: {
       userId_courseId: {
         userId,
@@ -72,7 +73,7 @@ include: {
    * تمام درس‌های منتشرشده دوره
    */
 
-  const lessons = await prisma.lesson.findMany({
+  const lessons = await db.lesson.findMany({
     where: {
       section: {
         courseId: course.id,

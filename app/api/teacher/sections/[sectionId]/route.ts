@@ -64,6 +64,8 @@ export async function DELETE(
       );
     }
 
+    if(await prisma.submission.count({where:{assignment:{lesson:{sectionId}}}}))return Response.json({message:"این محتوا پاسخ تکلیف دارد؛ برای حفظ کارنامه، به‌جای حذف آن را از انتشار خارج کنید."},{status:409});
+
     await prisma.courseSection.delete({
       where: {
         id: sectionId,

@@ -69,7 +69,7 @@ export default async function CourseManagementPage({ params }: PageProps) {
 
   return (
     <main dir="rtl" className="min-h-screen bg-slate-50 px-4 py-6 sm:p-8">
-      <div className="mx-auto mb-5 flex max-w-7xl flex-wrap items-center gap-4"><DeliveryStatus status={course.deliveryStatus}/><Link href={`/teacher/courses/${course.id}/interests`} className="text-sm text-indigo-700">فهرست متقاضیان پیش‌ثبت‌نام</Link></div>
+      <div className="mx-auto mb-5 flex max-w-7xl flex-wrap items-center gap-4"><DeliveryStatus status={course.deliveryStatus}/><Link href={`/teacher/courses/${course.id}/assignments`} className="text-sm text-indigo-700">تکلیف‌ها و ارزیابی</Link><Link href={`/teacher/courses/${course.id}/interests`} className="text-sm text-indigo-700">فهرست متقاضیان پیش‌ثبت‌نام</Link></div>
       <div className="mx-auto max-w-7xl">
         <nav aria-label="مسیر مدیریت دوره" className="mb-5">
           <Link href="/teacher" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 shadow-sm transition hover:border-indigo-200 hover:text-indigo-700">

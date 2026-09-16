@@ -44,6 +44,7 @@ export async function clearFinanceDemo(ownerId:string) {
   await tx.paymentRefund.deleteMany({where:{paymentId:{in:ids}}});await tx.paymentCost.deleteMany({where:{paymentId:{in:ids}}});
   await tx.payout.deleteMany({where:{teacherId:{in:userIds}}});
   await tx.payment.deleteMany({where:{id:{in:ids}}});
+  await tx.submission.deleteMany({where:{assignment:{lesson:{section:{courseId:{in:courseIds}}}},enrollment:{userId:{in:userIds}}}});
   await tx.enrollment.deleteMany({where:{courseId:{in:courseIds},userId:{in:userIds}}});
   await tx.course.deleteMany({where:{id:{in:courseIds},demoBatchId:batch.id}});
   await tx.user.deleteMany({where:{id:{in:userIds},demoBatchId:batch.id}});

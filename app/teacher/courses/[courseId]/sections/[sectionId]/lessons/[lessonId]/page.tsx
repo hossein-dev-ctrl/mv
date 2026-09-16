@@ -1,3 +1,4 @@
+import {AssignmentEditor} from "@/components/assignments/forms";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import EditLessonForm from "@/components/teacher/edit-lesson-form";
@@ -42,6 +43,7 @@ export default async function LessonManagementPage({ params }: PageProps) {
         },
       },
       files: true,
+      assignment:true,
     },
   });
 
@@ -98,6 +100,8 @@ export default async function LessonManagementPage({ params }: PageProps) {
                 </p>
               )}
             </section>
+            <AssignmentEditor lessonId={lessonId} assignment={lesson.assignment}/>
+            <Link href={`/teacher/courses/${courseId}/assignments`} className="inline-block text-sm text-indigo-600">بررسی پاسخ‌ها و ارزیابی تکلیف‌ها</Link>
             <EditLessonForm
               lessonId={lesson.id}
               initialTitle={lesson.title}

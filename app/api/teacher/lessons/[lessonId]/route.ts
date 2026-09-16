@@ -173,6 +173,8 @@ export async function DELETE(
       return Response.json({ message: "دسترسی غیرمجاز." }, { status: 403 });
     }
 
+    if(await prisma.submission.count({where:{assignment:{lessonId}}}))return Response.json({message:"این محتوا پاسخ تکلیف دارد؛ برای حفظ کارنامه، به‌جای حذف آن را از انتشار خارج کنید."},{status:409});
+
     await prisma.lesson.delete({
       where: {
         id: lessonId,

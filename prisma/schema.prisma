@@ -124,6 +124,7 @@ model LessonFile {
 }
 
 model Enrollment {
+  submissions Submission[]
   id       String @id @default(cuid())
   userId   String
   courseId String
@@ -189,6 +190,7 @@ model Payment {
 }
 
 model Lesson {
+  assignment Assignment?
   id        String @id @default(cuid())
   sectionId String
 
@@ -291,4 +293,39 @@ model PayoutReview {
  createdAt DateTime @default(now())
  payout Payout @relation(fields:[payoutId],references:[id],onDelete:Cascade)
  @@index([payoutId,createdAt])
+}
+
+model Assignment {
+ id String @id @default(cuid())
+ lessonId String @unique
+ lesson Lesson @relation(fields:[lessonId],references:[id],onDelete:Cascade)
+ title String
+ instructions String
+ published Boolean @default(false)
+ version Int @default(1)
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ submissions Submission[]
+}
+model Submission {
+ isLatest Boolean @default(true)
+ id String @id @default(cuid())
+ assignmentId String
+ assignment Assignment @relation(fields:[assignmentId],references:[id],onDelete:Restrict)
+ enrollmentId String
+ enrollment Enrollment @relation(fields:[enrollmentId],references:[id],onDelete:Cascade)
+ attempt Int
+ answer String
+ projectUrl String?
+ assignmentTitle String
+ assignmentInstructions String
+ status String @default("PENDING")
+ score Int?
+ feedback String?
+ reviewedBy String?
+ reviewedAt DateTime?
+ createdAt DateTime @default(now())
+ @@unique([assignmentId,enrollmentId,attempt])
+ @@index([assignmentId,status,createdAt])
+ @@index([enrollmentId])
 }
