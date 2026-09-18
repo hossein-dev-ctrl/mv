@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth";
+import { getManagementSession } from "@/lib/management-session";
 import { prisma } from "@/lib/prisma";
 
 type RouteProps = {
@@ -9,7 +9,7 @@ type RouteProps = {
 
 export async function PATCH(request: Request, { params }: RouteProps) {
   try {
-    const session = await getSession();
+    const session = await getManagementSession();
 
     if (!session) {
       return Response.json(
@@ -134,7 +134,7 @@ export async function DELETE(
   },
 ) {
   try {
-    const session = await getSession();
+    const session = await getManagementSession();
 
     if (!session) {
       return Response.json(

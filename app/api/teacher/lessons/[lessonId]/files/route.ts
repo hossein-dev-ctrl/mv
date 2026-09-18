@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth";
+import { getManagementSession } from "@/lib/management-session";
 import { prisma } from "@/lib/prisma";
 
 import fs from "fs/promises";
@@ -42,7 +42,7 @@ export async function POST(
   },
 ) {
   try {
-    const session = await getSession();
+    const session = await getManagementSession();
 
     if (!session) {
       return Response.json(

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getManagementSession } from "@/lib/management-session";
 import { z } from "zod";
 
 const createCourseSchema = z.object({
@@ -26,7 +26,7 @@ const createCourseSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const session = await getSession();
+    const session = await getManagementSession();
 
     if (!session) {
       return Response.json(

@@ -139,7 +139,7 @@ export default async function CoursePage({ params }: Props) {
 
       <section className="bg-white">
         <div className="mx-auto max-w-7xl px-6 py-12">
-          <Link href="/courses" className="mb-6 inline-block text-sm text-indigo-600 hover:underline">← بازگشت به همهٔ دوره‌ها</Link>
+          <Link href="/courses" className="panel-action panel-action-slate mb-6">← بازگشت به همهٔ دوره‌ها</Link>
           <div className="grid gap-10 lg:grid-cols-2">
             <div>
               <div className="mb-4 inline-flex rounded-full bg-indigo-50 px-4 py-2 text-sm text-indigo-700">
@@ -324,18 +324,18 @@ export default async function CoursePage({ params }: Props) {
                       </div>
 
                       {adminPreview ? <p className="text-sm text-slate-600">پیش‌نمایش دوره؛ عملیات ثبت‌نام برای مدیر نمایش داده نمی‌شود.</p> : course.deliveryStatus==="UPCOMING" && !isOwner && !isEnrolled ? (session ? <InterestForm courseId={course.id} registered={!!interest}/> : <Link href={`/login?redirect=/courses/${course.slug}`} className="rounded-xl bg-indigo-600 px-5 py-3 text-white">ورود برای پیش‌ثبت‌نام رایگان</Link>) : isOwner ? (
-                        <Link href={`/teacher/courses/${course.id}/sections/${section.id}/lessons/${lesson.id}`} className="text-sm font-medium text-indigo-600">مدیریت درس</Link>
+                        <Link href={`/teacher/courses/${course.id}/sections/${section.id}/lessons/${lesson.id}`} className="panel-action">مدیریت درس</Link>
                       ) : completed ? (
                         <Link
                           href={`/courses/${course.slug}/lessons/${lesson.id}`}
-                          className="text-sm font-medium text-green-600"
+                          className="panel-action panel-action-teal"
                         >
                           مشاهده مجدد
                         </Link>
                       ) : unlocked ? (
                         <Link
                           href={`/courses/${course.slug}/lessons/${lesson.id}`}
-                          className="text-sm font-medium text-indigo-600"
+                          className="panel-action"
                         >
                           شروع درس
                         </Link>

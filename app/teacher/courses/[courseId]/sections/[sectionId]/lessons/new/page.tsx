@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getManagementSession } from "@/lib/management-session";
 
 import CreateLessonForm from "@/components/teacher/create-lesson-form";
 
@@ -14,7 +14,7 @@ type PageProps = {
 };
 
 export default async function NewLessonPage({ params }: PageProps) {
-  const session = await getSession();
+  const session = await getManagementSession();
 
   if (!session) {
     redirect("/login");
@@ -30,6 +30,7 @@ export default async function NewLessonPage({ params }: PageProps) {
     where: {
       id: sectionId,
       courseId,
+      ...(session.role === "ADMIN" ? {} : { course: { teacherId: session.userId } }),
     },
     include: {
       course: true,
@@ -49,7 +50,7 @@ export default async function NewLessonPage({ params }: PageProps) {
       <div className="mx-auto max-w-3xl">
         <Link
           href={`/teacher/courses/${courseId}/sections/${sectionId}`}
-          className="text-sm text-indigo-600"
+          className="panel-action panel-action-indigo"
         >
           ← بازگشت به فصل
         </Link>

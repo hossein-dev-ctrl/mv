@@ -16,7 +16,7 @@ export default async function AdminFinancePage() {
   const globalWallet = await readWallet(undefined);
   const {sales,payouts} = globalWallet;
   return <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
-    <Link href="/admin" className="text-sm text-indigo-600">بازگشت به پنل مدیر</Link>
+    <Link href="/admin" className="panel-action panel-action-slate">بازگشت به پنل مدیر</Link>
     <h1 className="mt-4 text-2xl font-bold">مالی و سهم مدرس‌ها</h1>
     <Link href="/admin/settlements" className="mt-5 inline-block rounded-xl bg-indigo-600 px-5 py-3 text-sm text-white">مدیریت برداشت‌ها، بازپرداخت و کارمزد</Link>
     <WalletSummary totals={walletTotals(sales,payouts)} />

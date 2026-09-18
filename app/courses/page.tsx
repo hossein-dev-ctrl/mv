@@ -21,7 +21,7 @@ export default async function CoursesPage() {
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6">
-      {session && <Link href={panel} className="text-sm text-indigo-600 hover:underline">← بازگشت به پنل من</Link>}
+      {session && <Link href={panel} className="panel-action panel-action-slate">← بازگشت به پنل من</Link>}
       <h1 className="mt-4 text-3xl font-bold text-slate-900">همهٔ دوره‌ها</h1>
       <p className="mt-3 leading-7 text-slate-600">دورهٔ مورد علاقه‌تان را انتخاب کنید و جزئیات و سرفصل‌های آن را ببینید.</p>
       {courses.length === 0 ? (
@@ -42,7 +42,7 @@ export default async function CoursesPage() {
                 <div className="mt-auto pt-5">
                   <p className="font-bold">{course.deliveryStatus==="UPCOMING"?"پیش‌ثبت‌نام بدون پرداخت":<CoursePrice price={course.price} discountPercent={course.discountPercent} />}</p>
                   <Link href={`/courses/${course.slug}`} className="mt-4 inline-block rounded-xl bg-indigo-600 px-4 py-3 text-sm font-medium text-white hover:bg-indigo-700">مشاهدهٔ دوره</Link>
-                  {session?.userId === course.teacherId && <Link href={`/teacher/courses/${course.id}`} className="ms-4 inline-block py-3 text-sm text-indigo-600 hover:underline">مدیریت دورهٔ من</Link>}
+                  {session?.userId === course.teacherId && <Link href={`/teacher/courses/${course.id}`} className="panel-action ms-4">مدیریت دورهٔ من</Link>}
                 </div>
               </div>
             </article>

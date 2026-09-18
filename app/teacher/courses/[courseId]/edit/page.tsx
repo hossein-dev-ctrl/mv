@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getManagementSession } from "@/lib/management-session";
 
 import EditCourseForm from "@/components/teacher/edit-course-form";
 
@@ -13,7 +13,7 @@ type PageProps = {
 };
 
 export default async function EditCoursePage({ params }: PageProps) {
-  const session = await getSession();
+  const session = await getManagementSession();
 
   if (!session) {
     redirect("/login");
@@ -28,6 +28,7 @@ export default async function EditCoursePage({ params }: PageProps) {
   const course = await prisma.course.findUnique({
     where: {
       id: courseId,
+      ...(session.role === "ADMIN" ? {} : { teacherId: session.userId }),
     },
   });
 
@@ -45,7 +46,7 @@ export default async function EditCoursePage({ params }: PageProps) {
         <div className="mb-8">
           <Link
             href={`/teacher/courses/${course.id}`}
-            className="text-sm text-indigo-600"
+            className="panel-action panel-action-indigo"
           >
             ← بازگشت به مدیریت دوره
           </Link>

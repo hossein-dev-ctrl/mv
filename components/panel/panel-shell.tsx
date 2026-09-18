@@ -93,7 +93,7 @@ export default async function PanelShell({ children, area }: {
             <p className="mt-3 text-sm leading-7 text-slate-500">دوره‌ها، درس‌ها و مسیر یادگیری شما در یک جا.</p>
           </div>
           <nav aria-label="دسترسی سریع پایین صفحه" className="flex flex-wrap content-center items-center gap-x-5 gap-y-3 text-sm text-slate-600 sm:justify-end">
-            {navigation.map((item) => <Link key={item.href} href={item.href} className="hover:text-indigo-700 hover:underline">{item.label}</Link>)}
+            {navigation.map((item) => <Link key={item.href} href={item.href} className="panel-action panel-action-slate">{item.label}</Link>)}
           </nav>
         </div>
         <div className="border-t border-slate-100 px-4 py-4 text-center text-xs leading-6 text-slate-500">

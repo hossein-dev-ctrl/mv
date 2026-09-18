@@ -36,3 +36,29 @@ main > section { margin-block: 1.5rem; }
 main details[open] > summary { margin-bottom: 1rem; }
 .number-words { height: 4.5rem; overflow: auto; display: block; }
 main > h2 { margin-top: 2.5rem; padding-top: 1.25rem; border-top: 1px solid #dbe3ee; }
+
+/* Explicit action links: navigation, logos and whole-card links keep their layout. */
+.panel-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  min-height: 2.75rem;
+  padding: .5rem 1rem;
+  border: 1px solid var(--action-border, #c7d2fe);
+  border-radius: .8rem;
+  background: var(--action-bg, #eef2ff);
+  color: var(--action-text, #3730a3);
+  font-size: .875rem;
+  font-weight: 600;
+  line-height: 1.6;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color .15s, box-shadow .15s;
+}
+.panel-action:hover { background: var(--action-border, #c7d2fe); }
+.panel-action:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.panel-action-slate { --action-bg: #f1f5f9; --action-border: #cbd5e1; --action-text: #334155; }
+.panel-action-teal { --action-bg: #f0fdfa; --action-border: #99f6e4; --action-text: #115e59; }
+.panel-action-violet { --action-bg: #f5f3ff; --action-border: #ddd6fe; --action-text: #5b21b6; }
+.panel-action-amber { --action-bg: #fffbeb; --action-border: #fde68a; --action-text: #92400e; }

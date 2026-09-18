@@ -9,7 +9,7 @@ import CourseStatusButton from "@/components/teacher/course-status-button";
 import DeleteSectionButton from "@/components/teacher/delete-section-button";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getManagementSession } from "@/lib/management-session";
 
 type PageProps = {
   params: Promise<{
@@ -18,7 +18,7 @@ type PageProps = {
 };
 
 export default async function CourseManagementPage({ params }: PageProps) {
-  const session = await getSession();
+  const session = await getManagementSession();
 
   if (!session) {
     redirect("/login");
@@ -33,6 +33,7 @@ export default async function CourseManagementPage({ params }: PageProps) {
   const course = await prisma.course.findUnique({
     where: {
       id: courseId,
+      ...(session.role === "ADMIN" ? {} : { teacherId: session.userId }),
     },
     include: {
       sections: {
@@ -69,12 +70,12 @@ export default async function CourseManagementPage({ params }: PageProps) {
 
   return (
     <main dir="rtl" className="min-h-screen bg-slate-50 px-4 py-6 sm:p-8">
-      <div className="mx-auto mb-5 flex max-w-7xl flex-wrap items-center gap-4"><DeliveryStatus status={course.deliveryStatus}/><Link href={`/teacher/courses/${course.id}/assignments`} className="text-sm text-indigo-700">تکلیف‌ها و ارزیابی</Link><Link href={`/teacher/courses/${course.id}/interests`} className="text-sm text-indigo-700">فهرست متقاضیان پیش‌ثبت‌نام</Link></div>
+      <div className="mx-auto mb-5 flex max-w-7xl flex-wrap items-center gap-4"><DeliveryStatus status={course.deliveryStatus}/><Link href={`/teacher/courses/${course.id}/assignments`} className="panel-action panel-action-violet">تکلیف‌ها و ارزیابی</Link><Link href={`/teacher/courses/${course.id}/interests`} className="panel-action panel-action-amber">فهرست متقاضیان پیش‌ثبت‌نام</Link></div>
       <div className="mx-auto max-w-7xl">
         <nav aria-label="مسیر مدیریت دوره" className="mb-5">
-          <Link href="/teacher" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 shadow-sm transition hover:border-indigo-200 hover:text-indigo-700">
+          <Link href={session.role === "ADMIN" ? "/admin/courses" : "/teacher"} className="panel-action panel-action-slate">
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4"><path d="m14 6 6 6-6 6M20 12H4" /></svg>
-            بازگشت به دوره‌های من
+            {session.role === "ADMIN" ? "بازگشت به همهٔ دوره‌ها" : "بازگشت به دوره‌های من"}
           </Link>
         </nav>
         <section aria-labelledby="course-heading" className="mb-8 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -123,7 +124,7 @@ export default async function CourseManagementPage({ params }: PageProps) {
             <p className="mt-2 text-xl font-bold">
               {(course._count.enrollments).toLocaleString("fa-IR")}
             </p>
-            <Link href={`/teacher/courses/${course.id}/students`} className="mt-3 inline-block text-sm text-indigo-600 hover:underline">مشاهدهٔ دانش‌آموزان و پیشرفت</Link>
+            <Link href={`/teacher/courses/${course.id}/students`} className="panel-action panel-action-teal mt-3">مشاهدهٔ دانش‌آموزان و پیشرفت</Link>
           </div>
         </div>
 

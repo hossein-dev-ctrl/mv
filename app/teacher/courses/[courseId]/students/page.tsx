@@ -42,7 +42,7 @@ export default async function CourseStudentsPage({ params, searchParams }: {
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
-      <Link href={`/teacher/courses/${courseId}`} className="text-sm text-indigo-600 hover:underline">← بازگشت به مدیریت دوره</Link>
+      <Link href={`/teacher/courses/${courseId}`} className="panel-action panel-action-indigo">← بازگشت به مدیریت دوره</Link>
       <h1 className="mt-4 text-2xl font-bold">دانش‌آموزان دورهٔ {course.title}</h1>
       <p className="mt-3 text-sm leading-7 text-slate-600">پیشرفت بر اساس درس‌های منتشرشدهٔ فعلی محاسبه می‌شود. وضعیت ثبت‌نام جدا از پیشرفت آموزشی نمایش داده می‌شود.</p>
       <form action={base} className="mt-6 flex flex-wrap items-end gap-4 rounded-2xl border border-slate-200 bg-white p-5">
@@ -58,7 +58,7 @@ export default async function CourseStudentsPage({ params, searchParams }: {
           </select>
         </div>
         <button type="submit" className="rounded-lg bg-indigo-600 px-5 py-2 text-white hover:bg-indigo-700">اعمال فیلتر</button>
-        {(q || status) && <Link href={base} className="py-2 text-sm text-indigo-600 hover:underline">پاک کردن فیلترها</Link>}
+        {(q || status) && <Link href={base} className="panel-action panel-action-indigo">پاک کردن فیلترها</Link>}
       </form>
       <p className="my-5 text-sm text-slate-600">{total.toLocaleString("fa-IR")} ثبت‌نام مطابق فیلتر</p>
       {enrollments.length === 0 ? (
@@ -80,16 +80,16 @@ export default async function CourseStudentsPage({ params, searchParams }: {
                 <td className="p-4">
                   {lessons.length ? <><span>{summary.completedLessons.toLocaleString("fa-IR")} از {summary.totalLessons.toLocaleString("fa-IR")} درس · {summary.percentage.toLocaleString("fa-IR")}٪</span><progress aria-label={`پیشرفت ${name}`} value={summary.percentage} max={100} className="mt-2 block h-2 w-full accent-indigo-600" /></> : "بدون درس منتشرشده"}
                 </td>
-                <td className="p-4"><Link href={`${base}/${enrollment.id}`} aria-label={`جزئیات پیشرفت ${name}`} className="font-medium text-indigo-600 hover:underline">مشاهدهٔ پیشرفت</Link></td>
+                <td className="p-4"><Link href={`${base}/${enrollment.id}`} aria-label={`جزئیات پیشرفت ${name}`} className="panel-action panel-action-indigo">مشاهدهٔ پیشرفت</Link></td>
               </tr>;
             })}</tbody>
           </table>
         </div>
       )}
       {pageCount > 1 && <nav aria-label="صفحه‌بندی دانش‌آموزان" className="mt-6 flex items-center justify-center gap-5 text-sm">
-        {page > 1 && <Link href={pageUrl(page - 1)} className="text-indigo-600 hover:underline">صفحهٔ قبل</Link>}
+        {page > 1 && <Link href={pageUrl(page - 1)} className="panel-action panel-action-slate">صفحهٔ قبل</Link>}
         <span>صفحهٔ {page.toLocaleString("fa-IR")} از {pageCount.toLocaleString("fa-IR")}</span>
-        {page < pageCount && <Link href={pageUrl(page + 1)} className="text-indigo-600 hover:underline">صفحهٔ بعد</Link>}
+        {page < pageCount && <Link href={pageUrl(page + 1)} className="panel-action panel-action-slate">صفحهٔ بعد</Link>}
       </nav>}
     </main>
   );

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getManagementSession } from "@/lib/management-session";
 
 import CreateLessonForm from "@/components/teacher/create-lesson-form";
 import DeleteLessonButton from "@/components/teacher/delete-lesson-button";
@@ -15,7 +15,7 @@ type PageProps = {
 };
 
 export default async function SectionPage({ params }: PageProps) {
-  const session = await getSession();
+  const session = await getManagementSession();
 
   if (!session) {
     redirect("/login");
@@ -31,6 +31,7 @@ export default async function SectionPage({ params }: PageProps) {
     where: {
       id: sectionId,
       courseId,
+      ...(session.role === "ADMIN" ? {} : { course: { teacherId: session.userId } }),
     },
     include: {
       course: true,
@@ -57,7 +58,7 @@ export default async function SectionPage({ params }: PageProps) {
           <div>
             <Link
               href={`/teacher/courses/${courseId}`}
-              className="text-sm text-indigo-600"
+              className="panel-action panel-action-indigo"
             >
               ← بازگشت به دوره
             </Link>

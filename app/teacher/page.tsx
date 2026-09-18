@@ -2,10 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getManagementSession } from "@/lib/management-session";
 
 export default async function TeacherPage() {
-  const session = await getSession();
+  const session = await getManagementSession();
 
   if (!session) {
     redirect("/login");
@@ -41,7 +41,7 @@ export default async function TeacherPage() {
           <div>
             <h1 className="text-3xl font-bold">پنل مدرس</h1>
             <p className="mt-2 text-gray-500">
-              دوره‌های آموزشی خود را مدیریت کنید.
+              فقط دوره‌های خودتان، پیشرفت دانش‌آموزان آن‌ها و پاسخ تکلیف‌هایشان در این پنل نمایش داده می‌شود.
             </p>
           </div>
 
@@ -76,9 +76,8 @@ export default async function TeacherPage() {
         ) : (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {courses.map((course) => (
-              <Link
+              <article
                 key={course.id}
-                href={`/teacher/courses/${course.id}`}
                 className="overflow-hidden rounded-xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
               >
                 <div className="aspect-video bg-gray-100">
@@ -115,8 +114,15 @@ export default async function TeacherPage() {
 
                     <span>{(course._count.enrollments).toLocaleString("fa-IR")} دانشجو</span>
                   </div>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <Link href={`/teacher/courses/${course.id}`} className="panel-action">مدیریت دوره</Link>
+                    <Link href={`/teacher/courses/${course.id}/students`} className="panel-action panel-action-teal">پیشرفت دانش‌آموزان</Link>
+                    <Link href={`/teacher/courses/${course.id}/assignments`} className="panel-action panel-action-violet">تکلیف‌ها و ارزیابی</Link>
+                    <Link href={`/teacher/courses/${course.id}/interests`} className="panel-action panel-action-amber">متقاضیان دوره</Link>
+                    {course.status === "PUBLISHED" && <Link href={`/courses/${course.slug}`} className="panel-action panel-action-slate">مشاهده از دید کاربر</Link>}
+                  </div>
                 </div>
-              </Link>
+              </article>
             ))}
           </div>
         )}

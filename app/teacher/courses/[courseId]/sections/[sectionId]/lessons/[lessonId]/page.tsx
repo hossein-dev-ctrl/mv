@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import EditLessonForm from "@/components/teacher/edit-lesson-form";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getManagementSession } from "@/lib/management-session";
 import UploadLessonVideoForm from "@/components/teacher/upload-lesson-video-form";
 import UploadLessonFileForm from "@/components/teacher/upload-lesson-file-form";
 import DeleteLessonFileButton from "@/components/teacher/delete-lesson-file-button";
@@ -16,7 +16,7 @@ type PageProps = {
 };
 
 export default async function LessonManagementPage({ params }: PageProps) {
-  const session = await getSession();
+  const session = await getManagementSession();
 
   if (!session) {
     redirect("/login");
@@ -34,6 +34,7 @@ export default async function LessonManagementPage({ params }: PageProps) {
       sectionId,
       section: {
         courseId,
+        ...(session.role === "ADMIN" ? {} : { course: { teacherId: session.userId } }),
       },
     },
     include: {
@@ -66,7 +67,7 @@ export default async function LessonManagementPage({ params }: PageProps) {
           <div>
             <Link
               href={`/teacher/courses/${courseId}/sections/${sectionId}`}
-              className="text-sm text-indigo-600 hover:text-indigo-700"
+              className="panel-action panel-action-indigo"
             >
               ← بازگشت به فصل
             </Link>
@@ -101,7 +102,7 @@ export default async function LessonManagementPage({ params }: PageProps) {
               )}
             </section>
             <AssignmentEditor lessonId={lessonId} assignment={lesson.assignment}/>
-            <Link href={`/teacher/courses/${courseId}/assignments`} className="inline-block text-sm text-indigo-600">بررسی پاسخ‌ها و ارزیابی تکلیف‌ها</Link>
+            <Link href={`/teacher/courses/${courseId}/assignments`} className="panel-action panel-action-violet">بررسی پاسخ‌ها و ارزیابی تکلیف‌ها</Link>
             <EditLessonForm
               lessonId={lesson.id}
               initialTitle={lesson.title}

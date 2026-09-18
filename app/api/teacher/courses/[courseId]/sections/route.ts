@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth";
+import { getManagementSession } from "@/lib/management-session";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -15,7 +15,7 @@ type RouteProps = {
 
 export async function POST(request: Request, { params }: RouteProps) {
   try {
-    const session = await getSession();
+    const session = await getManagementSession();
 
     if (!session) {
       return Response.json(
@@ -131,7 +131,7 @@ export async function PATCH(
   },
 ) {
   try {
-    const session = await getSession();
+    const session = await getManagementSession();
 
     if (!session) {
       return Response.json(

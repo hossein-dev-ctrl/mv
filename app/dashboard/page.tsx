@@ -175,7 +175,7 @@ export default async function DashboardPage() {
                       </div>
                     </div>
 
-                    <Link href={`/dashboard/courses/${enrollment.courseId}/grades`} className="mt-4 inline-block text-sm text-indigo-600">کارنامهٔ تکلیف‌ها</Link>
+                    <Link href={`/dashboard/courses/${enrollment.courseId}/grades`} className="panel-action panel-action-indigo mt-4">کارنامهٔ تکلیف‌ها</Link>
                     {/* ادامه یادگیری */}
 
                     <div className="mt-6">
@@ -205,7 +205,7 @@ export default async function DashboardPage() {
                       {enrollment.course.status === "PUBLISHED" && (
                         <Link
                           href={`/courses/${enrollment.course.slug}`}
-                          className="mt-4 block text-center text-sm font-medium text-indigo-700 hover:underline"
+                          className="panel-action panel-action-indigo mt-4"
                         >
                           {state === "completed" ? "مرور درس‌های دوره" : "مشاهدهٔ محتوای دوره"}
                         </Link>

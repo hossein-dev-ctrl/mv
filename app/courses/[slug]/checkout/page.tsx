@@ -93,7 +93,7 @@ export default async function CheckoutPage({ params }: Props) {
         <div className="mb-8">
           <Link
             href={`/courses/${course.slug}`}
-            className="text-sm text-indigo-600 hover:underline"
+            className="panel-action panel-action-slate"
           >
             ← بازگشت به دوره
           </Link>
