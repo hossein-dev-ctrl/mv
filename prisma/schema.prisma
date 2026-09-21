@@ -44,6 +44,11 @@ enum PaymentStatus {
 }
 
 model User {
+  notifications Notification[]
+  ticketsCreated Ticket[] @relation("TicketCreator")
+  ticketsReceived Ticket[] @relation("TicketRecipient")
+  ticketMessages TicketMessage[]
+  notificationDispatches NotificationDispatch[]
   demoBatchId String?
   id           String   @id @default(cuid())
   name         String?
@@ -328,4 +333,62 @@ model Submission {
  @@unique([assignmentId,enrollmentId,attempt])
  @@index([assignmentId,status,createdAt])
  @@index([enrollmentId])
+}
+
+model Ticket {
+ id String @id @default(cuid())
+ creatorId String
+ recipientId String?
+ subject String
+ status String @default("OPEN")
+ clientRequestId String
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ creator User @relation("TicketCreator",fields:[creatorId],references:[id],onDelete:Restrict)
+ recipient User? @relation("TicketRecipient",fields:[recipientId],references:[id],onDelete:Restrict)
+ messages TicketMessage[]
+ @@unique([creatorId,clientRequestId])
+ @@index([creatorId,updatedAt])
+ @@index([recipientId,updatedAt])
+ @@index([status,updatedAt])
+}
+
+model TicketMessage {
+ id String @id @default(cuid())
+ ticketId String
+ senderId String
+ body String
+ clientRequestId String
+ createdAt DateTime @default(now())
+ ticket Ticket @relation(fields:[ticketId],references:[id],onDelete:Cascade)
+ sender User @relation(fields:[senderId],references:[id],onDelete:Restrict)
+ @@unique([ticketId,senderId,clientRequestId])
+ @@index([ticketId,createdAt])
+}
+
+model Notification {
+ id String @id @default(cuid())
+ userId String
+ title String
+ body String
+ href String
+ eventKey String
+ readAt DateTime?
+ createdAt DateTime @default(now())
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ @@unique([userId,eventKey])
+ @@index([userId,readAt,createdAt])
+}
+
+model NotificationDispatch {
+ id String @id
+ senderId String
+ title String
+ body String
+ audience String
+ targetId String?
+ recipientCount Int
+ createdAt DateTime @default(now())
+ sender User @relation(fields:[senderId],references:[id],onDelete:Restrict)
+ @@index([createdAt])
 }

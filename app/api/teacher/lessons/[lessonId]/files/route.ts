@@ -1,5 +1,6 @@
 import { getManagementSession } from "@/lib/management-session";
 import { prisma } from "@/lib/prisma";
+import {notifyCourse} from '@/lib/notifications';
 
 import fs from "fs/promises";
 import path from "path";
@@ -159,7 +160,8 @@ export async function POST(
 
     const url = `/uploads/lesson-files/${filename}`;
 
-    const lessonFile = await prisma.lessonFile.create({
+    const lessonFile = await prisma.$transaction(async tx=>{
+      const created = await tx.lessonFile.create({
       data: {
         lessonId,
         name: file.name,
@@ -167,6 +169,10 @@ export async function POST(
         type: file.type,
         size: file.size,
       },
+      });
+      const published=await tx.lesson.findFirst({where:{id:lessonId,status:'PUBLISHED',section:{course:{status:'PUBLISHED'}}},include:{section:{include:{course:true}}}});
+      if(published)await notifyCourse(tx,published.section.courseId,{title:'فایل جدید در دورهٔ شما',body:`${published.title} · ${file.name}`,href:`/courses/${published.section.course.slug}`,eventKey:`lesson-file:${created.id}`});
+      return created;
     });
 
     return Response.json({

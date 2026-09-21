@@ -5,12 +5,14 @@ import { redirect } from "next/navigation";
 import { getSession, type UserRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import LogoutButton from "@/components/logout-button";
+import {NotificationBell} from "@/components/communication/notification-controls";
 
-type Area = "student" | "teacher" | "admin" | "lesson" | "courses" | "payments";
+type Area = "student" | "teacher" | "admin" | "lesson" | "courses" | "payments" | "tickets" | "notifications";
 const roles: Record<UserRole, string> = {
   STUDENT: "دانش‌آموز", TEACHER: "مدرس", ADMIN: "مدیر",
 };
 const areas: Record<Area, string> = {
+  tickets: "تیکت‌ها", notifications: "اعلان‌ها",
   payments: "سوابق پرداخت", courses: "دوره‌ها", student: "دوره‌های ثبت‌نام‌شده", teacher: "پنل مدرس", admin: "پنل مدیر", lesson: "محیط یادگیری",
 };
 
@@ -70,7 +72,7 @@ export default async function PanelShell({ children, area }: {
                 <p className="mt-1 text-xs text-indigo-700">سطح دسترسی: {roles[user.role]}</p>
               </div>
             </div>
-            <LogoutButton />
+            <div className="flex shrink-0 items-center gap-2"><NotificationBell/><LogoutButton /></div>
           </div> : <Link href="/login" className="rounded-xl bg-indigo-600 px-5 py-3 text-sm text-white">ورود به حساب کاربری</Link>}
         </div>
         <div className="panel-tabs">
@@ -92,7 +94,7 @@ export default async function PanelShell({ children, area }: {
             <Link href="/courses" className="inline-block text-slate-900"><Brand /></Link>
             <p className="mt-3 text-sm leading-7 text-slate-500">دوره‌ها، درس‌ها و مسیر یادگیری شما در یک جا.</p>
           </div>
-          <nav aria-label="دسترسی سریع پایین صفحه" className="flex flex-wrap content-center items-center gap-x-5 gap-y-3 text-sm text-slate-600 sm:justify-end">
+          <nav aria-label="دسترسی سریع پایین صفحه" className="panel-actions panel-actions-wide content-center text-sm text-slate-600">
             {navigation.map((item) => <Link key={item.href} href={item.href} className="panel-action panel-action-slate">{item.label}</Link>)}
           </nav>
         </div>

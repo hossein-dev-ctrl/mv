@@ -45,7 +45,7 @@ export default async function TeacherPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="panel-actions shrink-0">
           <Link href="/teacher/finance" className="rounded-xl border border-slate-200 px-5 py-3 text-sm text-slate-600 hover:bg-slate-50">گزارش مالی من</Link>
           <Link
             href="/teacher/courses/new"
@@ -78,7 +78,7 @@ export default async function TeacherPage() {
             {courses.map((course) => (
               <article
                 key={course.id}
-                className="overflow-hidden rounded-xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
               >
                 <div className="aspect-video bg-gray-100">
                   {course.thumbnailUrl ? (
@@ -94,7 +94,7 @@ export default async function TeacherPage() {
                   )}
                 </div>
 
-                <div className="p-5">
+                <div className="flex flex-1 flex-col p-5">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <h2 className="font-bold">{course.title}</h2>
 
@@ -109,12 +109,12 @@ export default async function TeacherPage() {
                     </p>
                   )}
 
-                  <div className="mt-5 flex gap-4 text-xs text-gray-500">
+                  <div className="mt-auto flex gap-4 pt-5 text-xs text-gray-500">
                     <span>{(course._count.sections).toLocaleString("fa-IR")} فصل</span>
 
                     <span>{(course._count.enrollments).toLocaleString("fa-IR")} دانشجو</span>
                   </div>
-                  <div className="mt-5 flex flex-wrap gap-2">
+                  <div className="panel-actions mt-5">
                     <Link href={`/teacher/courses/${course.id}`} className="panel-action">مدیریت دوره</Link>
                     <Link href={`/teacher/courses/${course.id}/students`} className="panel-action panel-action-teal">پیشرفت دانش‌آموزان</Link>
                     <Link href={`/teacher/courses/${course.id}/assignments`} className="panel-action panel-action-violet">تکلیف‌ها و ارزیابی</Link>

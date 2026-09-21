@@ -1,5 +1,6 @@
 import { getManagementSession } from "@/lib/management-session";
 import { prisma } from "@/lib/prisma";
+import {notifyLessonPublished} from '@/lib/notifications';
 
 type RouteProps = {
   params: Promise<{
@@ -99,11 +100,16 @@ export async function PATCH(request: Request, { params }: RouteProps) {
       data.status = body.status;
     }
 
-    const updatedLesson = await prisma.lesson.update({
+    const updatedLesson = await prisma.$transaction(async tx=>{
+      await tx.$queryRaw`SELECT id FROM "Lesson" WHERE id=${lessonId} FOR UPDATE`;
+      const updated = await tx.lesson.update({
       where: {
         id: lessonId,
       },
       data,
+      });
+      if(data.status==='PUBLISHED')await notifyLessonPublished(tx,lessonId);
+      return updated;
     });
 
     return Response.json({

@@ -70,6 +70,7 @@ for(const [file,method] of endpoints) {
 for(const role of ['TEACHER','ADMIN'])test(`${role} can update an authorized lesson`,async()=>{
  const {mocks}=boundaries({userId:role==='TEACHER'?'teacher-b':'admin',role},{role});
  let writes=0;
+ const db=mocks['@/lib/prisma'].prisma;db.$transaction=fn=>fn(db);db.$queryRaw=async()=>[];
  mocks['@/lib/prisma'].prisma.lesson.update=async({where,data})=>{assert.equal(where.id,'lesson');assert.equal(data.title,'عنوان دوره');writes++;return {id:'lesson',...data};};
  const response=await load('app/api/teacher/lessons/[lessonId]/route.ts',mocks).PATCH(request('PATCH'),context);
  assert.equal(response.status,200);assert.equal(writes,1);

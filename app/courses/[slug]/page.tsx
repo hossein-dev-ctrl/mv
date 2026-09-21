@@ -247,7 +247,7 @@ export default async function CoursePage({ params }: Props) {
               <img
                 src={course.roadmapImageUrl}
                 alt="نقشه راه دوره"
-                className="mx-auto max-h-[700px] w-auto max-w-full object-contain"
+                className="rounded-xl mx-auto max-h-[700px] w-auto max-w-full object-contain"
               />
             </div>
           </div>

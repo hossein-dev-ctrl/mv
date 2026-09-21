@@ -1,5 +1,6 @@
 import { getManagementSession } from "@/lib/management-session";
 import { prisma } from "@/lib/prisma";
+import {notifyLessonPublished} from '@/lib/notifications';
 
 import fs from "fs/promises";
 import path from "path";
@@ -267,14 +268,22 @@ export async function PATCH(
         );
       }
 
-      const updatedCourse = await prisma.course.update({
+      const updatedCourse = await prisma.$transaction(async tx=>{
+        await tx.$queryRaw`SELECT id FROM "Course" WHERE id=${courseId} FOR UPDATE`;
+        const updated = await tx.course.update({
         where: {
           id: courseId,
         },
         data: {
           status,
         },
-      });
+        });
+        if(status==='PUBLISHED'){
+          const lessons=await tx.lesson.findMany({where:{section:{courseId},status:'PUBLISHED'},select:{id:true}});
+          for(const lesson of lessons)await notifyLessonPublished(tx,lesson.id);
+        }
+        return updated;
+      },{timeout:30000});
 
       return Response.json({
         success: true,

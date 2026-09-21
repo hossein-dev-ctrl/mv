@@ -2,6 +2,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { readWallet } from "@/lib/wallet";
 import { validIban } from "@/lib/wallet-math";
+import {notifyAdmins,notifyUsers} from '@/lib/notifications';
 
 const money=z.number().int().min(0).max(2000000000);
 const ref=z.string().trim().min(3).max(100);
@@ -51,7 +52,8 @@ export async function executeSettlement(actor:Actor,input:z.infer<typeof settlem
       const wallet=await readWallet(actor.id,tx);
       if(wallet.payouts.some(p=>["REQUESTED","PROCESSING"].includes(p.status)))throw new Error("یک درخواست باز دارید؛ ابتدا نتیجهٔ آن مشخص شود.");
       if(input.amount<settings.minimumPayout || input.amount>wallet.totals.available)throw new Error("مبلغ باید حداقل برداشت را داشته باشد و از مانده بیشتر نباشد.");
-      await tx.payout.create({data:{teacherId:actor.id,amount:input.amount,iban:input.iban,accountName:input.accountName}});
+      const created=await tx.payout.create({data:{teacherId:actor.id,amount:input.amount,iban:input.iban,accountName:input.accountName}});
+      await notifyAdmins(tx,{title:'درخواست برداشت جدید',body:'یک مدرس درخواست برداشت ثبت کرده است؛ جزئیات را در بخش تسویه بررسی کنید.',href:'/admin/settlements',eventKey:`payout:${created.id}:request`});
       return "درخواست برداشت ثبت شد و مبلغ آن رزرو شد.";
     }
     if(input.action==="begin"||input.action==="pay"||input.action==="reject"||input.action==="receive"||input.action==="dispute"||input.action==="review"||input.action==="reverse") {
@@ -64,7 +66,9 @@ export async function executeSettlement(actor:Actor,input:z.infer<typeof settlem
         } else {
           await tx.payout.update({where:{id:payout.id},data:{reviewedAt:new Date(),reviewNote:input.reason,...(input.action==="reverse"?{status:"REJECTED",note:"ثبت واریز پس از بررسی مدیر برگشت خورد: "+input.reason}:{})}});
         }
-        await tx.payoutReview.create({data:{payoutId:payout.id,actorId:actor.id,action:input.action,message:input.reason}});
+        const review=await tx.payoutReview.create({data:{payoutId:payout.id,actorId:actor.id,action:input.action,message:input.reason}});
+        if(input.action==='dispute')await notifyAdmins(tx,{title:'گزارش عدم دریافت وجه',body:'یک درخواست واریز نیاز به بررسی مجدد دارد.',href:'/admin/settlements',eventKey:`payout:${payout.id}:review:${review.id}`});
+        else await notifyUsers(tx,[teacherId],{title:'نتیجهٔ بررسی واریز',body:input.reason,href:'/teacher/finance',eventKey:`payout:${payout.id}:review:${review.id}`});
         return input.action==="dispute"?"گزارش عدم دریافت برای مدیر ثبت شد؛ مبلغ دوباره به مانده اضافه نشده است.":input.action==="reverse"?"ثبت واریز برگشت خورد و اثر آن از مانده برداشته شد؛ سابقه حفظ شده است.":"پاسخ بررسی ثبت شد؛ منتظر تأیید دریافت مدرس است.";
       }
       if(input.action==="receive") {
@@ -83,6 +87,7 @@ export async function executeSettlement(actor:Actor,input:z.infer<typeof settlem
       if(payout.status==="PROCESSING"&&payout.processedBy!==actor.id)throw new Error("مدیر دیگری در حال واریز این درخواست است.");
       if(input.action==="reject") {
         await tx.payout.update({where:{id:payout.id},data:{status:"REJECTED",note:input.reason,processedBy:actor.id}});
+        await notifyUsers(tx,[teacherId],{title:'نتیجهٔ درخواست برداشت',body:input.reason,href:'/teacher/finance',eventKey:`payout:${payout.id}:rejected`});
         return "درخواست رد شد و مبلغ رزروشده آزاد شد.";
       }
       if(payout.status!=="PROCESSING")throw new Error("ابتدا درخواست را برای واریز رزرو کنید.");
@@ -91,6 +96,7 @@ export async function executeSettlement(actor:Actor,input:z.infer<typeof settlem
       const wallet=await readWallet(teacherId,tx);
       if(wallet.totals.available+payout.amount<payout.amount)throw new Error("مانده برای این واریز کافی نیست؛ درخواست را رد کنید.");
       await tx.payout.update({where:{id:payout.id},data:{status:"PAID",fee:input.fee,reference:input.reference,paidAt:new Date(input.paidAt),processedBy:actor.id}});
+      await notifyUsers(tx,[teacherId],{title:'واریز وجه ثبت شد',body:'جزئیات واریز را بررسی و دریافت یا عدم دریافت وجه را اعلام کنید.',href:'/teacher/finance',eventKey:`payout:${payout.id}:paid`});
       return "واریز ثبت شد؛ مبلغ از مانده کم شده است.";
     }
     const payment=await tx.payment.findUniqueOrThrow({where:{id:input.paymentId},include:{refund:true,cost:true,course:true}});

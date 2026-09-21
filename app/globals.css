@@ -31,7 +31,7 @@ button, input, select, textarea {
 
 /* Separate the page regions; cards retain their original surfaces. */
 .panel-tabs { background: #edf2f8; border-block: 1px solid #dbe3ee; }
-.panel-footer { background: #e8eef5; border-top: 1px solid #cdd8e5; }
+.panel-footer { background: #ffffff; border-top: 1px solid #e2e8f0; }
 main > section { margin-block: 1.5rem; }
 main details[open] > summary { margin-bottom: 1rem; }
 .number-words { height: 4.5rem; overflow: auto; display: block; }
@@ -43,13 +43,13 @@ main > h2 { margin-top: 2.5rem; padding-top: 1.25rem; border-top: 1px solid #dbe
   align-items: center;
   justify-content: center;
   gap: .5rem;
-  min-height: 2.75rem;
-  padding: .5rem 1rem;
+  min-height: 2.625rem;
+  padding: .625rem .875rem;
   border: 1px solid var(--action-border, #c7d2fe);
-  border-radius: .8rem;
+  border-radius: .625rem;
   background: var(--action-bg, #eef2ff);
   color: var(--action-text, #3730a3);
-  font-size: .875rem;
+  font-size: .8125rem;
   font-weight: 600;
   line-height: 1.6;
   text-align: center;
@@ -62,3 +62,10 @@ main > h2 { margin-top: 2.5rem; padding-top: 1.25rem; border-top: 1px solid #dbe
 .panel-action-teal { --action-bg: #f0fdfa; --action-border: #99f6e4; --action-text: #115e59; }
 .panel-action-violet { --action-bg: #f5f3ff; --action-border: #ddd6fe; --action-text: #5b21b6; }
 .panel-action-amber { --action-bg: #fffbeb; --action-border: #fde68a; --action-text: #92400e; }
+.panel-action-primary { --action-bg: #4f46e5; --action-border: #4338ca; --action-text: #fff; }
+.panel-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .625rem; align-items: stretch; }
+.panel-actions > .panel-action { width: 100%; min-width: 0; margin: 0; }
+.panel-actions-wide { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.loading-spinner { display: inline-block; flex-shrink: 0; border: 3px solid #e0e7ff; border-top-color: #4f46e5; border-radius: 50%; animation: spinner-turn .8s linear infinite; }
+@keyframes spinner-turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .loading-spinner { animation: none; border-top-color: #4f46e5; } }

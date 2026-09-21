@@ -42,7 +42,7 @@ function interest({role='STUDENT',owner=false,status='UPCOMING',published=true}=
  let saved;
  const {POST}=load('app/api/courses/[courseId]/interest/route.ts',{
  '@/lib/auth':{getSession:async()=>({userId:'u',role})},
- '@/lib/prisma':{prisma:{user:{findUnique:async()=>({id:'u',role})},course:{findUnique:async()=>({teacherId:owner?'u':'t',status:published?'PUBLISHED':'DRAFT',deliveryStatus:status})},courseInterest:{upsert:async q=>{saved=q;}}}}
+ '@/lib/prisma':{prisma:{$transaction:async function(fn){return fn(this);},notification:{createMany:async()=>({count:1})},user:{findMany:async()=>[{id:'admin'}],findUnique:async()=>({id:'u',role})},course:{findUnique:async()=>({teacherId:owner?'u':'t',status:published?'PUBLISHED':'DRAFT',deliveryStatus:status})},courseInterest:{upsert:async q=>{saved=q;return {id:"interest"};}}}}
  });
  return {run:body=>POST(new Request('http://test/api',{method:'POST',body:JSON.stringify(body)}),{params:Promise.resolve({courseId:'c'})}),saved:()=>saved};
 }
@@ -62,7 +62,7 @@ for(const file of ['app/api/enrollments/route.ts','app/api/payments/create/route
 });
 function review(initial={}) {
  let row={id:'p',teacherId:'t',status:'PAID',amount:500,fee:10,reference:'bank-original',receivedAt:null,...initial};const audit=[];let locks=0;
- const tx={$queryRaw:async()=>{locks++;},payout:{findUnique:async()=>row,findUniqueOrThrow:async()=>row,update:async({data})=>{assert.ok(locks);row={...row,...data};return row;}},payoutReview:{create:async({data})=>audit.push(data)}};
+ const tx={user:{findMany:async()=>[{id:'admin'}]},notification:{createMany:async()=>({count:1})},$queryRaw:async()=>{locks++;},payout:{findUnique:async()=>row,findUniqueOrThrow:async()=>row,update:async({data})=>{assert.ok(locks);row={...row,...data};return row;}},payoutReview:{create:async({data})=>{audit.push(data);return {id:"review",...data};}}};
  const run=load('lib/settlement-service.ts',{'@/lib/prisma':{prisma:{$transaction:fn=>fn(tx)}}}).executeSettlement;
  return {run,row:()=>row,audit};
 }

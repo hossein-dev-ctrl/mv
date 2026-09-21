@@ -30,14 +30,14 @@ function load(file, mocks = {}) {
 
 const teacher={id:'t',role:'TEACHER'},student={id:'s',role:'STUDENT'},admin={id:'a',role:'ADMIN'};
 function service({allowed=true,published=true,enrollmentStatus='ACTIVE',owner='t',version=1,latest=null,reviewStatus='PENDING',changedAccess=false}={}) {
- const writes=[];let locked=0,calls=0;
- const assignment={id:'a1',version,title:'تمرین',instructions:'صورت تکلیف ثبت‌شده',published,lesson:{status:'PUBLISHED',section:{courseId:'c',course:{teacherId:owner,status:'PUBLISHED'}}}};
- const tx={$queryRaw:async()=>{locked++;},assignment:{findUnique:async()=>assignment,update:async({data})=>{writes.push(data);return data;}},enrollment:{findUnique:async()=>({id:'e',userId:'s',courseId:'c',status:enrollmentStatus})},submission:{updateMany:async()=>({count:1}),findFirst:async()=>latest,create:async({data})=>{assert.ok(locked>=2);writes.push(data);return data;},findUnique:async()=>({id:'submission',status:reviewStatus,assignment}),update:async({data})=>{assert.ok(locked);writes.push(data);return data;}},lesson:{findUnique:async()=>assignment.lesson}};
- return {writes,tx,...load('lib/assignments.ts',{'@/lib/prisma':{prisma:{$transaction:fn=>fn(tx)}},'@/lib/lesson-access':{getLessonAccess:async()=>({allowed:allowed&&(!changedAccess||calls++===0),enrollment:{id:'e'}})}})};
+ const writes=[],notices=[];let locked=0,calls=0;
+ const assignment={id:'a1',version,title:'تمرین',instructions:'صورت تکلیف ثبت‌شده',published,lesson:{status:'PUBLISHED',section:{courseId:'c',course:{id:'c',slug:'course',teacherId:owner,status:'PUBLISHED'}}}};
+ const tx={notification:{createMany:async({data})=>{notices.push(...data);return {count:data.length};}},$queryRaw:async()=>{locked++;},assignment:{findUnique:async()=>assignment,update:async({data})=>{writes.push(data);return data;}},enrollment:{findMany:async()=>[{userId:'s'}],findUnique:async()=>({id:'e',userId:'s',courseId:'c',status:enrollmentStatus})},submission:{updateMany:async()=>({count:1}),findFirst:async()=>latest,create:async({data})=>{assert.ok(locked>=2);writes.push(data);return data;},findUnique:async()=>({id:'submission',status:reviewStatus,assignment,enrollment:{userId:'s',courseId:'c'}}),update:async({data})=>{assert.ok(locked);writes.push(data);return data;}},lesson:{findUnique:async()=>assignment.lesson}};
+ return {writes,notices,tx,...load('lib/assignments.ts',{'@/lib/prisma':{prisma:{$transaction:fn=>fn(tx)}},'@/lib/lesson-access':{getLessonAccess:async()=>({allowed:allowed&&(!changedAccess||calls++===0),enrollment:{id:'e'}})}})};
 }
 const response={answer:'پاسخ دانش‌آموز',projectUrl:'https://example.com/project',version:1};
 test('submission preserves assignment snapshot and first attempt',async()=>{
- const s=service();await s.submitAssignment(student,'lesson',response);assert.equal(s.writes[0].attempt,1);assert.equal(s.writes[0].assignmentInstructions,'صورت تکلیف ثبت‌شده');assert.equal(s.writes[0].enrollmentId,'e');
+ const s=service();await s.submitAssignment(student,'lesson',response);assert.equal(s.writes[0].attempt,1);assert.equal(s.writes[0].assignmentInstructions,'صورت تکلیف ثبت‌شده');assert.equal(s.writes[0].enrollmentId,'e');assert.equal(s.notices[0].userId,'t');assert.equal(s.notices[0].href,'/teacher/courses/c/assignments');
 });
 for(const options of [{allowed:false},{published:false},{enrollmentStatus:'CANCELLED'},{owner:'s'},{version:2},{changedAccess:true}])test('submission refuses unavailable or changed access '+JSON.stringify(options),async()=>{
  const s=service(options);await assert.rejects(s.submitAssignment(student,'lesson',response));assert.equal(s.writes.length,0);
@@ -49,7 +49,7 @@ test('requested revision creates new attempt instead of overwriting history',asy
  const s=service({latest:{id:'old',attempt:2,status:'REVISION'}});await s.submitAssignment(student,'lesson',response);assert.equal(s.writes[0].attempt,3);assert.equal(s.writes[0].id,undefined);
 });
 test('review by owner stores score zero and immutable review metadata',async()=>{
- const s=service();await s.reviewSubmission(teacher,'submission',{action:'grade',score:0,feedback:'نیاز به تمرین بیشتر'});assert.equal(s.writes[0].score,0);assert.equal(s.writes[0].status,'GRADED');assert.equal(s.writes[0].reviewedBy,'t');
+ const s=service();await s.reviewSubmission(teacher,'submission',{action:'grade',score:0,feedback:'نیاز به تمرین بیشتر'});assert.equal(s.writes[0].score,0);assert.equal(s.writes[0].status,'GRADED');assert.equal(s.writes[0].reviewedBy,'t');assert.equal(s.notices[0].userId,'s');assert.equal(s.notices[0].href,'/dashboard/courses/c/grades');assert.equal(s.notices[0].eventKey,'submission:submission:review');
 });
 test('revision has feedback and no final score; admin may review',async()=>{
  const s=service();await s.reviewSubmission(admin,'submission',{action:'revision',feedback:'بخش دوم را تکمیل کنید'});assert.equal(s.writes[0].score,null);assert.equal(s.writes[0].status,'REVISION');
@@ -74,6 +74,6 @@ for(const reason of ['LESSON_LOCKED','NOT_ENROLLED','LESSON_NOT_PUBLISHED','COUR
  const res=await GET(new Request('http://test/api'),{params:Promise.resolve({lessonId:'l'})});assert.equal(res.status,403);assert.equal((await res.json()).lesson,undefined);
 });
 test('student gradebook scopes both enrollment and submissions to logged-in user',async()=>{
- const Page=load('app/dashboard/courses/[courseId]/grades/page.tsx',{'@/lib/assignment-api':{assignmentActor:async()=>student},'next/link':{default:({children,href})=>React.createElement('a',{href},children)},'next/navigation':{redirect:()=>assert.fail(),notFound:()=>assert.fail()},'@/lib/prisma':{prisma:{enrollment:{findUnique:async({where})=>{assert.deepEqual(where.userId_courseId,{userId:'s',courseId:'c'});return {id:'own',status:'ACTIVE',course:{title:'Course'}};}},assignment:{findMany:async({include})=>{assert.deepEqual(include.submissions.where,{enrollmentId:'own'});return [];}}}}}).default;
+ const Page=load('app/dashboard/courses/[courseId]/grades/page.tsx',{'@/lib/assignment-api':{assignmentActor:async()=>student},'next/link':{default:({children,href})=>React.createElement('a',{href},children)},'next/navigation':{redirect:()=>assert.fail(),notFound:()=>assert.fail()},'@/lib/prisma':{prisma:{enrollment:{findMany:async()=>[{userId:'s'}],findUnique:async({where})=>{assert.deepEqual(where.userId_courseId,{userId:'s',courseId:'c'});return {id:'own',status:'ACTIVE',course:{title:'Course'}};}},assignment:{findMany:async({include})=>{assert.deepEqual(include.submissions.where,{enrollmentId:'own'});return [];}}}}}).default;
  const html=renderToStaticMarkup(await Page({params:Promise.resolve({courseId:'c'})}));assert.match(html,/هنوز نمره‌ای ثبت نشده/);
 });

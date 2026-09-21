@@ -70,7 +70,7 @@ export default async function CourseManagementPage({ params }: PageProps) {
 
   return (
     <main dir="rtl" className="min-h-screen bg-slate-50 px-4 py-6 sm:p-8">
-      <div className="mx-auto mb-5 flex max-w-7xl flex-wrap items-center gap-4"><DeliveryStatus status={course.deliveryStatus}/><Link href={`/teacher/courses/${course.id}/assignments`} className="panel-action panel-action-violet">تکلیف‌ها و ارزیابی</Link><Link href={`/teacher/courses/${course.id}/interests`} className="panel-action panel-action-amber">فهرست متقاضیان پیش‌ثبت‌نام</Link></div>
+      <div className="mx-auto mb-5 grid max-w-7xl items-center gap-3 sm:grid-cols-[auto_1fr_1fr]"><DeliveryStatus status={course.deliveryStatus}/><Link href={`/teacher/courses/${course.id}/assignments`} className="panel-action panel-action-violet">تکلیف‌ها و ارزیابی</Link><Link href={`/teacher/courses/${course.id}/interests`} className="panel-action panel-action-amber">فهرست متقاضیان پیش‌ثبت‌نام</Link></div>
       <div className="mx-auto max-w-7xl">
         <nav aria-label="مسیر مدیریت دوره" className="mb-5">
           <Link href={session.role === "ADMIN" ? "/admin/courses" : "/teacher"} className="panel-action panel-action-slate">
@@ -145,7 +145,7 @@ export default async function CourseManagementPage({ params }: PageProps) {
             <img
               src={course.roadmapImageUrl}
               alt="نقشه راه دوره"
-              className="max-h-[600px] w-full rounded-xl object-contain"
+              className="mx-auto max-h-[600px] w-auto max-w-full rounded-xl object-contain"
             />
           ) : (
             <div className="rounded-xl border-2 border-dashed p-10 text-center text-gray-500">

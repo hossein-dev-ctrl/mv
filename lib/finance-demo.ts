@@ -42,6 +42,8 @@ export async function clearFinanceDemo(ownerId:string) {
   if(outside||foreignPayments||foreignEnrollments||foreignInterests)throw new Error('بسته به داده‌ای خارج از تست متصل است؛ برای حفظ اطلاعات، حذف انجام نشد.');
   const payments=await tx.payment.findMany({where:{courseId:{in:courseIds},userId:{in:userIds}},select:{id:true}});const ids=payments.map(p=>p.id);
   await tx.paymentRefund.deleteMany({where:{paymentId:{in:ids}}});await tx.paymentCost.deleteMany({where:{paymentId:{in:ids}}});
+  const payouts=await tx.payout.findMany({where:{teacherId:{in:userIds}},select:{id:true}});
+  if(payouts.length)await tx.notification.deleteMany({where:{OR:payouts.map(p=>({eventKey:{startsWith:`payout:${p.id}:`}}))}});
   await tx.payout.deleteMany({where:{teacherId:{in:userIds}}});
   await tx.payment.deleteMany({where:{id:{in:ids}}});
   await tx.submission.deleteMany({where:{assignment:{lesson:{section:{courseId:{in:courseIds}}}},enrollment:{userId:{in:userIds}}}});
