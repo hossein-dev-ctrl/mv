@@ -16,7 +16,7 @@ export async function POST(request:Request,{params}:{params:Promise<{courseId:st
  await prisma.$transaction(async tx=>{
   const interest=await tx.courseInterest.upsert({where:{courseId_userId:{courseId,userId:user.id}},create:{courseId,userId:user.id,name:body.data.name,phone:body.data.phone},update:{}});
   const notice={title:'درخواست پیش‌ثبت‌نام جدید',body:'یک متقاضی جدید برای دوره ثبت شده است.',href:`/teacher/courses/${courseId}/interests`,eventKey:`interest:${interest.id}`};
-  await notifyUsers(tx,[course.teacherId],notice);await notifyAdmins(tx,notice);
+  await notifyUsers(tx,[course.teacherId],notice);await notifyAdmins(tx,{...notice,scope:'SYSTEM'});
  });
  return Response.json({message:'درخواست ثبت شد؛ پس از مشخص شدن زمان برگزاری امکان اطلاع‌رسانی وجود دارد.'});
 }

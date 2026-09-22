@@ -1,6 +1,6 @@
 import type {Prisma} from '@prisma/client';
 
-type Notice = {title:string;body:string;href:string;eventKey:string};
+type Notice = {title:string;body:string;href:string;eventKey:string;scope?:'PERSONAL'|'SYSTEM';senderName?:string;recipientName?:string};
 export async function notifyUsers(tx:Prisma.TransactionClient, userIds:string[], notice:Notice) {
  const ids=Array.from(new Set(userIds));
  // Keep individual INSERTs bounded, including admin broadcasts.

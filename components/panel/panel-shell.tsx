@@ -52,13 +52,13 @@ export default async function PanelShell({ children, area }: {
   const navigation = panelNavigation(user?.role);
 
   return (
-    <div dir="rtl" className="flex min-h-screen flex-col bg-slate-50">
+    <div dir="rtl" className="platform-shell flex min-h-screen flex-col">
       <a href="#panel-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:rounded-lg focus:bg-white focus:p-4">
         رفتن به محتوای صفحه
       </a>
-      <header className="border-b border-slate-200 bg-white">
+      <header className="platform-header">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-5 px-4 py-5 sm:px-6">
-          <Link href="/courses" aria-label="آموزش آنلاین، مشاهدهٔ دوره‌ها" className="rounded-lg text-slate-900 focus-visible:outline-2 focus-visible:outline-indigo-600">
+          <Link href="/courses" aria-label="آموزش آنلاین، مشاهدهٔ دوره‌ها" className="rounded-lg text-white focus-visible:outline-2 focus-visible:outline-indigo-300">
             <Brand />
           </Link>
           {user ? <div className="flex w-full min-w-0 items-center justify-between gap-3 sm:w-auto">
@@ -67,18 +67,18 @@ export default async function PanelShell({ children, area }: {
                 {Array.from(name)[0]}
               </span>
               <div className="min-w-0">
-                <p className="text-xs text-slate-500">کاربر واردشده</p>
+                <p className="text-xs text-indigo-200">کاربر واردشده</p>
                 <p className="max-w-64 break-words text-sm font-semibold"><bdi>{name}</bdi></p>
-                <p className="mt-1 text-xs text-indigo-700">سطح دسترسی: {roles[user.role]}</p>
+                <p className="mt-1 text-xs text-indigo-200">سطح دسترسی: {roles[user.role]}</p>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2"><NotificationBell/><LogoutButton /></div>
+            <div className="flex shrink-0 items-center gap-2"><NotificationBell role={user.role}/><LogoutButton /></div>
           </div> : <Link href="/login" className="rounded-xl bg-indigo-600 px-5 py-3 text-sm text-white">ورود به حساب کاربری</Link>}
         </div>
         <div className="panel-tabs">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
             <Navigation items={navigation} role={user?.role} />
-            <span className="text-xs text-slate-500">بخش فعلی: {areas[area]}</span>
+            <span className="text-xs text-indigo-200">بخش فعلی: {areas[area]}</span>
           </div>
         </div>
       </header>

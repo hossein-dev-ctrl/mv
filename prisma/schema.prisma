@@ -354,6 +354,7 @@ model Ticket {
 }
 
 model TicketMessage {
+ attachments TicketAttachment[]
  id String @id @default(cuid())
  ticketId String
  senderId String
@@ -367,6 +368,9 @@ model TicketMessage {
 }
 
 model Notification {
+ scope String @default("PERSONAL")
+ senderName String?
+ recipientName String?
  id String @id @default(cuid())
  userId String
  title String
@@ -378,6 +382,18 @@ model Notification {
  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
  @@unique([userId,eventKey])
  @@index([userId,readAt,createdAt])
+ @@index([userId,scope,readAt,createdAt])
+}
+
+model TicketAttachment {
+ id String @id @default(cuid())
+ messageId String @unique
+ filename String
+ contentType String
+ size Int
+ data Bytes
+ createdAt DateTime @default(now())
+ message TicketMessage @relation(fields:[messageId],references:[id],onDelete:Cascade)
 }
 
 model NotificationDispatch {

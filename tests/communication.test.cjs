@@ -30,6 +30,34 @@ function load(file, mocks = {}) {
 const student={userId:'student',role:'STUDENT'},teacher={userId:'teacher',role:'TEACHER'},admin={userId:'admin',role:'ADMIN'};
 const uuid='e4106c70-5d70-4e19-a088-d2c19f1b8203';
 const input={subject:'پرسش درباره درس',body:'متن پیام آزمایشی',recipientId:'teacher',requestId:uuid};
+
+test('ticket file validates actual type and normalizes unsafe filename characters',async()=>{
+ const {validateTicketFile}=load('lib/ticket-attachments.ts',{'@/lib/communication':{CommunicationError:class extends Error {constructor(message,status){super(message);this.status=status;}}}});
+ const file=await validateTicketFile(new File(['%PDF-1.7\nexample'],'../test\r\n.pdf',{type:'text/html'}));
+ assert.equal(file.contentType,'application/pdf');assert.ok(!/[\r\n/]/.test(file.filename));assert.equal(file.size,file.data.length);
+ for(const [name,body] of [['fake.png','not png'],['run.html','<script>bad</script>'],['text.txt',new Uint8Array([255,0,1])]])await assert.rejects(validateTicketFile(new File([body],name)),e=>e.status===415);
+ for(const body of ['',new Uint8Array(5*1024*1024+1)])await assert.rejects(validateTicketFile(new File([body],'test.txt')),e=>e.status===413);
+});
+test('multipart parser accepts one attachment and rejects duplicate files',async()=>{
+ const {readTicketRequest}=load('lib/ticket-attachments.ts',{'@/lib/communication':{CommunicationError:class extends Error {constructor(message,status){super(message);this.status=status;}}}});
+ const form=new FormData();form.set('payload',JSON.stringify(input));form.set('file',new File(['متن فایل'],'example.txt'));
+ const parsed=await readTicketRequest(new Request('http://test',{method:'POST',body:form}));assert.deepEqual(parsed.payload,input);assert.equal(parsed.attachment.contentType,'text/plain');
+ form.append('file',new File(['second'],'second.txt'));await assert.rejects(readTicketRequest(new Request('http://test',{method:'POST',body:form})),/یک فایل/);
+});
+test('streamed request limit is enforced without a Content-Length header',async()=>{
+ const {readTicketRequest}=load('lib/ticket-attachments.ts',{'@/lib/communication':{CommunicationError:class extends Error {constructor(message,status){super(message);this.status=status;}}}});
+ const request=new Request('http://test',{method:'POST',body:new Uint8Array(6*1024*1024)});
+ assert.equal(request.headers.get('content-length'),null);await assert.rejects(readTicketRequest(request),e=>e.status===413);
+});
+for(const actor of [student,teacher,admin])test(`${actor.role} attachment download checks ticket visibility and forces private download`,async()=>{
+ const scope=actor.role==='ADMIN'?{}:{OR:[{creatorId:actor.userId},{recipientId:actor.userId}]};let found=true;
+ const {GET}=load('app/api/tickets/attachments/[attachmentId]/route.ts',{'@/lib/communication':{communicationActor:async()=>actor,ticketScope:()=>scope},'@/lib/prisma':{prisma:{ticketAttachment:{findFirst:async({where})=>{assert.deepEqual(where,{id:'file',message:{ticket:scope}});return found?{data:new Uint8Array([1,2]),size:2,filename:'تست.pdf',contentType:'application/pdf'}:null;}}}}});
+ const response=await GET(new Request('http://test'),{params:Promise.resolve({attachmentId:'file'})});assert.equal(response.status,200);assert.equal(response.headers.get('Cache-Control'),'private, no-store');assert.match(response.headers.get('Content-Disposition'),/^attachment;/);assert.equal(response.headers.get('X-Content-Type-Options'),'nosniff');
+ found=false;assert.equal((await GET(new Request('http://test'),{params:Promise.resolve({attachmentId:'file'})})).status,404);
+});
+test('guest cannot download attachments before login',async()=>{
+ const {GET}=load('app/api/tickets/attachments/[attachmentId]/route.ts',{'@/lib/communication':{communicationActor:async()=>null},'@/lib/prisma':{prisma:{}}});assert.equal((await GET(new Request('http://test'),{params:Promise.resolve({attachmentId:'file'})})).status,401);
+});
 function service(overrides={}){
  const calls={notices:[],tickets:[],messages:[],updates:[],locks:0};
  const ticket={id:'ticket',creatorId:'student',recipientId:'teacher',subject:input.subject,status:'OPEN'};
@@ -49,6 +77,36 @@ function service(overrides={}){
 }
 test('ticket visibility is participant-only with an explicit admin exception',()=>{
  const s=service();assert.deepEqual(s.ticketScope(student),{OR:[{creatorId:'student'},{recipientId:'student'}]});assert.deepEqual(s.ticketScope(admin),{});
+});
+function namedPeople(s){
+ const people=[{id:'student',name:'سارا',role:'STUDENT'},{id:'teacher',name:'مدرس نمونه',role:'TEACHER'},{id:'admin',name:'مدیر',role:'ADMIN'},{id:'observer',name:'مدیر دوم',role:'ADMIN'}];
+ s.tx.user.findMany=async({where})=>where.role==='ADMIN'?people.filter(p=>p.role==='ADMIN'&&!where.id.notIn.includes(p.id)):people.filter(p=>where.id.in.includes(p.id));
+}
+test('direct participants receive personal notices and observing admins receive system notices with both names',async()=>{
+ const s=service();namedPeople(s);await s.createTicket(student,input);
+ assert.equal(s.calls.notices.find(n=>n.userId==='teacher').scope,'PERSONAL');
+ assert.equal(s.calls.notices.find(n=>n.userId==='admin').scope,'SYSTEM');
+ assert.ok(s.calls.notices.every(n=>n.senderName==='سارا (دانش‌آموز)'&&n.recipientName==='مدرس نمونه (مدرس)'));
+});
+test('an admin participant gets one personal notification instead of an observer copy',async()=>{
+ const s=service();namedPeople(s);s.ticket.creatorId='admin';s.ticket.recipientId='student';await s.replyTicket(student,'ticket',{body:'پاسخ',requestId:uuid});
+ const direct=s.calls.notices.filter(n=>n.userId==='admin');assert.equal(direct.length,1);assert.equal(direct[0].scope,'PERSONAL');assert.equal(direct[0].recipientName,'مدیر (مدیر)');assert.equal(s.calls.notices.find(n=>n.userId==='observer').scope,'SYSTEM');
+});
+test('support-queue tickets are personal to managers, not observer notifications',async()=>{
+ const s=service();namedPeople(s);await s.createTicket(student,{...input,recipientId:null});assert.ok(s.calls.notices.every(n=>n.scope==='PERSONAL'));assert.ok(s.calls.notices.every(n=>n.recipientName==='پشتیبانی مدیریت'));
+});
+test('attachments are created inside the message write and retry creates no second file',async()=>{
+ const s=service();const file={filename:'test.txt',contentType:'text/plain',size:1,data:new Uint8Array([65])};
+ await s.createTicket(student,input,file);assert.deepEqual(s.calls.tickets[0].messages.create.attachments.create,file);
+ await s.replyTicket(teacher,'ticket',{body:'پیوست',requestId:uuid},file);assert.deepEqual(s.calls.messages[0].attachments.create,file);
+ s.tx.ticketMessage.findUnique=async()=>({id:'existing'});await s.replyTicket(teacher,'ticket',{body:'پیوست',requestId:uuid},file);assert.equal(s.calls.messages.length,1);
+});
+test('notification scope filters are available only to administrators',()=>{
+ const {notificationScope}=load('lib/notification-scope.ts');assert.equal(notificationScope('ADMIN','SYSTEM'),'SYSTEM');assert.equal(notificationScope('ADMIN','PERSONAL'),'PERSONAL');assert.equal(notificationScope('STUDENT','SYSTEM'),undefined);assert.equal(notificationScope('ADMIN','INVALID'),undefined);
+});
+test('reading an admin category leaves the other category untouched',async()=>{
+ const {POST}=load('app/api/notifications/read/route.ts',{'@/lib/communication':{communicationActor:async()=>admin},'@/lib/prisma':{prisma:{notification:{updateMany:async({where})=>{assert.deepEqual(where,{userId:'admin',readAt:null,scope:'SYSTEM'});return {count:1};}}}}});
+ assert.equal((await POST(new Request('http://test',{method:'POST',body:JSON.stringify({all:true,scope:'SYSTEM'})}))).status,200);
 });
 test('contacts expose teachers to students and enrolled students to their teacher',()=>{
  const s=service();assert.equal(s.contactScope(student).role,'TEACHER');assert.equal(s.contactScope(student).demoBatchId,null);
@@ -123,7 +181,7 @@ test('unauthorized ticket page stops before fetching any messages',async()=>{
  await assert.rejects(Page({params:Promise.resolve({ticketId:'private'}),searchParams:Promise.resolve({})}),/NOT_FOUND/);
 });
 test('ticket page escapes message content instead of rendering HTML',async()=>{
- const api=service();const Page=load('app/tickets/[ticketId]/page.tsx',{'@/lib/communication':{...api,communicationActor:async()=>student},'@/lib/prisma':{prisma:{ticket:{findFirst:async()=>({...api.ticket,creator:{id:'student',name:'دانش‌آموز',role:'STUDENT'},recipient:null})},ticketMessage:{count:async()=>1,findMany:async()=>[{id:'m',senderId:'student',sender:{id:'student',name:'دانش‌آموز',role:'STUDENT'},body:'<script>alert(1)</script>',createdAt:new Date()}]}}},'@/components/communication/forms':{TicketReply:()=>null},'next/navigation':{},'next/link':{default:({children,href})=>React.createElement('a',{href},children)}}).default;
+ const api=service();const Page=load('app/tickets/[ticketId]/page.tsx',{'@/lib/communication':{...api,communicationActor:async()=>student},'@/lib/prisma':{prisma:{ticket:{findFirst:async()=>({...api.ticket,creator:{id:'student',name:'دانش‌آموز',role:'STUDENT'},recipient:null})},ticketMessage:{count:async()=>1,findMany:async()=>[{id:'m',senderId:'student',sender:{id:'student',name:'دانش‌آموز',role:'STUDENT'},body:'<script>alert(1)</script>',attachments:[],createdAt:new Date()}]}}},'@/components/communication/forms':{TicketReply:()=>null},'next/navigation':{},'next/link':{default:({children,href})=>React.createElement('a',{href},children)}}).default;
  const html=renderToStaticMarkup(await Page({params:Promise.resolve({ticketId:'ticket'}),searchParams:Promise.resolve({})}));assert.ok(!html.includes('<script>'));assert.ok(html.includes('&lt;script&gt;'));
 });
 test('notification batches deduplicate recipients and cap inserts at 500',async()=>{

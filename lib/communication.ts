@@ -3,7 +3,8 @@ import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import {prisma} from '@/lib/prisma';
 import {getManagementSession} from '@/lib/management-session';
-import {notifyAdmins,notifyUsers} from '@/lib/notifications';
+import {notifyUsers} from '@/lib/notifications';
+import type {TicketFile} from '@/lib/ticket-attachments';
 
 export type Actor={userId:string;role:'STUDENT'|'TEACHER'|'ADMIN'};
 export class CommunicationError extends Error {constructor(message:string,public status=400){super(message);}}
@@ -36,12 +37,16 @@ export const statusInput=z.object({status:z.enum(['OPEN','CLOSED'])});
 export const dispatchInput=z.object({title:z.string().trim().min(3).max(150),body:z.string().trim().min(3).max(3000),audience:z.enum(['ALL','STUDENT','TEACHER','COURSE','USER']),targetId:z.string().max(100).optional(),requestId});
 
 async function notifyTicket(tx:Prisma.TransactionClient,ticket:{id:string;creatorId:string;recipientId:string|null;subject:string},actor:Actor,eventKey:string,title:string){
- const notice={title,body:ticket.subject,href:`/tickets/${ticket.id}`,eventKey};
- await notifyUsers(tx,[ticket.creatorId,ticket.recipientId].filter((id):id is string=>!!id&&id!==actor.userId),notice);
- // Managers oversee tickets; duplicates are suppressed for a manager participant.
- await notifyAdmins(tx,notice,actor.userId);
+ const people=await tx.user.findMany({where:{id:{in:Array.from(new Set([actor.userId,ticket.creatorId,...(ticket.recipientId?[ticket.recipientId]:[])]))}},select:{id:true,name:true,role:true}});
+ const label=(id:string)=>{const user=people.find(u=>u.id===id);return user?`${userLabel(user)} (${roleLabels[user.role]})`:`کاربر ${id.slice(-6)}`;};
+ const recipientName=actor.userId===ticket.creatorId?(ticket.recipientId?label(ticket.recipientId):'پشتیبانی مدیریت'):actor.userId===ticket.recipientId?label(ticket.creatorId):[label(ticket.creatorId),...(ticket.recipientId?[label(ticket.recipientId)]:[])].join(' و ');
+ const notice={title,body:ticket.subject,href:`/tickets/${ticket.id}`,eventKey,senderName:label(actor.userId),recipientName};
+ const participants=[ticket.creatorId,ticket.recipientId].filter((id):id is string=>!!id&&id!==actor.userId);
+ await notifyUsers(tx,participants,{...notice,scope:'PERSONAL'});
+ const admins=await tx.user.findMany({where:{role:'ADMIN',demoBatchId:null,id:{notIn:[actor.userId,...participants]}},select:{id:true}});
+ await notifyUsers(tx,admins.map(u=>u.id),{...notice,scope:ticket.recipientId===null?'PERSONAL':'SYSTEM'});
 }
-export async function createTicket(actor:Actor,raw:unknown){
+export async function createTicket(actor:Actor,raw:unknown,attachment?:TicketFile){
  const input=newTicketInput.parse(raw);
  return prisma.$transaction(async tx=>{
   const prior=await tx.ticket.findUnique({where:{creatorId_clientRequestId:{creatorId:actor.userId,clientRequestId:input.requestId}}});
@@ -50,12 +55,12 @@ export async function createTicket(actor:Actor,raw:unknown){
    const recipient=await tx.user.findFirst({where:{AND:[contactScope(actor),{id:input.recipientId}]},select:{id:true}});
    if(!recipient)throw new CommunicationError('گیرنده در دسترس شما نیست.',403);
   }else if(actor.role==='ADMIN')throw new CommunicationError('گیرنده را انتخاب کنید.');
-  const ticket=await tx.ticket.create({data:{creatorId:actor.userId,recipientId:input.recipientId,subject:input.subject,clientRequestId:input.requestId,messages:{create:{senderId:actor.userId,body:input.body,clientRequestId:input.requestId}}}});
+  const ticket=await tx.ticket.create({data:{creatorId:actor.userId,recipientId:input.recipientId,subject:input.subject,clientRequestId:input.requestId,messages:{create:{senderId:actor.userId,body:input.body,clientRequestId:input.requestId,...(attachment?{attachments:{create:attachment}}:{})}}}});
   await notifyTicket(tx,ticket,actor,`ticket:${ticket.id}:created`,'تیکت جدید');
   return ticket;
  });
 }
-export async function replyTicket(actor:Actor,id:string,raw:unknown){
+export async function replyTicket(actor:Actor,id:string,raw:unknown,attachment?:TicketFile){
  const input=replyInput.parse(raw);
  return prisma.$transaction(async tx=>{
   await tx.$queryRaw`SELECT id FROM "Ticket" WHERE id=${id} FOR UPDATE`;
@@ -64,7 +69,7 @@ export async function replyTicket(actor:Actor,id:string,raw:unknown){
   const prior=await tx.ticketMessage.findUnique({where:{ticketId_senderId_clientRequestId:{ticketId:id,senderId:actor.userId,clientRequestId:input.requestId}}});
   if(prior)return prior;
   if(ticket.status==='CLOSED')throw new CommunicationError('برای پاسخ، ابتدا تیکت را بازگشایی کنید.',409);
-  const message=await tx.ticketMessage.create({data:{ticketId:id,senderId:actor.userId,body:input.body,clientRequestId:input.requestId}});
+  const message=await tx.ticketMessage.create({data:{ticketId:id,senderId:actor.userId,body:input.body,clientRequestId:input.requestId,...(attachment?{attachments:{create:attachment}}:{})}});
   await tx.ticket.update({where:{id},data:{updatedAt:new Date()}});
   await notifyTicket(tx,ticket,actor,`ticket-message:${message.id}`,'پاسخ جدید تیکت');
   return message;
