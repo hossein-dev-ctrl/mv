@@ -1,3 +1,5 @@
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import CoursePrice from "@/components/course/price";
 import { coursePrice } from "@/lib/course-price";
 import Link from "next/link";
@@ -94,7 +96,7 @@ export default async function CheckoutPage({ params }: Props) {
           <Link
             href={`/courses/${course.slug}`}
             className="panel-action panel-action-slate"
-          >
+          ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
             ← بازگشت به دوره
           </Link>
 

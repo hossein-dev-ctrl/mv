@@ -1,3 +1,6 @@
+
+import ThemeIcon from '@/components/panel/theme-icon';
+import FinalReport from '@/components/assessment/final-report';
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -28,7 +31,7 @@ export default async function StudentProgressPage({ params }: {
   const lessonLabels = { NOT_STARTED: "شروع نشده", IN_PROGRESS: "در حال یادگیری", COMPLETED: "تکمیل‌شده" };
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
-      <Link href={`/teacher/courses/${courseId}/students`} className="panel-action panel-action-teal">← بازگشت به دانش‌آموزان دوره</Link>
+      <Link href={`/teacher/courses/${courseId}/students`} className="panel-action panel-action-teal"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>← بازگشت به دانش‌آموزان دوره</Link>
       <h1 className="mt-4 text-2xl font-bold">پیشرفت <bdi>{name}</bdi></h1>
       <p className="mt-2 text-slate-600">{course.title}</p>
       <dl className="my-6 grid gap-5 rounded-2xl border border-slate-200 bg-white p-6 sm:grid-cols-3">
@@ -39,6 +42,7 @@ export default async function StudentProgressPage({ params }: {
       {enrollment.status === "CANCELLED" && <p className="mb-5 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">این ثبت‌نام لغو شده و دسترسی آموزشی غیرفعال است؛ سابقهٔ پیشرفت قبلی حفظ شده است.</p>}
       {course.status !== "PUBLISHED" && <p className="mb-5 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">دوره در حال حاضر منتشر نیست و برای یادگیری در دسترس دانش‌آموز قرار ندارد.</p>}
       <p className="mb-6 text-sm leading-7 text-slate-600">پایان ویدئو به معنی تکمیل درس نیست؛ تکمیل درس با اقدام جداگانهٔ دانش‌آموز ثبت می‌شود. فقط درس‌های منتشرشده در این گزارش آمده‌اند.</p>
+      <FinalReport enrollmentId={enrollmentId}/>
       {lessons.length === 0 ? <p className="rounded-2xl border bg-white p-8 text-slate-600">هنوز درسی منتشر نشده است.</p> : course.sections.filter(section => section.lessons.length > 0).map(section => (
         <section key={section.id} className="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white">
           <h2 className="bg-slate-100 px-5 py-4 font-bold">{section.title}</h2>

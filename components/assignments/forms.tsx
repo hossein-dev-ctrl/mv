@@ -1,10 +1,12 @@
 "use client";
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import {useState,type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import NumberInput from '@/components/ui/number-input';
 const field='mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 text-sm';
 function useSave(){const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');const router=useRouter();return {busy,message,save:async(url:string,method:string,body:unknown)=>{setBusy(true);setMessage('');try{const res=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const json=await res.json();setMessage(json.message);if(res.ok)router.refresh();}catch{setMessage('ارتباط برقرار نشد؛ دوباره تلاش کنید.');}finally{setBusy(false);}}};}
-function Result({busy,message,label}:{busy:boolean;message:string;label:string}){return <><button disabled={busy} className="rounded-xl bg-indigo-600 px-5 py-3 text-sm text-white disabled:opacity-40">{busy?'در حال ثبت…':label}</button>{message&&<p role="status" className="text-sm leading-7">{message}</p>}</>;}
+function Result({busy,message,label}:{busy:boolean;message:string;label:string}){return <><button disabled={busy} className="rounded-xl bg-indigo-600 px-5 py-3 text-sm text-white disabled:opacity-40"><ThemeIcon name="check" className="me-2 h-4 w-4"/>{busy?'در حال ثبت…':label}</button>{message&&<p role="status" className="text-sm leading-7">{message}</p>}</>;}
 export function AssignmentEditor({lessonId,assignment}:{lessonId:string;assignment:{title:string;instructions:string;published:boolean;version:number}|null}){
  const state=useSave();
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();const form=new FormData(e.currentTarget);await state.save(`/api/assignments/${lessonId}`,'PUT',{title:form.get('title'),instructions:form.get('instructions'),published:form.get('published')==='on',version:assignment?.version??0});}

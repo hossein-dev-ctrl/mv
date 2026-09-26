@@ -1,3 +1,5 @@
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import { prisma } from "@/lib/prisma";
 import { readWallet } from "@/lib/wallet";
 import WalletSummary from "@/components/finance/wallet-summary";
@@ -18,7 +20,7 @@ export default async function TeacherFinancePage() {
   const eligible = !!minimum && wallet.totals.available >= minimum && !open;
 
   return <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
-    <Link href="/teacher" className="panel-action panel-action-slate">بازگشت به دوره‌های من</Link>
+    <Link href="/teacher" className="panel-action panel-action-slate"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>بازگشت به دوره‌های من</Link>
     <h1 className="mt-4 text-2xl font-bold">گزارش مالی من</h1>
     <p className="mt-3 text-sm leading-7 text-slate-600">سهم فعلی شما: {user.teacherSharePercent === null ? "هنوز توسط مدیر تعیین نشده" : `${user.teacherSharePercent.toLocaleString("fa-IR")}٪`}. سهم هر پرداخت هنگام تأیید موفق ذخیره می‌شود.</p>
     <WalletSummary totals={wallet.totals} />
@@ -39,7 +41,7 @@ export default async function TeacherFinancePage() {
     {courses.length === 0 && <p className="rounded-xl border bg-white p-6">هنوز دوره‌ای ندارید.</p>}
     <div className="space-y-5">{courses.map(course => <section key={course.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
       <h3 className="font-bold">{course.title}</h3><FinanceSummary totals={course.totals} />
-      <Link href={`/teacher/courses/${course.id}/students`} className="panel-action panel-action-teal">مشاهدهٔ ثبت‌نام‌ها و پیشرفت</Link>
+      <Link href={`/teacher/courses/${course.id}/students`} className="panel-action panel-action-teal"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>مشاهدهٔ ثبت‌نام‌ها و پیشرفت</Link>
     </section>)}</div>
   </main>;
 }

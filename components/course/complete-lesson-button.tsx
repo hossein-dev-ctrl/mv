@@ -1,5 +1,7 @@
 "use client";
 
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -67,7 +69,7 @@ export default function CompleteLessonButton({
         onClick={completeLesson}
         disabled={loading || !videoCompleted}
         className="rounded-xl bg-indigo-600 px-6 py-3 font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-      >
+      ><ThemeIcon name="check" className="me-2 h-4 w-4"/>
         {loading ? "در حال ثبت..." : "✅ تکمیل درس"}
       </button>
 

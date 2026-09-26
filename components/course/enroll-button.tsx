@@ -1,5 +1,7 @@
 "use client";
 
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -88,7 +90,7 @@ export default function EnrollButton({ courseId, price, isLoggedIn }: Props) {
         onClick={handleEnroll}
         disabled={loading}
         className="rounded-xl bg-indigo-600 px-6 py-3 font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-      >
+      ><ThemeIcon name="check" className="me-2 h-4 w-4"/>
         {loading
           ? "در حال انتقال..."
           : price > 0

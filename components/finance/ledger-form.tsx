@@ -1,4 +1,6 @@
 "use client";
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import JalaliDateInput from "@/components/ui/jalali-date-input";
 import NumberInput from "@/components/ui/number-input";
 import { useState } from "react";
@@ -16,7 +18,7 @@ export default function LedgerForm({action,fixed={},fields=[],label,disabled=fal
     }catch(error){setMessage(error instanceof Error?error.message:"ارتباط برقرار نشد.");}finally{setBusy(false);}
   }}>
     {fields.map(field=><div role="group" aria-label={field.label} key={field.name} className="flex min-w-0 flex-col gap-2 text-xs text-slate-600"><span>{field.label}</span>{field.type==="number" ? <NumberInput key={`${field.name}-${field.value}`} required aria-label={field.label} name={field.name} defaultValue={field.value} min={field.min} max={field.max} unit="تومان" className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm sm:w-44" /> : field.type==="datetime-local" ? <JalaliDateInput name={field.name}/> : <input required aria-label={field.label} name={field.name} type="text" defaultValue={field.value} min={field.min} max={field.max} maxLength={500} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm sm:w-44" />}</div>)}
-    <button disabled={busy||disabled} className="mt-6 rounded-xl bg-indigo-600 px-4 py-2 text-sm text-white disabled:opacity-40">{busy?"در حال ثبت…":label}</button>
+    <button disabled={busy||disabled} className="mt-6 rounded-xl bg-indigo-600 px-4 py-2 text-sm text-white disabled:opacity-40"><ThemeIcon name="check" className="me-2 h-4 w-4"/>{busy?"در حال ثبت…":label}</button>
     {message&&<p role="status" className="w-full text-sm text-slate-700">{message}</p>}
   </form>;
 }

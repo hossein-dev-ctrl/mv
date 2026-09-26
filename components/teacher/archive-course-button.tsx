@@ -1,4 +1,6 @@
 "use client";
+
+import ThemeIcon from '@/components/panel/theme-icon';
 ///////////// اینو حذف کردم اگر خطا نداشتیم حذفش کن
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -54,7 +56,7 @@ export default function ArchiveCourseButton({ courseId }: Props) {
       onClick={handleArchive}
       disabled={loading}
       className="rounded-xl bg-amber-50 px-5 py-3 text-sm font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
-    >
+    ><ThemeIcon name="book" className="me-2 h-4 w-4"/>
       {loading ? "در حال آرشیو..." : "📦 آرشیو دوره"}
     </button>
   );

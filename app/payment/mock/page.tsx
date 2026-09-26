@@ -1,5 +1,7 @@
 "use client";
 
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
@@ -64,7 +66,7 @@ function MockPaymentContent() {
             disabled={loading}
             onClick={() => pay(true)}
             className="w-full rounded-xl bg-green-600 px-5 py-3 font-medium text-white"
-          >
+          ><ThemeIcon name="wallet" className="me-2 h-4 w-4"/>
             ✅ پرداخت موفق
           </button>
 
@@ -72,7 +74,7 @@ function MockPaymentContent() {
             disabled={loading}
             onClick={() => pay(false)}
             className="w-full rounded-xl bg-red-600 px-5 py-3 font-medium text-white"
-          >
+          ><ThemeIcon name="wallet" className="me-2 h-4 w-4"/>
             ❌ پرداخت ناموفق
           </button>
         </div>

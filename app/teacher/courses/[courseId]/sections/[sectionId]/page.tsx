@@ -1,3 +1,5 @@
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -59,7 +61,7 @@ export default async function SectionPage({ params }: PageProps) {
             <Link
               href={`/teacher/courses/${courseId}`}
               className="panel-action panel-action-indigo"
-            >
+            ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
               ← بازگشت به دوره
             </Link>
 
@@ -116,7 +118,7 @@ export default async function SectionPage({ params }: PageProps) {
                         <Link
                           href={`/teacher/courses/${courseId}/sections/${sectionId}/lessons/${lesson.id}`}
                           className="rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-600"
-                        >
+                        ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
                           مدیریت
                         </Link>
 

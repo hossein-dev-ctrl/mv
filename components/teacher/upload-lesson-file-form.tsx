@@ -1,5 +1,7 @@
 "use client";
 
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import { ChangeEvent, FormEvent, useState } from "react";
 
 import { useRouter } from "next/navigation";
@@ -150,7 +152,7 @@ export default function UploadLessonFileForm({ lessonId }: Props) {
         type="submit"
         disabled={loading || !file}
         className="mt-6 w-full rounded-xl bg-indigo-600 px-5 py-3.5 font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-      >
+      ><ThemeIcon name="plus" className="me-2 h-4 w-4"/>
         {loading ? "در حال آپلود..." : "افزودن فایل"}
       </button>
     </form>

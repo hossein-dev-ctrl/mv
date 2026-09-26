@@ -1,5 +1,7 @@
 "use client";
 
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -62,7 +64,7 @@ export default function CourseStatusButton({ courseId, status }: Props) {
           disabled={loading}
           onClick={() => changeStatus("DRAFT")}
           className="rounded-xl border bg-white px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
-        >
+        ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
           انتقال به پیش‌نویس
         </button>
       )}
@@ -73,7 +75,7 @@ export default function CourseStatusButton({ courseId, status }: Props) {
           disabled={loading}
           onClick={() => changeStatus("PUBLISHED")}
           className="rounded-xl bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700 disabled:opacity-50"
-        >
+        ><ThemeIcon name="book" className="me-2 h-4 w-4"/>
           انتشار دوره
         </button>
       )}
@@ -84,7 +86,7 @@ export default function CourseStatusButton({ courseId, status }: Props) {
           disabled={loading}
           onClick={() => changeStatus("ARCHIVED")}
           className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800 hover:bg-amber-100 disabled:opacity-50"
-        >
+        ><ThemeIcon name="book" className="me-2 h-4 w-4"/>
           آرشیو دوره
         </button>
       )}

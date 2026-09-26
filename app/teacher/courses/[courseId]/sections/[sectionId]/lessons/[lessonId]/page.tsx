@@ -1,3 +1,5 @@
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import {AssignmentEditor} from "@/components/assignments/forms";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -68,7 +70,7 @@ export default async function LessonManagementPage({ params }: PageProps) {
             <Link
               href={`/teacher/courses/${courseId}/sections/${sectionId}`}
               className="panel-action panel-action-indigo"
-            >
+            ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
               ← بازگشت به فصل
             </Link>
 
@@ -102,7 +104,7 @@ export default async function LessonManagementPage({ params }: PageProps) {
               )}
             </section>
             <AssignmentEditor lessonId={lessonId} assignment={lesson.assignment}/>
-            <Link href={`/teacher/courses/${courseId}/assignments`} className="panel-action panel-action-violet">بررسی پاسخ‌ها و ارزیابی تکلیف‌ها</Link>
+            <Link href={`/teacher/courses/${courseId}/assignments`} className="panel-action panel-action-violet"><ThemeIcon name="message" className="me-2 h-4 w-4"/>بررسی پاسخ‌ها و ارزیابی تکلیف‌ها</Link>
             <EditLessonForm
               lessonId={lesson.id}
               initialTitle={lesson.title}

@@ -133,3 +133,20 @@ body { background: #f3f7fc; color: #17234b; }
  .chapter-lesson { gap:8px; }
  .lesson-open { padding:8px 10px; font-size:11px; }
 }
+
+/* Interactive controls retain visible keyboard focus and respect reduced motion. */
+.panel-action,.course-tool,.theme-navigation a { transition:transform .18s ease,box-shadow .18s ease,background-color .18s ease; }
+.panel-action:hover:not(:disabled),.course-tool:hover,.theme-navigation a:hover { transform:translateY(-2px);box-shadow:0 5px 16px #4f46e51a; }
+.panel-action:active:not(:disabled){transform:translateY(0)}
+.panel-action:focus-visible,.course-tool:focus-visible{outline:3px solid #a5b4fc;outline-offset:3px}
+.assessment-card{border:1px solid #e0e7ff;border-radius:1.5rem;background:white;padding:1.5rem;box-shadow:0 8px 30px #4338ca06}
+.assessment-heading{display:flex;align-items:center;gap:.65rem;font-size:1.15rem;font-weight:700;color:#312e81}
+.assessment-stat{display:flex;flex-direction:column;gap:.8rem;background:#f5f7ff;border-radius:1rem;padding:1.2rem;font-size:.9rem}
+.assessment-stat strong{color:#4338ca;font-size:1.05rem}
+.assessment-form label{display:block;font-size:.9rem;line-height:1.8}
+.assessment-form input:not([type=checkbox]),.assessment-form textarea,.assessment-form select{display:block;width:100%;border:1px solid #cbd5e1;border-radius:.8rem;padding:.7rem;background:white;margin-top:.4rem}
+.assessment-form .form-help{display:block;min-height:3rem;font-size:.75rem;color:#64748b;margin-top:.3rem}
+.assessment-form fieldset:disabled{opacity:.65}
+@media(prefers-reduced-motion:reduce){.panel-action,.course-tool,.theme-navigation a{transition:none!important;transform:none!important}}
+.assessment-form label:has(>input[type=checkbox]){display:flex;align-items:center;gap:.65rem}
+.assessment-form label>span:has(>input[inputmode=numeric]){display:flex;width:100%}

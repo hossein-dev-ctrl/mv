@@ -1,3 +1,5 @@
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import Link from "next/link";
 
 export default function PaymentFailedPage() {
@@ -17,20 +19,20 @@ export default function PaymentFailedPage() {
           پرداخت انجام نشد یا توسط شما لغو شد.
         </p>
 
-        <Link href="/payments" className="mt-5 inline-block text-sm text-indigo-600 hover:underline">بررسی سوابق پرداخت</Link>
+        <Link href="/payments" className="mt-5 inline-block text-sm text-indigo-600 hover:underline"><ThemeIcon name="wallet" className="me-2 h-4 w-4"/>بررسی سوابق پرداخت</Link>
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             href="/courses"
             className="flex-1 rounded-xl bg-indigo-600 px-5 py-3 text-white"
-          >
+          ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
             بازگشت به دوره‌ها
           </Link>
 
           <Link
             href="/dashboard"
             className="flex-1 rounded-xl border px-5 py-3"
-          >
+          ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
             داشبورد
           </Link>
         </div>

@@ -1,5 +1,7 @@
 "use client";
 
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import { useState } from "react";
 
 export default function LogoutButton() {
@@ -29,7 +31,7 @@ export default function LogoutButton() {
       disabled={loading}
       aria-busy={loading}
       className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-100 focus-visible:outline-2 focus-visible:outline-rose-600 disabled:cursor-wait disabled:opacity-60"
-    >
+    ><ThemeIcon name="logout" className="me-2 h-4 w-4"/>
       {loading ? "در حال خروج…" : "خروج از حساب"}
     </button>
     {error && <p role="alert" className="mt-2 text-xs leading-5 text-rose-700">{error}</p>}

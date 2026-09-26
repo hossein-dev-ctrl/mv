@@ -16,6 +16,7 @@ function load(file, mocks = {}) {
   const module = { exports: {} };
   const resolve = (name) => {
     if (name in mocks) return mocks[name];
+    if (['@/components/assessment/exam-gateway','@/components/assessment/final-report'].includes(name)) return {default:()=>null};
     if (name.startsWith('@/')) {
       const base = name.slice(2);
       const ext = fs.existsSync(path.join(__dirname, '..', `${base}.tsx`)) ? '.tsx' : '.ts';

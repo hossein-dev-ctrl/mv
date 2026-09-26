@@ -1,4 +1,6 @@
 'use client';
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import {useEffect,useRef,useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {Spinner} from '@/components/panel/loading';
@@ -38,7 +40,7 @@ export function TicketReply({ticketId,status}:{ticketId:string;status:string}){
   else await send(`/api/tickets/${ticketId}`,{status:status==='OPEN'?'CLOSED':'OPEN'},'PATCH');
   router.refresh();
  }catch(e){setError((e as Error).message);}finally{inFlight.current=false;setBusy(false);}}
- return <div className="space-y-4">{status==='OPEN'?<form onSubmit={e=>{e.preventDefault();void action(true);}} className="space-y-4"><label className="block font-medium">پاسخ شما<textarea required maxLength={6000} rows={5} value={body} onChange={e=>setBody(e.target.value)} className={`${field} mt-2`}/></label><TicketFileInput key={fileKey} onChange={setFile}/><SubmitButton busy={busy} label="ارسال پاسخ"/></form>:<p className="rounded-xl bg-slate-100 p-4 text-sm">تیکت بسته است. برای ادامهٔ گفت‌وگو آن را بازگشایی کنید.</p>}<button type="button" disabled={busy} onClick={()=>void action(false)} className="panel-action panel-action-slate">{status==='OPEN'?'بستن تیکت':'بازگشایی تیکت'}</button>{error&&<p role="alert" className="text-sm text-rose-700">{error}</p>}</div>;
+ return <div className="space-y-4">{status==='OPEN'?<form onSubmit={e=>{e.preventDefault();void action(true);}} className="space-y-4"><label className="block font-medium">پاسخ شما<textarea required maxLength={6000} rows={5} value={body} onChange={e=>setBody(e.target.value)} className={`${field} mt-2`}/></label><TicketFileInput key={fileKey} onChange={setFile}/><SubmitButton busy={busy} label="ارسال پاسخ"/></form>:<p className="rounded-xl bg-slate-100 p-4 text-sm">تیکت بسته است. برای ادامهٔ گفت‌وگو آن را بازگشایی کنید.</p>}<button type="button" disabled={busy} onClick={()=>void action(false)} className="panel-action panel-action-slate"><ThemeIcon name="message" className="me-2 h-4 w-4"/>{status==='OPEN'?'بستن تیکت':'بازگشایی تیکت'}</button>{error&&<p role="alert" className="text-sm text-rose-700">{error}</p>}</div>;
 }
 export function AnnouncementForm(){
  const router=useRouter();const [audience,setAudience]=useState('STUDENT');const [targetId,setTarget]=useState('');const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');const requestId=useRef('');const inFlight=useRef(false);

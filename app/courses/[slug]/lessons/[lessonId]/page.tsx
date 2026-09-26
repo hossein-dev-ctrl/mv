@@ -1,3 +1,6 @@
+
+import ThemeIcon from '@/components/panel/theme-icon';
+import ExamGateway from '@/components/assessment/exam-gateway';
 import LessonAssignment from "@/components/assignments/lesson-assignment";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -136,7 +139,7 @@ export default async function LessonPage({ params }: Props) {
             <Link
               href={`/courses/${slug}`}
               className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
-            >
+            ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
               ← بازگشت به دوره
             </Link>
 
@@ -179,7 +182,7 @@ export default async function LessonPage({ params }: Props) {
               />
 
               <LessonAssignment lessonId={lesson.id} enrollmentId={enrollment.id}/>
-              <Link href={`/dashboard/courses/${course.id}/grades`} className="mt-4 inline-block text-sm text-indigo-600">کارنامهٔ تکلیف‌های این دوره</Link>
+              <Link href={`/dashboard/courses/${course.id}/grades`} className="mt-4 inline-block text-sm text-indigo-600"><ThemeIcon name="award" className="me-2 h-4 w-4"/>کارنامهٔ تکلیف‌های این دوره</Link>
               {/* فایل‌ها */}
 
               {lesson.files.length > 0 && (
@@ -209,7 +212,7 @@ export default async function LessonPage({ params }: Props) {
                   <Link
                     href={`/courses/${slug}/lessons/${previousLesson.id}`}
                     className="rounded-xl border px-5 py-3 text-sm font-medium transition hover:bg-gray-50"
-                  >
+                  ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
                     → درس قبلی
                   </Link>
                 ) : (
@@ -220,17 +223,18 @@ export default async function LessonPage({ params }: Props) {
                   <Link
                     href={`/courses/${slug}/lessons/${nextLesson.id}`}
                     className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-indigo-700"
-                  >
+                  ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
                     درس بعدی ←
                   </Link>
                 ) : null}
               </div>
             </div>
 
+
             {/* Sidebar */}
 
             <aside className="h-fit rounded-2xl border bg-white p-5 shadow-sm">
-              <h2 className="text-lg font-bold">محتوای دوره</h2>
+              <ExamGateway courseId={enrollment.courseId}/><h2 className="text-lg font-bold">محتوای دوره</h2>
 
               <div className="mt-4">
                 <div className="mb-2 flex items-center justify-between text-sm">

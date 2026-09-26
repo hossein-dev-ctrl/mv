@@ -1,5 +1,7 @@
 "use client";
 
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -60,7 +62,7 @@ export default function CreateSectionForm({ courseId }: Props) {
       <button
         onClick={() => setOpen(true)}
         className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-medium text-white hover:bg-indigo-700"
-      >
+      ><ThemeIcon name="plus" className="me-2 h-4 w-4"/>
         + افزودن فصل
       </button>
     );
@@ -101,7 +103,7 @@ export default function CreateSectionForm({ courseId }: Props) {
             type="submit"
             disabled={loading}
             className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50"
-          >
+          ><ThemeIcon name="plus" className="me-2 h-4 w-4"/>
             {loading ? "در حال ایجاد..." : "ایجاد فصل"}
           </button>
 
@@ -109,7 +111,7 @@ export default function CreateSectionForm({ courseId }: Props) {
             type="button"
             onClick={() => setOpen(false)}
             className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm"
-          >
+          ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
             انصراف
           </button>
         </div>

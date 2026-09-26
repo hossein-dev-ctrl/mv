@@ -1,4 +1,6 @@
 "use client";
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import CourseExtraFields from "@/components/teacher/course-extra-fields";
 import NumberInput from "@/components/ui/number-input";
 
@@ -198,7 +200,7 @@ export default function NewCoursePage() {
               type="button"
               onClick={() => router.back()}
               className="rounded-xl border border-slate-200 bg-white px-6 py-3 font-medium hover:bg-slate-50"
-            >
+            ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
               انصراف
             </button>
 
@@ -206,7 +208,7 @@ export default function NewCoursePage() {
               type="submit"
               disabled={loading}
               className="rounded-xl bg-indigo-600 px-6 py-3 font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
+            ><ThemeIcon name="plus" className="me-2 h-4 w-4"/>
               {loading ? "در حال ذخیره..." : "ایجاد دوره"}
             </button>
           </div>

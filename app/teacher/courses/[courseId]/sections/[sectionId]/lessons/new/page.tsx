@@ -1,3 +1,5 @@
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -51,7 +53,7 @@ export default async function NewLessonPage({ params }: PageProps) {
         <Link
           href={`/teacher/courses/${courseId}/sections/${sectionId}`}
           className="panel-action panel-action-indigo"
-        >
+        ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
           ← بازگشت به فصل
         </Link>
 

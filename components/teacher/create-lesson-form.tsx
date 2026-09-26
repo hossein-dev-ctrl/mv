@@ -1,5 +1,7 @@
 "use client";
 
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -90,7 +92,7 @@ export default function CreateLessonForm({ courseId, sectionId }: Props) {
           type="submit"
           disabled={loading}
           className="w-full rounded-xl bg-indigo-600 px-5 py-3 font-medium text-white disabled:opacity-50"
-        >
+        ><ThemeIcon name="plus" className="me-2 h-4 w-4"/>
           {loading ? "در حال ایجاد..." : "ایجاد درس"}
         </button>
       </div>

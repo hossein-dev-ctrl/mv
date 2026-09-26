@@ -1,4 +1,6 @@
 "use client";
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import NumberInput from "@/components/ui/number-input";
 
 import { FormEvent, useState } from "react";
@@ -223,7 +225,7 @@ export default function EditLessonForm({
           type="submit"
           disabled={loading}
           className="w-full rounded-xl bg-indigo-600 px-5 py-3.5 font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        ><ThemeIcon name="check" className="me-2 h-4 w-4"/>
           {loading ? "در حال ذخیره..." : "ذخیره تغییرات"}
         </button>
       </div>

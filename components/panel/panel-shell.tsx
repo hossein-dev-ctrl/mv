@@ -1,3 +1,5 @@
+
+import ThemeIcon,{relatedIcon} from '@/components/panel/theme-icon';
 import Link from "next/link";
 import Navigation from "@/components/panel/navigation";
 import { panelNavigation } from "@/lib/panel-navigation";
@@ -73,7 +75,7 @@ export default async function PanelShell({ children, area }: {
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2"><NotificationBell role={user.role}/><LogoutButton /></div>
-          </div> : <Link href="/login" className="rounded-xl bg-indigo-600 px-5 py-3 text-sm text-white">ورود به حساب کاربری</Link>}
+          </div> : <Link href="/login" className="rounded-xl bg-indigo-600 px-5 py-3 text-sm text-white"><ThemeIcon name="users" className="me-2 h-4 w-4"/>ورود به حساب کاربری</Link>}
         </div>
         <div className="panel-tabs">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
@@ -95,7 +97,7 @@ export default async function PanelShell({ children, area }: {
             <p className="mt-3 text-sm leading-7 text-slate-500">دوره‌ها، درس‌ها و مسیر یادگیری شما در یک جا.</p>
           </div>
           <nav aria-label="دسترسی سریع پایین صفحه" className="panel-actions panel-actions-wide content-center text-sm text-slate-600">
-            {navigation.map((item) => <Link key={item.href} href={item.href} className="panel-action panel-action-slate">{item.label}</Link>)}
+            {navigation.map((item) => <Link key={item.href} href={item.href} className="panel-action panel-action-slate"><ThemeIcon name={relatedIcon(item.label)} className="h-4 w-4"/>{item.label}</Link>)}
           </nav>
         </div>
         <div className="border-t border-slate-100 px-4 py-4 text-center text-xs leading-6 text-slate-500">

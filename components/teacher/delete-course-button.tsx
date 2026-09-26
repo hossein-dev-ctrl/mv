@@ -1,5 +1,7 @@
 "use client";
 
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -51,7 +53,7 @@ export default function DeleteCourseButton({ courseId }: Props) {
       onClick={handleDelete}
       disabled={loading}
       className="rounded-xl bg-red-50 px-5 py-3 text-sm font-medium text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-    >
+    ><ThemeIcon name="trash" className="me-2 h-4 w-4"/>
       {loading ? "در حال حذف..." : "🗑 حذف دوره"}
     </button>
   );

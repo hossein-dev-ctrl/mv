@@ -1,3 +1,5 @@
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -75,20 +77,20 @@ export default async function PaymentSuccessPage({ searchParams }: Props) {
           )}
         </div>
 
-        <Link href="/payments" className="mt-5 inline-block text-sm text-indigo-600 hover:underline">بازگشت به سوابق پرداخت</Link>
+        <Link href="/payments" className="mt-5 inline-block text-sm text-indigo-600 hover:underline"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>بازگشت به سوابق پرداخت</Link>
 
         <div className="mt-6 flex flex-wrap gap-3">
           {payment.course.status === "PUBLISHED" && <Link
             href={`/courses/${payment.course.slug}`}
             className="flex-1 rounded-xl bg-indigo-600 px-5 py-3 text-white"
-          >
+          ><ThemeIcon name="book" className="me-2 h-4 w-4"/>
             ورود به دوره
           </Link>}
 
           <Link
             href="/dashboard"
             className="flex-1 rounded-xl border px-5 py-3"
-          >
+          ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
             داشبورد
           </Link>
         </div>

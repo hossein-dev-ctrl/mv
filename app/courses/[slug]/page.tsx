@@ -1,3 +1,6 @@
+
+import ThemeIcon from '@/components/panel/theme-icon';
+import ExamGateway from '@/components/assessment/exam-gateway';
 import DeliveryStatus from "@/components/course/delivery-status";
 import InterestForm from "@/components/course/interest-form";
 import CoursePrice from "@/components/course/price";
@@ -139,7 +142,7 @@ export default async function CoursePage({ params }: Props) {
 
       <section className="bg-white">
         <div className="mx-auto max-w-7xl px-6 py-12">
-          <Link href="/courses" className="panel-action panel-action-slate mb-6">← بازگشت به همهٔ دوره‌ها</Link>
+          <Link href="/courses" className="panel-action panel-action-slate mb-6"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>← بازگشت به همهٔ دوره‌ها</Link>
           <div className="grid gap-10 lg:grid-cols-2">
             <div>
               <div className="mb-4 inline-flex rounded-full bg-indigo-50 px-4 py-2 text-sm text-indigo-700">
@@ -164,8 +167,8 @@ export default async function CoursePage({ params }: Props) {
               </div>
 
               <div className="mt-8">
-                {adminPreview ? <p className="text-sm text-slate-600">پیش‌نمایش دوره؛ عملیات ثبت‌نام برای مدیر نمایش داده نمی‌شود.</p> : course.deliveryStatus==="UPCOMING" && !isOwner && !isEnrolled ? (session ? <InterestForm courseId={course.id} registered={!!interest}/> : <Link href={`/login?redirect=/courses/${course.slug}`} className="rounded-xl bg-indigo-600 px-5 py-3 text-white">ورود برای پیش‌ثبت‌نام رایگان</Link>) : isOwner ? (
-                  <Link href={`/teacher/courses/${course.id}`} className="inline-flex rounded-xl bg-indigo-600 px-7 py-4 font-medium text-white">مدیریت این دوره</Link>
+                {adminPreview ? <p className="text-sm text-slate-600">پیش‌نمایش دوره؛ عملیات ثبت‌نام برای مدیر نمایش داده نمی‌شود.</p> : course.deliveryStatus==="UPCOMING" && !isOwner && !isEnrolled ? (session ? <InterestForm courseId={course.id} registered={!!interest}/> : <Link href={`/login?redirect=/courses/${course.slug}`} className="rounded-xl bg-indigo-600 px-5 py-3 text-white"><ThemeIcon name="check" className="me-2 h-4 w-4"/>ورود برای پیش‌ثبت‌نام رایگان</Link>) : isOwner ? (
+                  <Link href={`/teacher/courses/${course.id}`} className="inline-flex rounded-xl bg-indigo-600 px-7 py-4 font-medium text-white"><ThemeIcon name="book" className="me-2 h-4 w-4"/>مدیریت این دوره</Link>
                 ) : isEnrolled ? (
                   <Link
                     href={
@@ -174,7 +177,7 @@ export default async function CoursePage({ params }: Props) {
                         : "#"
                     }
                     className="inline-flex rounded-xl bg-indigo-600 px-7 py-4 font-medium text-white transition hover:bg-indigo-700"
-                  >
+                  ><ThemeIcon name="book" className="me-2 h-4 w-4"/>
                     ▶️ ادامه یادگیری
                   </Link>
                 ) : (
@@ -185,7 +188,7 @@ export default async function CoursePage({ params }: Props) {
                         : `/login?redirect=/courses/${course.slug}`
                     }
                     className="inline-flex rounded-xl bg-indigo-600 px-7 py-4 font-medium text-white transition hover:bg-indigo-700"
-                  >
+                  ><ThemeIcon name="check" className="me-2 h-4 w-4"/>
                     {coursePrice(course) === 0 ? "ثبت‌نام رایگان" : "خرید و ثبت‌نام"}
                   </Link>
                 )}
@@ -221,6 +224,7 @@ export default async function CoursePage({ params }: Props) {
         </div>
       </section>
 
+<div className="mx-auto max-w-7xl px-6"><ExamGateway courseId={course.id}/></div>
       {/* DESCRIPTION */}
 
       {course.description && (
@@ -323,20 +327,20 @@ export default async function CoursePage({ params }: Props) {
                         </div>
                       </div>
 
-                      {adminPreview ? <p className="text-sm text-slate-600">پیش‌نمایش دوره؛ عملیات ثبت‌نام برای مدیر نمایش داده نمی‌شود.</p> : course.deliveryStatus==="UPCOMING" && !isOwner && !isEnrolled ? (session ? <InterestForm courseId={course.id} registered={!!interest}/> : <Link href={`/login?redirect=/courses/${course.slug}`} className="rounded-xl bg-indigo-600 px-5 py-3 text-white">ورود برای پیش‌ثبت‌نام رایگان</Link>) : isOwner ? (
-                        <Link href={`/teacher/courses/${course.id}/sections/${section.id}/lessons/${lesson.id}`} className="panel-action">مدیریت درس</Link>
+                      {adminPreview ? <p className="text-sm text-slate-600">پیش‌نمایش دوره؛ عملیات ثبت‌نام برای مدیر نمایش داده نمی‌شود.</p> : course.deliveryStatus==="UPCOMING" && !isOwner && !isEnrolled ? (session ? <InterestForm courseId={course.id} registered={!!interest}/> : <Link href={`/login?redirect=/courses/${course.slug}`} className="rounded-xl bg-indigo-600 px-5 py-3 text-white"><ThemeIcon name="check" className="me-2 h-4 w-4"/>ورود برای پیش‌ثبت‌نام رایگان</Link>) : isOwner ? (
+                        <Link href={`/teacher/courses/${course.id}/sections/${section.id}/lessons/${lesson.id}`} className="panel-action"><ThemeIcon name="book" className="me-2 h-4 w-4"/>مدیریت درس</Link>
                       ) : completed ? (
                         <Link
                           href={`/courses/${course.slug}/lessons/${lesson.id}`}
                           className="panel-action panel-action-teal"
-                        >
+                        ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
                           مشاهده مجدد
                         </Link>
                       ) : unlocked ? (
                         <Link
                           href={`/courses/${course.slug}/lessons/${lesson.id}`}
                           className="panel-action"
-                        >
+                        ><ThemeIcon name="book" className="me-2 h-4 w-4"/>
                           شروع درس
                         </Link>
                       ) : (

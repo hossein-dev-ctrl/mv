@@ -1,3 +1,5 @@
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -80,7 +82,7 @@ export default async function DashboardPage() {
             <Link
               href="/courses"
               className="mt-6 inline-block rounded-xl bg-indigo-600 px-6 py-3 text-white"
-            >
+            ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
               مشاهده دوره‌ها
             </Link>
           </div>
@@ -175,7 +177,7 @@ export default async function DashboardPage() {
                       </div>
                     </div>
 
-                    <Link href={`/dashboard/courses/${enrollment.courseId}/grades`} className="panel-action panel-action-indigo mt-4">کارنامهٔ تکلیف‌ها</Link>
+                    <Link href={`/dashboard/courses/${enrollment.courseId}/grades`} className="panel-action panel-action-indigo mt-4"><ThemeIcon name="award" className="me-2 h-4 w-4"/>کارنامهٔ تکلیف‌ها</Link>
                     {/* ادامه یادگیری */}
 
                     <div className="mt-6">
@@ -191,7 +193,7 @@ export default async function DashboardPage() {
                           <Link
                             href={`/courses/${enrollment.course.slug}/lessons/${nextLesson.id}`}
                             className="block rounded-xl bg-indigo-600 px-5 py-3 text-center font-medium text-white hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                          >
+                          ><ThemeIcon name="book" className="me-2 h-4 w-4"/>
                             {hasStarted ? "ادامهٔ یادگیری" : "شروع یادگیری"}
                           </Link>
                         </>
@@ -206,7 +208,7 @@ export default async function DashboardPage() {
                         <Link
                           href={`/courses/${enrollment.course.slug}`}
                           className="panel-action panel-action-indigo mt-4"
-                        >
+                        ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
                           {state === "completed" ? "مرور درس‌های دوره" : "مشاهدهٔ محتوای دوره"}
                         </Link>
                       )}

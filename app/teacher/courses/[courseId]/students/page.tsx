@@ -1,3 +1,5 @@
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -42,7 +44,7 @@ export default async function CourseStudentsPage({ params, searchParams }: {
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
-      <Link href={`/teacher/courses/${courseId}`} className="panel-action panel-action-indigo">← بازگشت به مدیریت دوره</Link>
+      <Link href={`/teacher/courses/${courseId}`} className="panel-action panel-action-indigo"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>← بازگشت به مدیریت دوره</Link>
       <h1 className="mt-4 text-2xl font-bold">دانش‌آموزان دورهٔ {course.title}</h1>
       <p className="mt-3 text-sm leading-7 text-slate-600">پیشرفت بر اساس درس‌های منتشرشدهٔ فعلی محاسبه می‌شود. وضعیت ثبت‌نام جدا از پیشرفت آموزشی نمایش داده می‌شود.</p>
       <form action={base} className="mt-6 flex flex-wrap items-end gap-4 rounded-2xl border border-slate-200 bg-white p-5">
@@ -57,8 +59,8 @@ export default async function CourseStudentsPage({ params, searchParams }: {
             {Object.entries(enrollmentLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
         </div>
-        <button type="submit" className="rounded-lg bg-indigo-600 px-5 py-2 text-white hover:bg-indigo-700">اعمال فیلتر</button>
-        {(q || status) && <Link href={base} className="panel-action panel-action-indigo">پاک کردن فیلترها</Link>}
+        <button type="submit" className="rounded-lg bg-indigo-600 px-5 py-2 text-white hover:bg-indigo-700"><ThemeIcon name="search" className="me-2 h-4 w-4"/>اعمال فیلتر</button>
+        {(q || status) && <Link href={base} className="panel-action panel-action-indigo"><ThemeIcon name="search" className="me-2 h-4 w-4"/>پاک کردن فیلترها</Link>}
       </form>
       <p className="my-5 text-sm text-slate-600">{total.toLocaleString("fa-IR")} ثبت‌نام مطابق فیلتر</p>
       {enrollments.length === 0 ? (
@@ -87,9 +89,9 @@ export default async function CourseStudentsPage({ params, searchParams }: {
         </div>
       )}
       {pageCount > 1 && <nav aria-label="صفحه‌بندی دانش‌آموزان" className="mt-6 flex items-center justify-center gap-5 text-sm">
-        {page > 1 && <Link href={pageUrl(page - 1)} className="panel-action panel-action-slate">صفحهٔ قبل</Link>}
+        {page > 1 && <Link href={pageUrl(page - 1)} className="panel-action panel-action-slate"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>صفحهٔ قبل</Link>}
         <span>صفحهٔ {page.toLocaleString("fa-IR")} از {pageCount.toLocaleString("fa-IR")}</span>
-        {page < pageCount && <Link href={pageUrl(page + 1)} className="panel-action panel-action-slate">صفحهٔ بعد</Link>}
+        {page < pageCount && <Link href={pageUrl(page + 1)} className="panel-action panel-action-slate"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>صفحهٔ بعد</Link>}
       </nav>}
     </main>
   );

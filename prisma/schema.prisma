@@ -69,6 +69,7 @@ model User {
 }
 
 model Course {
+  finalExam FinalExam?
   deliveryStatus String @default("ONGOING")
   teacherIntro String?
   interests CourseInterest[]
@@ -129,6 +130,9 @@ model LessonFile {
 }
 
 model Enrollment {
+  examAttempt ExamAttempt?
+  finalFeedback FinalFeedback?
+  courseReview CourseReview?
   submissions Submission[]
   id       String @id @default(cuid())
   userId   String
@@ -407,4 +411,49 @@ model NotificationDispatch {
  createdAt DateTime @default(now())
  sender User @relation(fields:[senderId],references:[id],onDelete:Restrict)
  @@index([createdAt])
+}
+
+model FinalExam {
+ id String @id @default(cuid())
+ courseId String @unique
+ course Course @relation(fields:[courseId],references:[id],onDelete:Cascade)
+ title String
+ instructions String
+ questions Json
+ published Boolean @default(false)
+ version Int @default(1)
+ examWeight Int @default(50)
+ attempts ExamAttempt[]
+ updatedAt DateTime @updatedAt
+}
+model ExamAttempt {
+ id String @id @default(cuid())
+ examId String
+ exam FinalExam @relation(fields:[examId],references:[id],onDelete:Restrict)
+ enrollmentId String @unique
+ enrollment Enrollment @relation(fields:[enrollmentId],references:[id],onDelete:Cascade)
+ answers Json
+ score Int?
+ feedback String?
+ reviewedBy String?
+ reviewedAt DateTime?
+ createdAt DateTime @default(now())
+}
+model FinalFeedback {
+ id String @id @default(cuid())
+ enrollmentId String @unique
+ enrollment Enrollment @relation(fields:[enrollmentId],references:[id],onDelete:Cascade)
+ teacherNote String @default("")
+ adminNote String @default("")
+ teacherUpdatedAt DateTime?
+ adminUpdatedAt DateTime?
+}
+model CourseReview {
+ id String @id @default(cuid())
+ enrollmentId String @unique
+ enrollment Enrollment @relation(fields:[enrollmentId],references:[id],onDelete:Cascade)
+ authorType String
+ rating Int
+ body String
+ updatedAt DateTime @updatedAt
 }

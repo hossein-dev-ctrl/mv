@@ -1,3 +1,5 @@
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import { readWallet } from "@/lib/wallet";
 import { walletTotals } from "@/lib/wallet-math";
 import WalletSummary from "@/components/finance/wallet-summary";
@@ -16,9 +18,9 @@ export default async function AdminFinancePage() {
   const globalWallet = await readWallet(undefined);
   const {sales,payouts} = globalWallet;
   return <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
-    <Link href="/admin" className="panel-action panel-action-slate">بازگشت به پنل مدیر</Link>
+    <Link href="/admin" className="panel-action panel-action-slate"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>بازگشت به پنل مدیر</Link>
     <h1 className="mt-4 text-2xl font-bold">مالی و سهم مدرس‌ها</h1>
-    <Link href="/admin/settlements" className="mt-5 inline-block rounded-xl bg-indigo-600 px-5 py-3 text-sm text-white">مدیریت برداشت‌ها، بازپرداخت و کارمزد</Link>
+    <Link href="/admin/settlements" className="mt-5 inline-block rounded-xl bg-indigo-600 px-5 py-3 text-sm text-white"><ThemeIcon name="wallet" className="me-2 h-4 w-4"/>مدیریت برداشت‌ها، بازپرداخت و کارمزد</Link>
     <WalletSummary totals={walletTotals(sales,payouts)} />
     <FinancialChart sales={sales} payouts={payouts} />
     <details className="my-6"><summary className="cursor-pointer font-bold">آمار ناخالص کل دوره‌ها</summary><FinanceSummary totals={totalFinance(courses)} /></details>
@@ -32,7 +34,7 @@ export default async function AdminFinancePage() {
         <p className="mt-2 text-sm text-slate-500">{owned.length.toLocaleString("fa-IR")} دوره · سهم فعلی: {teacher.teacherSharePercent === null ? "تعیین نشده" : `${teacher.teacherSharePercent.toLocaleString("fa-IR")}٪`}</p>
         <WalletSummary totals={wallets[index].totals} />
         <details><summary className="cursor-pointer text-sm">ثبت‌نام‌ها و فروش ناخالص</summary><FinanceSummary totals={totalFinance(owned)} /></details>
-        <div className="flex flex-wrap gap-3">{owned.map(course => <Link key={course.id} href={`/teacher/courses/${course.id}/students`} className="rounded-xl bg-slate-100 px-3 py-2 text-sm text-indigo-700">پیشرفت دانش‌آموزان: {course.title}</Link>)}</div>
+        <div className="flex flex-wrap gap-3">{owned.map(course => <Link key={course.id} href={`/teacher/courses/${course.id}/students`} className="rounded-xl bg-slate-100 px-3 py-2 text-sm text-indigo-700"><ThemeIcon name="users" className="me-2 h-4 w-4"/>پیشرفت دانش‌آموزان: {course.title}</Link>)}</div>
         <ShareForm teacherId={teacher.id} percent={teacher.teacherSharePercent} />
       </details>;
     })}</div>

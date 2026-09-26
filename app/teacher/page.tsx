@@ -1,3 +1,5 @@
+
+import ThemeIcon from '@/components/panel/theme-icon';
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -46,11 +48,11 @@ export default async function TeacherPage() {
           </div>
 
           <div className="panel-actions shrink-0">
-          <Link href="/teacher/finance" className="rounded-xl border border-slate-200 px-5 py-3 text-sm text-slate-600 hover:bg-slate-50">گزارش مالی من</Link>
+          <Link href="/teacher/finance" className="rounded-xl border border-slate-200 px-5 py-3 text-sm text-slate-600 hover:bg-slate-50"><ThemeIcon name="wallet" className="me-2 h-4 w-4"/>گزارش مالی من</Link>
           <Link
             href="/teacher/courses/new"
             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-indigo-700"
-          >
+          ><ThemeIcon name="plus" className="me-2 h-4 w-4"/>
             + ایجاد دوره
           </Link>
           </div>
@@ -69,7 +71,7 @@ export default async function TeacherPage() {
             <Link
               href="/teacher/courses/new"
               className="mt-6 inline-flex rounded-lg bg-black px-5 py-3 text-sm font-medium text-white"
-            >
+            ><ThemeIcon name="plus" className="me-2 h-4 w-4"/>
               ایجاد اولین دوره
             </Link>
           </div>
@@ -115,11 +117,11 @@ export default async function TeacherPage() {
                     <span>{(course._count.enrollments).toLocaleString("fa-IR")} دانشجو</span>
                   </div>
                   <div className="panel-actions mt-5">
-                    <Link href={`/teacher/courses/${course.id}`} className="panel-action">مدیریت دوره</Link>
-                    <Link href={`/teacher/courses/${course.id}/students`} className="panel-action panel-action-teal">پیشرفت دانش‌آموزان</Link>
-                    <Link href={`/teacher/courses/${course.id}/assignments`} className="panel-action panel-action-violet">تکلیف‌ها و ارزیابی</Link>
-                    <Link href={`/teacher/courses/${course.id}/interests`} className="panel-action panel-action-amber">متقاضیان دوره</Link>
-                    {course.status === "PUBLISHED" && <Link href={`/courses/${course.slug}`} className="panel-action panel-action-slate">مشاهده از دید کاربر</Link>}
+                    <Link href={`/teacher/courses/${course.id}`} className="panel-action"><ThemeIcon name="book" className="me-2 h-4 w-4"/>مدیریت دوره</Link>
+                    <Link href={`/teacher/courses/${course.id}/students`} className="panel-action panel-action-teal"><ThemeIcon name="users" className="me-2 h-4 w-4"/>پیشرفت دانش‌آموزان</Link>
+                    <Link href={`/teacher/courses/${course.id}/assignments`} className="panel-action panel-action-violet"><ThemeIcon name="award" className="me-2 h-4 w-4"/>تکلیف‌ها و ارزیابی</Link>
+                    <Link href={`/teacher/courses/${course.id}/interests`} className="panel-action panel-action-amber"><ThemeIcon name="book" className="me-2 h-4 w-4"/>متقاضیان دوره</Link>
+                    {course.status === "PUBLISHED" && <Link href={`/courses/${course.slug}`} className="panel-action panel-action-slate"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>مشاهده از دید کاربر</Link>}
                   </div>
                 </div>
               </article>
