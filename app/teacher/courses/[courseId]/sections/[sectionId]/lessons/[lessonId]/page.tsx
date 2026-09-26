@@ -70,8 +70,7 @@ export default async function LessonManagementPage({ params }: PageProps) {
             <Link
               href={`/teacher/courses/${courseId}/sections/${sectionId}`}
               className="panel-action panel-action-indigo"
-            ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
-              ← بازگشت به فصل
+            ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/> بازگشت به فصل
             </Link>
 
             <p className="mt-4 text-sm text-gray-400">

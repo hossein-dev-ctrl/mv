@@ -49,8 +49,7 @@ export default async function EditCoursePage({ params }: PageProps) {
           <Link
             href={`/teacher/courses/${course.id}`}
             className="panel-action panel-action-indigo"
-          ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
-            ← بازگشت به مدیریت دوره
+          ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/> بازگشت به مدیریت دوره
           </Link>
 
           <h1 className="mt-5 text-3xl font-bold">ویرایش دوره</h1>

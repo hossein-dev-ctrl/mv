@@ -142,7 +142,7 @@ export default async function CoursePage({ params }: Props) {
 
       <section className="bg-white">
         <div className="mx-auto max-w-7xl px-6 py-12">
-          <Link href="/courses" className="panel-action panel-action-slate mb-6"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>← بازگشت به همهٔ دوره‌ها</Link>
+          <Link href="/courses" className="panel-action panel-action-slate mb-6"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/> بازگشت به همهٔ دوره‌ها</Link>
           <div className="grid gap-10 lg:grid-cols-2">
             <div>
               <div className="mb-4 inline-flex rounded-full bg-indigo-50 px-4 py-2 text-sm text-indigo-700">
@@ -177,8 +177,7 @@ export default async function CoursePage({ params }: Props) {
                         : "#"
                     }
                     className="inline-flex rounded-xl bg-indigo-600 px-7 py-4 font-medium text-white transition hover:bg-indigo-700"
-                  ><ThemeIcon name="book" className="me-2 h-4 w-4"/>
-                    ▶️ ادامه یادگیری
+                  ><ThemeIcon name="book" className="me-2 h-4 w-4"/> ادامه یادگیری
                   </Link>
                 ) : (
                   <Link

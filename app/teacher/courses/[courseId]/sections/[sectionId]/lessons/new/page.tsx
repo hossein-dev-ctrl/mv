@@ -53,8 +53,7 @@ export default async function NewLessonPage({ params }: PageProps) {
         <Link
           href={`/teacher/courses/${courseId}/sections/${sectionId}`}
           className="panel-action panel-action-indigo"
-        ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
-          ← بازگشت به فصل
+        ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/> بازگشت به فصل
         </Link>
 
         <div className="mb-8 mt-5">

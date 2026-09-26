@@ -96,8 +96,7 @@ export default async function CheckoutPage({ params }: Props) {
           <Link
             href={`/courses/${course.slug}`}
             className="panel-action panel-action-slate"
-          ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
-            ← بازگشت به دوره
+          ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/> بازگشت به دوره
           </Link>
 
           <h1 className="mt-4 text-3xl font-bold">ثبت‌نام در دوره</h1>

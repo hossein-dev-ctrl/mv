@@ -66,8 +66,7 @@ function MockPaymentContent() {
             disabled={loading}
             onClick={() => pay(true)}
             className="w-full rounded-xl bg-green-600 px-5 py-3 font-medium text-white"
-          ><ThemeIcon name="wallet" className="me-2 h-4 w-4"/>
-            ✅ پرداخت موفق
+          ><ThemeIcon name="wallet" className="me-2 h-4 w-4"/> پرداخت موفق
           </button>
 
           <button

@@ -1,5 +1,13 @@
-export type IconName='book'|'users'|'settings'|'chart'|'layers'|'play'|'file'|'check'|'award'|'star'|'message'|'bell'|'wallet'|'arrow'|'plus'|'edit'|'trash'|'download'|'logout'|'search';
+export type IconName='book'|'users'|'settings'|'chart'|'layers'|'play'|'file'|'check'|'award'|'star'|'message'|'bell'|'wallet'|'arrow'|'plus'|'edit'|'trash'|'download'|'logout'|'search'|'eye'|'graduation'|'exam'|'map'|'lock'|'headset'|'clock';
 const paths:Record<IconName,string>={
+ eye:'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Zm13 0a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
+ graduation:'m2 8 10-5 10 5-10 5L2 8Zm4 3v7c4 3 8 3 12 0v-7M22 8v9',
+ exam:'M5 3h14v18H5V3Zm3 5 1 1 2-2M13 8h3M8 14l1 1 2-2M13 14h3',
+ map:'m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Zm6-2v16M15 5v16',
+ lock:'M5 10h14v11H5V10Zm3 0V6a4 4 0 0 1 8 0v4M12 14v3',
+ headset:'M3 14v-3a9 9 0 0 1 18 0v3M3 12h4v8H3v-8Zm14 0h4v8h-4v-8Zm4 8-4 3h-5',
+ clock:'M12 7v5l3 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z',
+
  check:'m5 12 4 4L19 6',
  award:'M8 14 6 22l6-3 6 3-2-8M19 8a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z',
  star:'m12 3 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-6Z',
@@ -27,8 +35,15 @@ export default function ThemeIcon({name,className='h-6 w-6'}:{name:IconName;clas
 }
 
 export function relatedIcon(text:string):IconName{
+ if(/دوره‌های ثبت‌نام/.test(text))return 'graduation';
+ if(/همهٔ دوره‌ها/.test(text))return 'search';
+ if(/مدیریت دوره/.test(text))return 'layers';
+ if(/درآمد/.test(text))return 'chart';
+ if(/پشتیبانی/.test(text))return 'headset';
+ if(/نظارت/.test(text))return 'eye';
  if(/تیکت|پیام|ticket|بازخورد|نظر/.test(text))return 'message';
- if(/آزمون|کارنامه|نمره|exam|grade/.test(text))return 'award';
+ if(/آزمون|exam/.test(text))return 'exam';
+ if(/کارنامه|نمره|grade/.test(text))return 'award';
  if(/تکلیف|تمرین|assignment|submission|فایل/.test(text))return 'file';
  if(/پرداخت|درآمد|مالی|واریز|برداشت|finance|payment|payout|refund/.test(text))return 'wallet';
  if(/دانش|کاربر|مدرس|student|user|interest/.test(text))return 'users';

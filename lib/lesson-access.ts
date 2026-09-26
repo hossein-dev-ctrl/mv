@@ -15,6 +15,8 @@ include: {
           id: true,
           slug: true,
           title: true,
+          thumbnailUrl:true,roadmapImageUrl:true,description:true,teacherIntro:true,
+          teacher:{select:{name:true}},
           status: true,
         },
       },
@@ -97,6 +99,7 @@ include: {
       title: true,
       order: true,
       sectionId: true,
+      videoDuration:true,section:{select:{title:true,order:true}},
     },
   });
 

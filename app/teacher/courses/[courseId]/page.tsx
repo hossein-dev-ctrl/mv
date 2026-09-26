@@ -72,7 +72,7 @@ export default async function CourseManagementPage({ params }: PageProps) {
   const lessonCount=course.sections.reduce((sum,section)=>sum+section.lessons.length,0);
   return (
     <main className="course-workspace mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
-      <Link href={session.role === "ADMIN" ? "/admin/courses" : "/teacher"} className="panel-action panel-action-slate mb-5"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>← {session.role === "ADMIN" ? "بازگشت به همهٔ دوره‌ها" : "بازگشت به دوره‌های من"}</Link>
+      <Link href={session.role === "ADMIN" ? "/admin/courses" : "/teacher"} className="panel-action panel-action-slate mb-5"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/> {session.role === "ADMIN" ? "بازگشت به همهٔ دوره‌ها" : "بازگشت به دوره‌های من"}</Link>
       <section className="course-hero" aria-labelledby="course-heading">
         <div className="relative z-10 flex-1 p-6 sm:p-9">
           <div className="mb-4 flex flex-wrap items-center gap-2"><span className="rounded-full bg-teal-400/20 px-4 py-1 text-xs font-semibold text-teal-100">{{DRAFT:"پیش‌نویس",PUBLISHED:"منتشرشده",ARCHIVED:"آرشیوشده"}[course.status]}</span><DeliveryStatus status={course.deliveryStatus}/></div>

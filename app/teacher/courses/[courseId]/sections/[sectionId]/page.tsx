@@ -61,8 +61,7 @@ export default async function SectionPage({ params }: PageProps) {
             <Link
               href={`/teacher/courses/${courseId}`}
               className="panel-action panel-action-indigo"
-            ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>
-              ← بازگشت به دوره
+            ><ThemeIcon name="arrow" className="me-2 h-4 w-4"/> بازگشت به دوره
             </Link>
 
             <p className="mt-4 text-sm text-gray-400">{section.course.title}</p>

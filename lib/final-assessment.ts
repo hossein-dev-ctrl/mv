@@ -1,9 +1,10 @@
+import {questionInput,normalizeQuestions,checkAnswers,scoreExam} from '@/lib/exam-questions';
 import {z} from 'zod';
 import type {Prisma} from '@prisma/client';
 import {prisma} from '@/lib/prisma';
 import {notifyCourse,notifyUsers} from '@/lib/notifications';
 export type Actor={id:string;role:string};
-export const examInput=z.object({title:z.string().trim().min(3).max(150),instructions:z.string().trim().max(5000),questions:z.array(z.string().trim().min(3).max(1000)).min(1).max(30),published:z.boolean(),version:z.number().int().min(0),examWeight:z.number().int().min(0).max(100)});
+export const examInput=z.object({title:z.string().trim().min(3).max(150),instructions:z.string().trim().max(5000),questions:z.array(z.union([questionInput,z.string().trim().min(3).max(1000)])).min(1).max(30),published:z.boolean(),version:z.number().int().min(0),examWeight:z.number().int().min(0).max(100)});
 export const answerInput=z.object({version:z.number().int().positive(),answers:z.array(z.string().trim().min(1).max(5000)).min(1).max(30)});
 export const gradeInput=z.object({score:z.number().int().min(0).max(100),feedback:z.string().trim().min(3).max(4000)});
 export const noteInput=z.object({note:z.string().trim().max(4000)});
@@ -29,7 +30,7 @@ export async function saveExam(actor:Actor,courseId:string,raw:unknown){
   const existing=await tx.finalExam.findUnique({where:{courseId},include:{_count:{select:{attempts:true}}}});
   if(existing?._count.attempts)throw Error('پس از دریافت پاسخ، آزمون و سهم نمره ثابت می‌ماند.');
   if((existing?.version??0)!==input.version)throw Error('آزمون تغییر کرده؛ صفحه را تازه کنید.');
-  const {version,...data}=input;void version;
+  const {version,...values}=input;void version;const data={...values,questions:normalizeQuestions(input.questions)};
   const exam=await tx.finalExam.upsert({where:{courseId},create:{courseId,...data},update:{...data,version:{increment:1}}});
   if(exam.published)await notifyCourse(tx,courseId,{title:'آزمون پایانی دوره آماده است',body:exam.title,href:`/dashboard/courses/${courseId}/exam`,eventKey:`exam:${exam.id}:v${exam.version}`});
   return exam;
@@ -50,9 +51,11 @@ export async function submitExam(actor:Actor,courseId:string,raw:unknown){
   if(!await finishedLessons(tx,courseId,enrollment.id))throw Error('ابتدا همهٔ درس‌ها و ویدئوهای منتشرشده را تکمیل کنید.');
   const exam=await tx.finalExam.findUnique({where:{courseId}});
   if(!exam?.published||exam.version!==input.version)throw Error('آزمون آماده نیست یا تغییر کرده؛ صفحه را تازه کنید.');
-  if(input.answers.length!==(exam.questions as string[]).length)throw Error('به همهٔ سؤال‌ها پاسخ دهید.');
-  const attempt=await tx.examAttempt.create({data:{examId:exam.id,enrollmentId:enrollment.id,answers:input.answers}});
+  const questions=normalizeQuestions(exam.questions);checkAnswers(questions,input.answers);
+  const autoScore=scoreExam(exam.questions,input.answers);
+  const attempt=await tx.examAttempt.create({data:{examId:exam.id,enrollmentId:enrollment.id,answers:input.answers,...(autoScore!==null?{score:autoScore,reviewedAt:new Date(),feedback:'تصحیح خودکار سؤال‌های چهارگزینه‌ای؛ بدون نمرهٔ منفی.'}:{})}});
   await notifyUsers(tx,[course.teacherId],{title:'پاسخ آزمون پایانی',body:course.title,href:`/teacher/courses/${courseId}/exam`,eventKey:`exam-attempt:${attempt.id}`});
+  if(autoScore!==null)await notifyUsers(tx,[actor.id],{title:'نتیجهٔ آزمون چهارگزینه‌ای آماده است',body:course.title,href:`/dashboard/courses/${courseId}/grades`,eventKey:`exam-grade:${attempt.id}`});
   return attempt;
  });
 }
@@ -60,10 +63,11 @@ export async function gradeExam(actor:Actor,enrollmentId:string,raw:unknown){
  const input=gradeInput.parse(raw);
  return prisma.$transaction(async tx=>{
   await tx.$queryRaw`SELECT id FROM "Enrollment" WHERE id=${enrollmentId} FOR UPDATE`;
-  const e=await tx.enrollment.findUnique({where:{id:enrollmentId},include:{course:true,examAttempt:true}});
+  const e=await tx.enrollment.findUnique({where:{id:enrollmentId},include:{course:true,examAttempt:{include:{exam:true}}}});
   if(!e||!mayManage(actor,e.course.teacherId)||!e.examAttempt)throw Error('پاسخ پیدا نشد یا دسترسی ندارید.');
   if(e.examAttempt.reviewedAt)throw Error('این پاسخ قبلاً نمره گرفته است.');
-  const result=await tx.examAttempt.update({where:{id:e.examAttempt.id},data:{...input,reviewedBy:actor.id,reviewedAt:new Date()}});
+  const score=scoreExam(e.examAttempt.exam.questions,e.examAttempt.answers as string[],input.score);
+  const result=await tx.examAttempt.update({where:{id:e.examAttempt.id},data:{...input,score,reviewedBy:actor.id,reviewedAt:new Date()}});
   await notifyUsers(tx,[e.userId],{title:'نمرهٔ آزمون پایانی ثبت شد',body:e.course.title,href:`/dashboard/courses/${e.courseId}/grades`,eventKey:`exam-grade:${result.id}`});
   return result;
  });

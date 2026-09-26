@@ -23,7 +23,7 @@ export default async function CoursesPage() {
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6">
-      {session && <Link href={panel} className="panel-action panel-action-slate"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>← بازگشت به پنل من</Link>}
+      {session && <Link href={panel} className="panel-action panel-action-slate"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/> بازگشت به پنل من</Link>}
       <h1 className="mt-4 text-3xl font-bold text-slate-900">همهٔ دوره‌ها</h1>
       <p className="mt-3 leading-7 text-slate-600">دورهٔ مورد علاقه‌تان را انتخاب کنید و جزئیات و سرفصل‌های آن را ببینید.</p>
       {courses.length === 0 ? (

@@ -31,7 +31,7 @@ export default async function StudentProgressPage({ params }: {
   const lessonLabels = { NOT_STARTED: "شروع نشده", IN_PROGRESS: "در حال یادگیری", COMPLETED: "تکمیل‌شده" };
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
-      <Link href={`/teacher/courses/${courseId}/students`} className="panel-action panel-action-teal"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>← بازگشت به دانش‌آموزان دوره</Link>
+      <Link href={`/teacher/courses/${courseId}/students`} className="panel-action panel-action-teal"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/> بازگشت به دانش‌آموزان دوره</Link>
       <h1 className="mt-4 text-2xl font-bold">پیشرفت <bdi>{name}</bdi></h1>
       <p className="mt-2 text-slate-600">{course.title}</p>
       <dl className="my-6 grid gap-5 rounded-2xl border border-slate-200 bg-white p-6 sm:grid-cols-3">

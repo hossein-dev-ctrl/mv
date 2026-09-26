@@ -44,7 +44,7 @@ export default async function CourseStudentsPage({ params, searchParams }: {
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
-      <Link href={`/teacher/courses/${courseId}`} className="panel-action panel-action-indigo"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>← بازگشت به مدیریت دوره</Link>
+      <Link href={`/teacher/courses/${courseId}`} className="panel-action panel-action-indigo"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/> بازگشت به مدیریت دوره</Link>
       <h1 className="mt-4 text-2xl font-bold">دانش‌آموزان دورهٔ {course.title}</h1>
       <p className="mt-3 text-sm leading-7 text-slate-600">پیشرفت بر اساس درس‌های منتشرشدهٔ فعلی محاسبه می‌شود. وضعیت ثبت‌نام جدا از پیشرفت آموزشی نمایش داده می‌شود.</p>
       <form action={base} className="mt-6 flex flex-wrap items-end gap-4 rounded-2xl border border-slate-200 bg-white p-5">
