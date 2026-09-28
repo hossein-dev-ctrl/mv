@@ -1,3 +1,6 @@
+import ContentSummary,{CertificateInfo} from '@/components/course/content-summary';
+import PrerequisitesForm from '@/components/teacher/prerequisites-form';
+import {readPrerequisites} from '@/lib/course-prerequisites';
 import ThemeIcon from "@/components/panel/theme-icon";
 import DeliveryStatus from "@/components/course/delivery-status";
 import Link from "next/link";
@@ -69,6 +72,7 @@ export default async function CourseManagementPage({ params }: PageProps) {
     redirect("/teacher");
   }
 
+  const prerequisiteOptions=await prisma.course.findMany({where:{id:{not:course.id},...(session.role==='ADMIN'?{}:{OR:[{status:'PUBLISHED'},{teacherId:session.userId}]})},select:{id:true,title:true},orderBy:{title:'asc'}});
   const lessonCount=course.sections.reduce((sum,section)=>sum+section.lessons.length,0);
   return (
     <main className="course-workspace mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
@@ -107,6 +111,7 @@ export default async function CourseManagementPage({ params }: PageProps) {
       <details className="theme-disclosure mt-6"><summary>توضیحات و نقشهٔ راه دوره</summary><div className="space-y-5 p-5"><p className="whitespace-pre-wrap text-sm leading-8 text-slate-600">{course.description||"توضیحی برای دوره ثبت نشده است."}</p>{course.roadmapImageUrl?<img src={course.roadmapImageUrl} alt="نقشهٔ راه دوره" className="mx-auto max-h-[600px] w-auto max-w-full rounded-xl object-contain"/>:<p className="text-sm text-slate-500">هنوز نقشهٔ راه ثبت نشده است.</p>}</div></details>
       <section className="theme-disclosure mt-6 p-5"><div className="flex flex-wrap items-center justify-between gap-5"><div><h2 className="font-bold">وضعیت انتشار</h2><p className="mt-2 text-xs leading-7 text-slate-500">فقط دورهٔ منتشرشده برای ثبت‌نام و یادگیری در دسترس است.</p></div><CourseStatusButton courseId={course.id} status={course.status}/></div>{course.status==='PUBLISHED'&&<Link href={`/courses/${course.slug}`} className="panel-action panel-action-slate mt-4"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>مشاهدهٔ دوره از دید کاربر</Link>}</section>
       {course._count.payments===0&&<details className="theme-disclosure mt-6"><summary className="text-rose-700">حذف دائمی دوره</summary><div className="flex flex-wrap items-center justify-between gap-4 p-5"><p className="text-sm text-slate-500">حذف دوره و اطلاعات وابسته قابل بازگشت نیست.</p><DeleteCourseButton courseId={course.id}/></div></details>}
+      <ContentSummary courseId={course.id} management/><PrerequisitesForm courseId={course.id} initial={readPrerequisites(course.prerequisites)} options={prerequisiteOptions}/><CertificateInfo/>
     </main>
   );
 }

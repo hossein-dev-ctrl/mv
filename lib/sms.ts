@@ -108,56 +108,9 @@ export async function sendSms(
       );
     }
 
-    // ==========================================
-    // SUCCESS LOG
-    // ==========================================
-
-    console.log("========== FARAZ SMS RESULT ==========");
-    console.dir(response.data, { depth: null });
-    console.log("======================================");
-
     return response.data;
-  } catch (error: unknown) {
-    console.error("========== FARAZ SMS ERROR ==========");
-
-    if (axios.isAxiosError(error)) {
-      console.error("HTTP Status:", error.response?.status);
-
-      console.error("Response:", JSON.stringify(error.response?.data, null, 2));
-
-      console.error("Request URL:", error.config?.url);
-
-      // API Key را هرگز در لاگ نمایش نمی‌دهیم
-      console.error("Request Headers:", {
-        Accept: error.config?.headers?.Accept,
-        "Content-Type": error.config?.headers?.["Content-Type"],
-        "Api-Key": "[HIDDEN]",
-      });
-
-      throw new Error(
-        JSON.stringify(
-          error.response?.data ?? {
-            message: error.message,
-          },
-          null,
-          2,
-        ),
-      );
-    }
-
-    if (error instanceof Error) {
-      console.error("Error name:", error.name);
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
-    } else {
-      console.dir(error, {
-        depth: null,
-        showHidden: true,
-      });
-    }
-
-    console.error("====================================");
-
-    throw error;
+  } catch {
+    // Provider payloads may contain phone numbers or OTP codes. Never log them.
+    throw new Error("ارسال پیامک ناموفق بود.");
   }
 }

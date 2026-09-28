@@ -69,6 +69,7 @@ model User {
 }
 
 model Course {
+  prerequisites Json @default("[]")
   finalExam FinalExam?
   deliveryStatus String @default("ONGOING")
   teacherIntro String?
@@ -199,6 +200,7 @@ model Payment {
 }
 
 model Lesson {
+  isPreview Boolean @default(false)
   assignment Assignment?
   id        String @id @default(cuid())
   sectionId String
@@ -427,6 +429,7 @@ model FinalExam {
  updatedAt DateTime @updatedAt
 }
 model ExamAttempt {
+  essayVerdicts Json?
  id String @id @default(cuid())
  examId String
  exam FinalExam @relation(fields:[examId],references:[id],onDelete:Restrict)
@@ -456,4 +459,22 @@ model CourseReview {
  rating Int
  body String
  updatedAt DateTime @updatedAt
+}
+
+model LoginOtp {
+ phone String @id
+ challengeId String? @unique
+ digest String?
+ expiresAt DateTime?
+ attempts Int @default(0)
+ consecutiveFailures Int @default(0)
+ blockedAt DateTime?
+ lastSentAt DateTime?
+ windowStart DateTime @default(now())
+ sentCount Int @default(0)
+}
+model OtpRateBucket {
+ key String @id
+ windowStart DateTime @default(now())
+ count Int @default(0)
 }

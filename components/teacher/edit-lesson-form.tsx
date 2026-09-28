@@ -14,6 +14,7 @@ type Props = {
   initialDescription: string;
   initialVideoDuration: number | null;
   initialStatus: LessonStatus;
+  initialIsPreview?: boolean;
 };
 
 export default function EditLessonForm({
@@ -22,6 +23,7 @@ export default function EditLessonForm({
   initialDescription,
   initialVideoDuration,
   initialStatus,
+  initialIsPreview=false,
 }: Props) {
   const router = useRouter();
 
@@ -32,6 +34,7 @@ export default function EditLessonForm({
     initialVideoDuration ? String(initialVideoDuration) : "",
   );
 
+  const [isPreview,setIsPreview]=useState(initialIsPreview);
   const [status, setStatus] = useState<LessonStatus>(initialStatus);
 
   const [loading, setLoading] = useState(false);
@@ -70,7 +73,7 @@ export default function EditLessonForm({
           title,
           description,
           videoDuration: duration,
-          status,
+          status, isPreview,
         }),
       });
 
@@ -174,6 +177,7 @@ export default function EditLessonForm({
           </p>
         </div>
 
+        <label className="flex items-center gap-3 rounded-xl bg-indigo-50 p-4"><input type="checkbox" checked={isPreview} onChange={e=>setIsPreview(e.target.checked)}/>نمایش رایگان این درس (دمو)</label><p className="text-xs leading-7 text-slate-500">پس از انتشار درس و دوره، عنوان، توضیح و ویدئو برای مهمان هم نمایش داده می‌شود. تمرین و فایل‌های ضمیمه شامل دمو نیستند.</p>
         {/* Status */}
         <div>
           <label

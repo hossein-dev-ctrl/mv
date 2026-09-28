@@ -16,6 +16,7 @@ function load(file, mocks = {}) {
   const module = { exports: {} };
   const resolve = (name) => {
     if (name in mocks) return mocks[name];
+    if(name==='@/components/course/content-summary')return {default:()=>null,CertificateInfo:()=>null};
     if (['@/components/assessment/exam-gateway','@/components/assessment/final-report'].includes(name)) return {default:()=>null};
     if (name.startsWith('@/')) {
       const base = name.slice(2);
@@ -97,7 +98,7 @@ test('negative available balance includes an account-specific explanation',()=>{
 });
 for(const [sessionRole,dbRole,allowed] of [['ADMIN','ADMIN',true],['ADMIN','TEACHER',false],['STUDENT','STUDENT',false]])test(`private course preview ${sessionRole}/${dbRole}`,async()=>{
  const course={id:'c',teacherId:'t',slug:'demo',status:'DRAFT',deliveryStatus:'ONGOING',title:'Private course',teacher:{name:'Teacher'},sections:[],price:0};
- const Component=load('app/courses/[slug]/page.tsx',{'next/link':{default:({children,href})=>React.createElement('a',{href},children)},'next/navigation':{notFound:()=>{throw Error('not found');}},'@/lib/auth':{getSession:async()=>({userId:'u',role:sessionRole})},'@/lib/prisma':{prisma:{course:{findUnique:async()=>course},user:{findUnique:async()=>({role:dbRole})},enrollment:{findUnique:async()=>null}}}}).default;
+ const Component=load('app/courses/[slug]/page.tsx',{'next/link':{default:({children,href})=>React.createElement('a',{href},children)},'next/navigation':{notFound:()=>{throw Error('not found');}},'@/lib/auth':{getSession:async()=>({userId:'u',role:sessionRole})},'@/lib/prisma':{prisma:{course:{findMany:async()=>[],findUnique:async()=>course},user:{findUnique:async()=>({role:dbRole})},enrollment:{findUnique:async()=>null}}}}).default;
  if(!allowed)await assert.rejects(Component({params:Promise.resolve({slug:'demo'})}),/not found/);
  else {const html=renderToStaticMarkup(await Component({params:Promise.resolve({slug:'demo'})}));assert.match(html,/Private course/);assert.match(html,/برای کاربران عمومی قابل مشاهده نیست/);}
 });

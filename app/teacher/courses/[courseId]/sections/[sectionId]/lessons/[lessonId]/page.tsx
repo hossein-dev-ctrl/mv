@@ -110,6 +110,7 @@ export default async function LessonManagementPage({ params }: PageProps) {
               initialDescription={lesson.description ?? ""}
               initialVideoDuration={lesson.videoDuration}
               initialStatus={lesson.status}
+              initialIsPreview={lesson.isPreview}
             />
 
             {/* Video */}

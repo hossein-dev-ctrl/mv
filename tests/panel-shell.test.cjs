@@ -16,6 +16,7 @@ function load(file, mocks = {}) {
   const module = { exports: {} };
   const resolve = (name) => {
     if (name in mocks) return mocks[name];
+    if(name==='@/components/course/content-summary')return {default:()=>null,CertificateInfo:()=>null};
     if (['@/components/assessment/exam-gateway','@/components/assessment/final-report'].includes(name)) return {default:()=>null};
     if (name.startsWith('@/')) {
       const base = name.slice(2);
@@ -120,7 +121,7 @@ for (const owner of [true,false]) test('course detail '+(owner?'offers managemen
   'next/link':link,
   'next/navigation':{notFound:()=>assert.fail('unexpected 404')},
   '@/lib/auth':{getSession:async()=>({userId:owner?'owner':'other',role:'TEACHER'})},
-  '@/lib/prisma':{prisma:{course:{findUnique:async()=>({id:'c1',slug:'dore',teacherId:'owner',title:'نمونه',teacher:{name:'مدرس'},status:'PUBLISHED',price:100,sections:[]})},enrollment:{findUnique:async()=>null}}},
+  '@/lib/prisma':{prisma:{course:{findMany:async()=>[],findUnique:async()=>({id:'c1',slug:'dore',teacherId:'owner',title:'نمونه',teacher:{name:'مدرس'},status:'PUBLISHED',price:100,sections:[]})},enrollment:{findUnique:async()=>null}}},
  });
  const html=renderToStaticMarkup(await Page({params:Promise.resolve({slug:'dore'})}));
  assert.equal(html.includes('href="/teacher/courses/c1"'),owner);

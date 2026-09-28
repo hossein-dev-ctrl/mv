@@ -1,4 +1,4 @@
-import {questionInput,normalizeQuestions,checkAnswers,scoreExam} from '@/lib/exam-questions';
+import {questionInput,normalizeQuestions,checkAnswers,scoreExam,scoreVerdicts} from '@/lib/exam-questions';
 import {z} from 'zod';
 import type {Prisma} from '@prisma/client';
 import {prisma} from '@/lib/prisma';
@@ -6,7 +6,7 @@ import {notifyCourse,notifyUsers} from '@/lib/notifications';
 export type Actor={id:string;role:string};
 export const examInput=z.object({title:z.string().trim().min(3).max(150),instructions:z.string().trim().max(5000),questions:z.array(z.union([questionInput,z.string().trim().min(3).max(1000)])).min(1).max(30),published:z.boolean(),version:z.number().int().min(0),examWeight:z.number().int().min(0).max(100)});
 export const answerInput=z.object({version:z.number().int().positive(),answers:z.array(z.string().trim().min(1).max(5000)).min(1).max(30)});
-export const gradeInput=z.object({score:z.number().int().min(0).max(100),feedback:z.string().trim().min(3).max(4000)});
+export const gradeInput=z.object({verdicts:z.array(z.boolean()).min(1).max(30),feedback:z.string().trim().max(4000).default('')});
 export const noteInput=z.object({note:z.string().trim().max(4000)});
 export const courseReviewInput=z.object({authorType:z.enum(['STUDENT','PARENT']),rating:z.number().int().min(1).max(5),body:z.string().trim().min(5).max(4000)});
 export function mayManage(actor:Actor,teacherId:string){return actor.role==='ADMIN'||actor.role==='TEACHER'&&actor.id===teacherId;}
@@ -66,8 +66,8 @@ export async function gradeExam(actor:Actor,enrollmentId:string,raw:unknown){
   const e=await tx.enrollment.findUnique({where:{id:enrollmentId},include:{course:true,examAttempt:{include:{exam:true}}}});
   if(!e||!mayManage(actor,e.course.teacherId)||!e.examAttempt)throw Error('پاسخ پیدا نشد یا دسترسی ندارید.');
   if(e.examAttempt.reviewedAt)throw Error('این پاسخ قبلاً نمره گرفته است.');
-  const score=scoreExam(e.examAttempt.exam.questions,e.examAttempt.answers as string[],input.score);
-  const result=await tx.examAttempt.update({where:{id:e.examAttempt.id},data:{...input,score,reviewedBy:actor.id,reviewedAt:new Date()}});
+  const score=scoreVerdicts(e.examAttempt.exam.questions,e.examAttempt.answers as string[],input.verdicts);
+  const result=await tx.examAttempt.update({where:{id:e.examAttempt.id},data:{feedback:input.feedback,essayVerdicts:input.verdicts,score,reviewedBy:actor.id,reviewedAt:new Date()}});
   await notifyUsers(tx,[e.userId],{title:'نمرهٔ آزمون پایانی ثبت شد',body:e.course.title,href:`/dashboard/courses/${e.courseId}/grades`,eventKey:`exam-grade:${result.id}`});
   return result;
  });

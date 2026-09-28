@@ -23,3 +23,10 @@ export function scoreExam(raw:unknown,answers:string[],essayScore?:number):numbe
  return Math.round((correct*100+essays*(essayScore??0))/questions.length);
 }
 export function displayAnswer(question:PublicQuestion,answer:string){return question.type==='CHOICE'?question.options[Number(answer)]??'گزینهٔ نامعتبر':answer;}
+
+export function scoreVerdicts(raw:unknown,answers:string[],verdicts:boolean[]){
+ const questions=normalizeQuestions(raw);
+ const count=questions.filter(q=>q.type==='TEXT').length;
+ if(verdicts.length!==count||verdicts.some(v=>typeof v!=='boolean'))throw Error('برای هر سؤال تشریحی درست یا غلط را مشخص کنید.');
+ return scoreExam(raw,answers,count?verdicts.filter(Boolean).length/count*100:undefined)!;
+}

@@ -1,0 +1,5 @@
+import {requireFinanceUser} from '@/lib/finance';
+import {prisma} from '@/lib/prisma';
+import Unblock from '@/components/otp-unblock';
+import Link from 'next/link';
+export default async function Blocks(){await requireFinanceUser(true);const rows=await prisma.loginOtp.findMany({where:{blockedAt:{not:null}},select:{phone:true,blockedAt:true,consecutiveFailures:true},orderBy:{blockedAt:'desc'},take:100});return <main className="mx-auto max-w-5xl px-4 py-8"><Link className="panel-action" href="/admin/users">بازگشت به کاربران</Link><h1 className="my-6 text-2xl font-bold">شماره‌های مسدودشدهٔ ورود</h1><p className="mb-5 text-sm">آخرین صد شماره؛ پس از احراز هویت صاحب شماره، مسدودی را رفع کنید.</p>{rows.map(r=><section className="assessment-card my-4 flex flex-wrap items-center justify-between gap-4" key={r.phone}><div><bdi>{r.phone}</bdi><p className="mt-2 text-sm">{r.consecutiveFailures.toLocaleString('fa-IR')} خطا · {r.blockedAt?.toLocaleDateString('fa-IR')}</p></div><Unblock phone={r.phone}/></section>)}{!rows.length&&<p className="assessment-card">شمارهٔ مسدودشده‌ای وجود ندارد.</p>}</main>;}

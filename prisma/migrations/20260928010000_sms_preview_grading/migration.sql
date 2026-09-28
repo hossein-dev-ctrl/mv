@@ -1,0 +1,11 @@
+ALTER TABLE "Course" ADD COLUMN "prerequisites" JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE "Lesson" ADD COLUMN "isPreview" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "ExamAttempt" ADD COLUMN "essayVerdicts" JSONB;
+CREATE TABLE "LoginOtp" (
+ "phone" TEXT NOT NULL PRIMARY KEY, "challengeId" TEXT, "digest" TEXT, "expiresAt" TIMESTAMP(3),
+ "attempts" INTEGER NOT NULL DEFAULT 0, "consecutiveFailures" INTEGER NOT NULL DEFAULT 0,
+ "blockedAt" TIMESTAMP(3), "lastSentAt" TIMESTAMP(3), "windowStart" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ "sentCount" INTEGER NOT NULL DEFAULT 0
+);
+CREATE UNIQUE INDEX "LoginOtp_challengeId_key" ON "LoginOtp"("challengeId");
+CREATE TABLE "OtpRateBucket" ("key" TEXT NOT NULL PRIMARY KEY, "windowStart" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "count" INTEGER NOT NULL DEFAULT 0);

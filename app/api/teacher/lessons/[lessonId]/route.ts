@@ -73,6 +73,7 @@ export async function PATCH(request: Request, { params }: RouteProps) {
     const body = await request.json();
 
     const data: {
+      isPreview?: boolean;
       title?: string;
       description?: string | null;
       videoUrl?: string | null;
@@ -80,6 +81,7 @@ export async function PATCH(request: Request, { params }: RouteProps) {
       status?: "DRAFT" | "PUBLISHED";
     } = {};
 
+    if(body.isPreview!==undefined){if(typeof body.isPreview!=="boolean")return Response.json({message:"وضعیت دمو نامعتبر است."},{status:400});data.isPreview=body.isPreview;}
     if (typeof body.title === "string") {
       data.title = body.title.trim();
     }

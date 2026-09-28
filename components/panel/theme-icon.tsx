@@ -1,5 +1,7 @@
-export type IconName='book'|'users'|'settings'|'chart'|'layers'|'play'|'file'|'check'|'award'|'star'|'message'|'bell'|'wallet'|'arrow'|'plus'|'edit'|'trash'|'download'|'logout'|'search'|'eye'|'graduation'|'exam'|'map'|'lock'|'headset'|'clock';
+export type IconName='folder'|'close'|'book'|'users'|'settings'|'chart'|'layers'|'play'|'file'|'check'|'award'|'star'|'message'|'bell'|'wallet'|'arrow'|'plus'|'edit'|'trash'|'download'|'logout'|'search'|'eye'|'graduation'|'exam'|'map'|'lock'|'headset'|'clock';
 const paths:Record<IconName,string>={
+ folder:'M3 6h7l2 3h9v11H3V6Z',
+ close:'m6 6 12 12M18 6 6 18',
  eye:'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Zm13 0a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
  graduation:'m2 8 10-5 10 5-10 5L2 8Zm4 3v7c4 3 8 3 12 0v-7M22 8v9',
  exam:'M5 3h14v18H5V3Zm3 5 1 1 2-2M13 8h3M8 14l1 1 2-2M13 14h3',

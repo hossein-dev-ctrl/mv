@@ -1,3 +1,5 @@
+import ContentSummary,{CertificateInfo} from '@/components/course/content-summary';
+import {readPrerequisites} from '@/lib/course-prerequisites';
 
 import ThemeIcon from '@/components/panel/theme-icon';
 import ExamGateway from '@/components/assessment/exam-gateway';
@@ -46,6 +48,7 @@ export default async function CoursePage({ params }: Props) {
             },
 
             select: {
+              isPreview: true,
               id: true,
               title: true,
               description: true,
@@ -128,6 +131,8 @@ export default async function CoursePage({ params }: Props) {
   const firstUnlockedLessonId =
     lessons.find((lesson) => unlockedLessonIds.has(lesson.id))?.id ?? null;
 
+  const prerequisites=readPrerequisites(course.prerequisites);
+  const linked=await prisma.course.findMany({where:{id:{in:prerequisites.flatMap(p=>p.courseId?[p.courseId]:[])},status:'PUBLISHED'},select:{id:true,slug:true,title:true}});
   const formatVideoDuration = (seconds: number | null) => {
     if (!seconds || seconds <= 0) return null;
 
@@ -137,10 +142,10 @@ export default async function CoursePage({ params }: Props) {
     return `${minutes.toLocaleString("fa-IR")}:${remainingSeconds.toLocaleString("fa-IR",{minimumIntegerDigits:2})}`;
   };
   return (
-    <main dir="rtl" className="min-h-screen bg-gray-50">
+    <main dir="rtl" className="public-course min-h-screen">
       {/* HERO */}
 
-      <section className="bg-white">
+      <section className="public-course-hero">
         <div className="mx-auto max-w-7xl px-6 py-12">
           <Link href="/courses" className="panel-action panel-action-slate mb-6"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/> بازگشت به همهٔ دوره‌ها</Link>
           <div className="grid gap-10 lg:grid-cols-2">
@@ -161,9 +166,9 @@ export default async function CoursePage({ params }: Props) {
 
               <div className="mt-5"><DeliveryStatus status={course.deliveryStatus}/>{adminPreview&&<p className="mt-3 text-xs text-amber-800">نمای کاربر برای مدیر · {course.status==="PUBLISHED"?"عمومی":"این دوره برای کاربران عمومی قابل مشاهده نیست"}</p>}</div>
               <div className="mt-6 flex flex-wrap gap-4 text-sm text-gray-500">
-                <span>👨‍🏫 مدرس: {course.teacher.name || "مدرس دوره"}</span>
+                <span><ThemeIcon name="users" className="inline h-4 w-4"/> مدرس: {course.teacher.name || "مدرس دوره"}</span>
 
-                <span>📚 {(lessons.length).toLocaleString("fa-IR")} درس</span>
+                <span><ThemeIcon name="book" className="inline h-4 w-4"/> {(lessons.length).toLocaleString("fa-IR")} درس</span>
               </div>
 
               <div className="mt-8">
@@ -224,6 +229,7 @@ export default async function CoursePage({ params }: Props) {
       </section>
 
 <div className="mx-auto max-w-7xl px-6"><ExamGateway courseId={course.id}/></div>
+      <div className="mx-auto max-w-7xl px-6"><ContentSummary courseId={course.id}/>{prerequisites.length>0&&<section className="assessment-card my-6"><h2 className="assessment-heading"><ThemeIcon name="layers"/>پیش‌نیازهای دوره</h2><ul className="mt-4 flex flex-wrap gap-3">{prerequisites.map((p,i)=>{const c=linked.find(c=>c.id===p.courseId);return <li key={i}>{c?<Link className="panel-action" href={`/courses/${c.slug}`}><ThemeIcon name="book"/>{c.title}</Link>:<span className="panel-action">{p.title}</span>}</li>})}</ul></section>}<CertificateInfo/></div>
       {/* DESCRIPTION */}
 
       {course.description && (
@@ -244,7 +250,7 @@ export default async function CoursePage({ params }: Props) {
       {course.roadmapImageUrl && (
         <section className="mx-auto max-w-7xl px-6 pb-12">
           <div className="rounded-3xl border bg-white p-8">
-            <h2 className="text-2xl font-bold">🗺️ نقشه راه دوره</h2>
+            <h2 className="text-2xl font-bold"><ThemeIcon name="map" className="inline me-2 h-6 w-6"/>نقشه راه دوره</h2>
 
             <div className="mt-6 overflow-hidden rounded-2xl">
               <img
@@ -260,7 +266,7 @@ export default async function CoursePage({ params }: Props) {
       {/* CURRICULUM */}
 
       <section className="mx-auto max-w-7xl px-6 pb-16">
-        <h2 className="mb-6 text-2xl font-bold">📚 محتوای دوره</h2>
+        <h2 className="mb-6 text-2xl font-bold"><ThemeIcon name="layers" className="inline me-2 h-6 w-6"/>محتوای دوره</h2>
 
         <div className="space-y-5">
           {course.sections.map((section) => (
@@ -312,7 +318,7 @@ export default async function CoursePage({ params }: Props) {
                                 : "bg-red-100"
                           }`}
                         >
-                          {completed ? "✓" : unlocked ? "▶" : "🔒"}
+                          <ThemeIcon name={completed?"check":unlocked||lesson.isPreview?"play":"lock"}/>
                         </div>
 
                         <div>
@@ -320,13 +326,13 @@ export default async function CoursePage({ params }: Props) {
 
                           {lesson.videoDuration && (
                             <div className="mt-1 text-xs text-gray-500">
-                              ⏱️ {formatVideoDuration(lesson.videoDuration)}
+                              <ThemeIcon name="clock" className="inline h-3 w-3"/> {formatVideoDuration(lesson.videoDuration)}
                             </div>
                           )}
                         </div>
                       </div>
 
-                      {adminPreview ? <p className="text-sm text-slate-600">پیش‌نمایش دوره؛ عملیات ثبت‌نام برای مدیر نمایش داده نمی‌شود.</p> : course.deliveryStatus==="UPCOMING" && !isOwner && !isEnrolled ? (session ? <InterestForm courseId={course.id} registered={!!interest}/> : <Link href={`/login?redirect=/courses/${course.slug}`} className="rounded-xl bg-indigo-600 px-5 py-3 text-white"><ThemeIcon name="check" className="me-2 h-4 w-4"/>ورود برای پیش‌ثبت‌نام رایگان</Link>) : isOwner ? (
+                      {lesson.isPreview ? <Link className="panel-action panel-action-teal" href={`/courses/${course.slug}/preview/${lesson.id}`}><ThemeIcon name="play" className="h-4 w-4"/>دموی رایگان</Link> : adminPreview ? <p className="text-sm text-slate-600">پیش‌نمایش دوره؛ عملیات ثبت‌نام برای مدیر نمایش داده نمی‌شود.</p> : course.deliveryStatus==="UPCOMING" && !isOwner && !isEnrolled ? (session ? <InterestForm courseId={course.id} registered={!!interest}/> : <Link href={`/login?redirect=/courses/${course.slug}`} className="rounded-xl bg-indigo-600 px-5 py-3 text-white"><ThemeIcon name="check" className="me-2 h-4 w-4"/>ورود برای پیش‌ثبت‌نام رایگان</Link>) : isOwner ? (
                         <Link href={`/teacher/courses/${course.id}/sections/${section.id}/lessons/${lesson.id}`} className="panel-action"><ThemeIcon name="book" className="me-2 h-4 w-4"/>مدیریت درس</Link>
                       ) : completed ? (
                         <Link

@@ -1,3 +1,4 @@
+import {prisma} from '@/lib/prisma';
 import LearningTabs from '@/components/course/learning-tabs';
 
 import ThemeIcon from '@/components/panel/theme-icon';
@@ -22,6 +23,9 @@ type Props = {
 
 export default async function LessonPage({ params }: Props) {
   const session = await getSession();
+  const previewParams=await params;
+  const preview=await prisma.lesson.findFirst({where:{id:previewParams.lessonId,isPreview:true,status:'PUBLISHED',section:{course:{slug:previewParams.slug,status:'PUBLISHED'}}},select:{id:true}});
+  if(preview&&!session)redirect(`/courses/${previewParams.slug}/preview/${previewParams.lessonId}`);
 
   if (!session) {
     const { slug, lessonId } = await params;
@@ -57,6 +61,7 @@ export default async function LessonPage({ params }: Props) {
   /*
    * اگر کاربر Enrollment نداشته باشد
    */
+  if(preview&&(access.reason==="NOT_ENROLLED"||access.reason==="LESSON_LOCKED"))redirect(`/courses/${slug}/preview/${lessonId}`);
   if (access.reason === "NOT_ENROLLED") {
     redirect(`/courses/${slug}`);
   }
