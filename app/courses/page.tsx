@@ -19,6 +19,8 @@ export default async function CoursesPage() {
       teacher: { select: { name: true } },
     },
   });
+  const enrollments=session&&session.role!=='ADMIN'?await prisma.enrollment.findMany({where:{userId:session.userId,status:{in:['ACTIVE','COMPLETED']},courseId:{in:courses.map(c=>c.id)}},select:{courseId:true}}):[];
+  const enrolled=new Set(enrollments.map(e=>e.courseId));
   const panel = session?.role === "ADMIN" ? "/admin" : session?.role === "TEACHER" ? "/teacher" : "/dashboard";
 
   return (
@@ -32,11 +34,12 @@ export default async function CoursesPage() {
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {courses.map((course) => (
             <article key={course.id} className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="course-image-wrap">{enrolled.has(course.id)&&session?.userId!==course.teacherId&&<span className="enrolled-ribbon">ثبت‌نام شده</span>}
               {course.thumbnailUrl ? (
                 // Course images may be served from instructor-configured storage hosts.
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={course.thumbnailUrl} alt={course.title} className="aspect-video w-full object-cover" />
-              ) : <div className="flex aspect-video items-center justify-center bg-indigo-50 text-indigo-500">آموزش آنلاین</div>}
+              ) : <div className="flex aspect-video items-center justify-center bg-indigo-50 text-indigo-500">آموزش آنلاین</div>}</div>
               <div className="flex flex-1 flex-col p-5">
                 <DeliveryStatus status={course.deliveryStatus}/><h2 className="mt-3 text-xl font-bold"><Link href={`/courses/${course.slug}`} className="hover:text-indigo-600">{course.title}</Link></h2>
                 <p className="mt-2 text-sm text-slate-500">مدرس: {course.teacher.name || "مدرس دوره"}</p>

@@ -44,7 +44,7 @@ function interest({role='STUDENT',owner=false,status='UPCOMING',published=true}=
  let saved;
  const {POST}=load('app/api/courses/[courseId]/interest/route.ts',{
  '@/lib/auth':{getSession:async()=>({userId:'u',role})},
- '@/lib/prisma':{prisma:{$transaction:async function(fn){return fn(this);},notification:{createMany:async()=>({count:1})},user:{findMany:async()=>[{id:'admin'}],findUnique:async()=>({id:'u',role})},course:{findUnique:async()=>({teacherId:owner?'u':'t',status:published?'PUBLISHED':'DRAFT',deliveryStatus:status})},courseInterest:{upsert:async q=>{saved=q;return {id:"interest"};}}}}
+ '@/lib/prisma':{prisma:{$queryRaw:async()=>[],$transaction:async function(fn){return fn(this);},notification:{createMany:async()=>({count:1})},user:{findMany:async()=>[{id:'admin'}],findUnique:async()=>({id:'u',role})},course:{findUnique:async()=>({teacherId:owner?'u':'t',status:published?'PUBLISHED':'DRAFT',deliveryStatus:status})},courseInterest:{upsert:async q=>{saved=q;return {id:"interest"};}}}}
  });
  return {run:body=>POST(new Request('http://test/api',{method:'POST',body:JSON.stringify(body)}),{params:Promise.resolve({courseId:'c'})}),saved:()=>saved};
 }

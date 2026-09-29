@@ -266,32 +266,14 @@ export default async function CoursePage({ params }: Props) {
       {/* CURRICULUM */}
 
       <section className="mx-auto max-w-7xl px-6 pb-16">
-        <h2 className="mb-6 text-2xl font-bold"><ThemeIcon name="layers" className="inline me-2 h-6 w-6"/>محتوای دوره</h2>
+        <h2 className="course-toolbar mb-5 text-2xl font-bold"><ThemeIcon name="layers" className="inline me-2 h-6 w-6"/>محتوای دوره</h2>
 
         <div className="space-y-5">
-          {course.sections.map((section) => (
-            <div
-              key={section.id}
-              className="overflow-hidden rounded-2xl border bg-white"
-            >
-              <div className="border-b bg-gray-50 p-5">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700">
-                    {(section.order).toLocaleString("fa-IR")}
-                  </span>
-
-                  <div>
-                    <h3 className="font-bold">{section.title}</h3>
-
-                    {section.description && (
-                      <p className="mt-1 text-sm text-gray-500">
-                        {section.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
+          {course.sections.filter(section=>section.lessons.some(l=>l.status==='PUBLISHED')).map((section,index) => (
+            <details key={section.id} open={index===0} className={`course-chapter chapter-tone-${index%5}`}>
+              <summary><span className="chapter-symbol"><ThemeIcon name="book"/></span><span className="min-w-0 flex-1 font-bold">فصل {section.order.toLocaleString('fa-IR')} · {section.title}</span><span className="chapter-count">{section.lessons.filter(l=>l.status==='PUBLISHED').length.toLocaleString('fa-IR')} درس</span><span className="chapter-chevron" aria-hidden="true">⌄</span></summary>
+              <div className="chapter-body">
+              {section.description&&<p className="px-5 py-4 text-sm leading-8 text-slate-500">{section.description}</p>}
               <div className="divide-y">
                 {section.lessons.filter((lesson) => lesson.status === "PUBLISHED").map((lesson) => {
                   const progress = enrollment?.progresses.find(
@@ -355,7 +337,8 @@ export default async function CoursePage({ params }: Props) {
                   );
                 })}
               </div>
-            </div>
+              </div>
+            </details>
           ))}
         </div>
       </section>

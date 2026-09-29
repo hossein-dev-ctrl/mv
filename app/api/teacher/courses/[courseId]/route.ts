@@ -1,3 +1,6 @@
+import {after} from 'next/server';
+import {queueCourseStart,processCourseStartSms} from '@/lib/course-start-sms';
+export const maxDuration=60;
 import { getManagementSession } from "@/lib/management-session";
 import { prisma } from "@/lib/prisma";
 import {notifyLessonPublished} from '@/lib/notifications';
@@ -282,9 +285,11 @@ export async function PATCH(
           const lessons=await tx.lesson.findMany({where:{section:{courseId},status:'PUBLISHED'},select:{id:true}});
           for(const lesson of lessons)await notifyLessonPublished(tx,lesson.id);
         }
+        await queueCourseStart(tx,courseId);
         return updated;
       },{timeout:30000});
 
+      after(()=>processCourseStartSms(courseId).then(()=>{}));
       return Response.json({
         success: true,
         course: updatedCourse,
@@ -341,7 +346,10 @@ export async function PATCH(
       );
     }
 
-    const updatedCourse = await prisma.course.update({
+    const updatedCourse = await prisma.$transaction(async tx=>{
+      await tx.$queryRaw`SELECT id FROM "Course" WHERE id=${courseId} FOR UPDATE`;
+      const previous=await tx.course.findUniqueOrThrow({where:{id:courseId}});
+      const updated=await tx.course.update({
       where: {
         id: courseId,
       },
@@ -357,6 +365,10 @@ export async function PATCH(
       },
     });
 
+      await queueCourseStart(tx,courseId,previous.deliveryStatus);
+      return updated;
+    });
+    after(()=>processCourseStartSms(courseId).then(()=>{}));
     return Response.json({
       success: true,
       course: updatedCourse,

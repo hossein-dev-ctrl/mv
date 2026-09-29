@@ -69,6 +69,7 @@ model User {
 }
 
 model Course {
+  launchSmsPending Boolean @default(false)
   prerequisites Json @default("[]")
   finalExam FinalExam?
   deliveryStatus String @default("ONGOING")
@@ -283,6 +284,7 @@ model DemoBatch {
 }
 
 model CourseInterest {
+ startSms CourseStartSms?
  id String @id @default(cuid())
  courseId String
  userId String
@@ -477,4 +479,19 @@ model OtpRateBucket {
  key String @id
  windowStart DateTime @default(now())
  count Int @default(0)
+}
+
+model CourseStartSms {
+ id String @id @default(cuid())
+ interestId String @unique
+ interest CourseInterest @relation(fields:[interestId],references:[id],onDelete:Cascade)
+ phone String
+ message String
+ status String @default("PENDING")
+ attempts Int @default(0)
+ createdAt DateTime @default(now())
+ claimedAt DateTime?
+ sentAt DateTime?
+ lastError String?
+ @@index([status,createdAt])
 }

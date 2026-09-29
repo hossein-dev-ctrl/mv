@@ -13,10 +13,14 @@ export async function POST(request:Request,{params}:{params:Promise<{courseId:st
  const course=await prisma.course.findUnique({where:{id:courseId},select:{status:true,deliveryStatus:true,teacherId:true}});
  if(!course||course.status!=='PUBLISHED'||course.deliveryStatus!=='UPCOMING')return Response.json({message:'پیش‌ثبت‌نام این دوره فعال نیست.'},{status:400});
  if(course.teacherId===user.id||user.role==='ADMIN')return Response.json({message:'این فرم برای متقاضیان دوره است.'},{status:403});
- await prisma.$transaction(async tx=>{
+ const registered=await prisma.$transaction(async tx=>{
+  await tx.$queryRaw`SELECT id FROM "Course" WHERE id=${courseId} FOR UPDATE`;
+  const current=await tx.course.findUnique({where:{id:courseId}});
+  if(!current||current.status!=='PUBLISHED'||current.deliveryStatus!=='UPCOMING')return false;
   const interest=await tx.courseInterest.upsert({where:{courseId_userId:{courseId,userId:user.id}},create:{courseId,userId:user.id,name:body.data.name,phone:body.data.phone},update:{}});
   const notice={title:'درخواست پیش‌ثبت‌نام جدید',body:'یک متقاضی جدید برای دوره ثبت شده است.',href:`/teacher/courses/${courseId}/interests`,eventKey:`interest:${interest.id}`};
-  await notifyUsers(tx,[course.teacherId],notice);await notifyAdmins(tx,{...notice,scope:'SYSTEM'});
+  await notifyUsers(tx,[course.teacherId],notice);await notifyAdmins(tx,{...notice,scope:'SYSTEM'});return true;
  });
+ if(!registered)return Response.json({message:'پیش‌ثبت‌نام این دوره بسته شده است.'},{status:409});
  return Response.json({message:'درخواست ثبت شد؛ پس از مشخص شدن زمان برگزاری امکان اطلاع‌رسانی وجود دارد.'});
 }
