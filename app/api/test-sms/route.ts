@@ -1,52 +1,81 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { sendSms } from "@/lib/sms";
 
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await request.json();
 
-    const phone = body.phone;
+    const phone = String(body.phone ?? "").trim();
+    const patternCode = String(body.patternCode ?? "").trim();
+    const code = Number(body.code);
 
     if (!phone) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "شماره موبایل وارد نشده است",
-        },
+        { success: false, message: "شماره موبایل وارد نشده است." },
         { status: 400 },
       );
     }
 
-    console.log("========== SMS TEST ==========");
-    console.log("PHONE:", phone);
+    if (!patternCode) {
+      return NextResponse.json(
+        { success: false, message: "Pattern Code وارد نشده است." },
+        { status: 400 },
+      );
+    }
+
+    if (!Number.isInteger(code) || code < 100000 || code > 999999) {
+      return NextResponse.json(
+        { success: false, message: "کد باید یک عدد ۶ رقمی باشد." },
+        { status: 400 },
+      );
+    }
+
+    console.log("========== TEST SMS ==========");
+    console.log({
+      phone,
+      patternCode,
+      variables: {
+        code,
+      },
+    });
+    console.log("==============================");
 
     const result = await sendSms({
-      type: "simple",
+      type: "pattern",
       phone,
-      message: "این یک پیامک تستی از پلتفرم آموزشی کودک برنامه نویس است.",
+      patternCode,
+      variables: {
+        code,
+      },
     });
 
-    // const result = await sendSms({
-    //   type: "pattern",
-    //   phone: "09331990041",
-    //   patternCode: "lFYUwXiOfT",
-    //   variables: {
-    //     ccode: "583214",
-    //   },
-    // });
-    console.log("SMS RESULT:", result);
-    console.dir(result, { depth: null });
-
-    console.log("==============================");
+    console.log("========== FARAZ RESPONSE ==========");
+    console.log(result);
+    console.log("====================================");
 
     return NextResponse.json({
       success: true,
+      message: "پیامک با موفقیت به سرویس ارسال شد.",
       result,
     });
   } catch (error) {
-    return NextResponse.json({
-      success: false,
-      result: error,
-    });
+    console.error("========== TEST SMS ERROR ==========");
+
+    if (error instanceof Error) {
+      console.error(error.message);
+    } else {
+      console.error(error);
+    }
+
+    console.error("====================================");
+
+    return NextResponse.json(
+      {
+        success: false,
+        message:
+          error instanceof Error ? error.message : "ارسال پیامک ناموفق بود.",
+      },
+      { status: 500 },
+    );
   }
 }

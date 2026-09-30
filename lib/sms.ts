@@ -58,11 +58,8 @@ export async function sendSms(
         `${FARAZ_API_URL}/sms/simple`,
         {
           text: params.message,
-
           line_number: lineNumber,
-
           recipients: [params.phone],
-
           number_format: "english",
         },
         {
@@ -84,6 +81,16 @@ export async function sendSms(
         throw new Error("patternCode ارسال نشده است.");
       }
 
+      console.log("========== FARAZ PATTERN REQUEST ==========");
+      console.log({
+        url: `${FARAZ_API_URL}/sms/pattern`,
+        patternCode: params.patternCode,
+        attributes: params.variables ?? {},
+        recipient: params.phone,
+        line_number: lineNumber,
+        number_format: "english",
+      });
+      console.log("===========================================");
       response = await axios.post<FarazSmsResponse>(
         `${FARAZ_API_URL}/sms/pattern`,
         {
@@ -108,9 +115,34 @@ export async function sendSms(
       );
     }
 
+    console.log("========== FARAZ SMS SUCCESS ==========");
+    console.log("Status:", response.status);
+    console.log("Response:", response.data);
+    console.log("=======================================");
+
     return response.data;
-  } catch {
-    // Provider payloads may contain phone numbers or OTP codes. Never log them.
-    throw new Error("ارسال پیامک ناموفق بود.");
+  } catch (error: unknown) {
+    console.error("========== FARAZ SMS ERROR ==========");
+
+    if (axios.isAxiosError(error)) {
+      console.error("Axios message:", error.message);
+      console.error("HTTP status:", error.response?.status);
+      console.error("Response data:", error.response?.data);
+      console.error("Response headers:", error.response?.headers);
+
+      console.error("Request URL:", error.config?.url);
+      console.error("Request method:", error.config?.method);
+
+      console.error("Request data:", error.config?.data);
+    } else if (error instanceof Error) {
+      console.error("Error:", error.message);
+      console.error("Stack:", error.stack);
+    } else {
+      console.error("Unknown error:", error);
+    }
+
+    console.error("====================================");
+
+    throw new Error("ارسال پیامک ناموفق بود؛ جزئیات خطا در ترمینال ثبت شد.");
   }
 }

@@ -1,0 +1,1600 @@
+diff --git a/README_FA.txt b/README_FA.txt
+new file mode 100644
+index 0000000..5cc4fb5
+--- /dev/null
++++ b/README_FA.txt
+@@ -0,0 +1,125 @@
++مرحلهٔ پیامک دستی، کد تخفیف و گواهی‌نامه
++مبنای تغییرات: آخرین main با شناسهٔ 34d0373
++
++اعمال تغییرات
++۱. از دیتابیس خود نسخهٔ پشتیبان بگیرید و سرور توسعه را متوقف کنید.
++۲. فقط یکی از روش‌های زیر را اجرا کنید:
++روش پیشنهادی: changes.patch را بیرون از پوشهٔ پروژه استخراج کنید، سپس در ریشهٔ پروژه:
++  git apply --check ../changes.patch
++  git apply ../changes.patch
++مسیر patch را مطابق محل استخراج خود تغییر دهید.
++روش جایگزین: محتویات files در ZIP را روی ریشهٔ پروژه کپی کنید و فایل زیر را حذف کنید:
++  app/api/jobs/course-start-sms/route.ts
++کپی‌کردن فایل‌ها به‌تنهایی فایل Cron قدیمی را حذف نمی‌کند. دو روش را هم‌زمان اجرا نکنید.
++۳. در ریشهٔ پروژه:
++  npm install
++  npx prisma migrate deploy
++  npx prisma generate
++  npm run dev
++از prisma migrate reset استفاده نکنید؛ نیازی به پاک‌کردن داده‌ها نیست.
++Migration جدید:
++  20260930040000_manual_sms_coupons_certificates
++افزوده‌ها: DiscountCode، SmsCampaign، SmsDelivery، Certificate و اطلاعات کد تخفیف در Payment.
++
++بدون Cron
++هیچ زمان‌بند یا Cron لازم نیست. مسیر قبلی jobs/course-start-sms حذف شده است.
++شروع دوره به معنی تغییر وضعیت از UPCOMING به ONGOING و انتشار دوره است؛ فقط یک اعلان برای مدیران ثبت می‌شود.
++اگر دوره در حالت پیش‌نویس آغاز شود، اعلان پس از انتشار ساخته می‌شود.
++ارسال خودکار پیامک هنگام ذخیرهٔ دوره حذف شده است.
++اگر قبلاً خارج از برنامه Cron ساخته‌اید آن را نیز غیرفعال کنید. CRON_SECRET دیگر در این جریان استفاده نمی‌شود.
++
++تنظیمات محیط
++  FARAZ_SMS_API_KEY=کلید_واقعی_سرویس
++  FARAZ_SMS_LINE_NUMBER=شماره_خط
++  PUBLIC_SITE_URL=http://localhost:3000
++در سایت اصلی PUBLIC_SITE_URL باید نشانی HTTPS واقعی سایت باشد؛ هم لینک پیامک و هم QR از آن استفاده می‌کنند.
++QR با نشانی localhost روی تلفن دیگر به کامپیوتر شما وصل نمی‌شود. برای اسکن با موبایل نشانی قابل دسترس لازم است.
++ورود پیامکی تنظیمات قبلی FARAZ_SMS_OTP_PATTERN و FARAZ_SMS_OTP_VARIABLE را حفظ کرده است.
++پیامک آغاز دوره ساده ارسال می‌شود تا کد تخفیف و لینک کامل در متن قرار بگیرند؛ پترن قدیمی COURSE_START دیگر استفاده نمی‌شود.
++برای پیامک گروهی پترن را در خود فرم مشخص کنید و نام متغیرها را مطابق پترن تأییدشدهٔ سرویس وارد کنید.
++
++صفحات و سناریوهای تست
++
++۱. /admin/sms — مرکز پیامک مدیر
++- با یک حساب واقعی آزمایشی در دورهٔ پیش‌ثبت‌نام درخواست بدهید.
++- وضعیت همان دوره را به «در حال برگزاری» تغییر دهید و مطمئن شوید منتشر شده است.
++- زنگولهٔ مدیر باید اعلان آغاز دوره با لینک مرکز پیامک نشان دهد؛ هنوز پیامکی ارسال نمی‌شود.
++- از بخش اعلام آغاز دوره، دوره را باز کنید؛ در صورت تمایل کد تخفیف فعال همان دوره یا کد عمومی را وارد کنید.
++- دکمهٔ اعلام آغاز دوره را بزنید. فقط پس از این اقدام پیامک ارسال می‌شود.
++- گزارش شماره‌ها در /teacher/courses/COURSE_ID/interests در دسترس است؛ کنترل ارسال فقط برای مدیر است.
++- ارسال در دسته‌های کوتاه، با درخواست‌های مرورگر انجام می‌شود. هنگام ارسال صفحه باز بماند.
++- توقف یا خروج از صفحه، ادامهٔ صف را به دکمهٔ اجرای بعدی موکول می‌کند؛ دستهٔ در حال پردازش ممکن است تکمیل شود.
++- هر پیش‌ثبت‌نام یک رکورد پیامک آغاز دارد. کلیک دوباره، موارد پذیرفته‌شده را تکرار نمی‌کند.
++- متن و کد تخفیف پس از آماده‌سازی آن رکورد ثابت می‌ماند؛ کد جدید پیامک‌های قبلاً آماده‌شده را تغییر نمی‌دهد.
++- رکوردهای آماده‌شده از نسخهٔ قبلی حفظ شده‌اند و ممکن است کد تخفیف نداشته باشند.
++- اگر سرویس تنظیم نشده باشد، صف باقی می‌ماند و شماره‌ای ارسال نمی‌شود.
++- «پذیرفته‌شده توسط سرویس» تأیید رسیدن به گوشی نیست. برای «نتیجه نامشخص» ابتدا پنل سرویس را بررسی کنید؛ سپس در صورت نیاز تلاش مجدد را بزنید.
++- ارسال معلق بیش از پنج دقیقه در اجرای بعدی «نامشخص» می‌شود؛ خودکار دوباره ارسال نمی‌شود.
++
++۲. /admin/sms — پیامک گروهی
++- گروه همهٔ کاربران، مدرس‌ها یا دانش‌آموزان را انتخاب کنید.
++- پیام ساده بنویسید یا کد پترن و متغیرهای JSON را وارد کنید؛ نمونه:
++  {"course":"آموزش برنامه‌نویسی","code":"START25"}
++- آماده‌سازی فقط فهرست را ثبت می‌کند؛ سپس در تاریخچه «ارسال / ادامهٔ ارسال» را بزنید.
++- شماره‌های معتبر و غیرآزمایشی انتخاب می‌شوند؛ شماره‌های تکراری در هر ارسال حذف می‌شوند.
++- گزارش وضعیت هر شماره، توقف، ادامه و تلاش مجدد کنترل‌شده وجود دارد.
++- آماده‌سازی یک ارسال جدید، یک پیام مستقل است و می‌تواند همان مخاطبان را دوباره انتخاب کند.
++
++۳. /admin/coupons — کد تخفیف
++- مثال: START25 با درصد ۲۵ و محدودهٔ یک دوره یا همهٔ دوره‌ها.
++- کد بین ۳ تا ۴۰ حرف/عدد انگلیسی، خط تیره یا زیرخط است؛ بزرگی و کوچکی حروف تفاوت ندارد.
++- برای ویرایش درصد، محدوده یا غیرفعال‌سازی، همان کد را دوباره در فرم وارد کنید.
++- کدها در این مرحله سقف مصرف و تاریخ انقضا ندارند؛ تا زمان غیرفعال‌سازی معتبرند.
++
++۴. /courses/SLUG/checkout — خرید با کد
++- کد را وارد و بررسی کنید؛ قیمت پس از اعمال کد نشان داده می‌شود.
++- کد روی قیمت فعلی پس از تخفیف عمومی دوره اعمال می‌شود. مثال: قیمت ۱۰۰۰، تخفیف دوره ۲۰٪ و کد ۲۵٪، مبلغ نهایی ۶۰۰ تومان.
++- مبلغ ورودی مرورگر قابل اعتماد نیست و مبلغ نهایی در سرور محاسبه می‌شود.
++- کد غیرفعال یا مخصوص دورهٔ دیگر باید خطا بدهد.
++- با کد ۱۰۰٪ ثبت‌نام مستقیم و رسید مبلغ صفر ثبت می‌شود؛ سهم درآمد صفر است و درگاه فراخوانی نمی‌شود.
++- اطلاعات تخفیف و مبلغ در پرداخت ذخیره می‌شوند. ویرایش بعدی کد، پرداخت قبلی را عوض نمی‌کند.
++- پرداخت معلق دارای authority معتبر دوباره به همان درگاه هدایت می‌شود.
++- مدیر و مدرس صاحب دوره نمی‌توانند آن دوره را بخرند.
++
++۵. /login — نام حساب تازه
++- شمارهٔ جدید را با کد صحیح تأیید کنید؛ سپس نام نمایشی خود را ثبت کنید.
++- حساب قبلی که نام دارد مستقیم وارد می‌شود و نامش تغییر نمی‌کند.
++- حساب قدیمی بدون نام هم این مرحله را می‌بیند. نام نمایشی همان نام قابل مشاهده در سایت است و شناسهٔ یکتای ورود نیست؛ ورود همچنان با موبایل انجام می‌شود.
++- تنظیم کد تست ثابت فقط در development مطابق مرحلهٔ قبل مجاز است؛ در production فعال نیست.
++
++۶. /dashboard/courses/COURSE_ID/grades — کارنامه و دریافت مدرک
++- همهٔ درس‌ها و ویدئوهای منتشرشده را تکمیل کنید؛ آزمون باید منتشرشده و نمره‌دار باشد.
++- همهٔ تمرین‌های منتشرشده باید تصحیح شده باشند.
++- نمرهٔ آزمون و نمرهٔ نهایی هر دو حداقل ۶۰ از ۱۰۰ باشند.
++- «دریافت گواهی‌نامه» را بزنید؛ مدیر و مدرس همان دوره هم از کارنامه اجازهٔ صدور دارند.
++- ثبت‌نام لغوشده، حساب/دورهٔ آزمایشی و مدرس خود دوره واجد شرایط نیستند.
++- تکرار درخواست همان مدرک قبلی را باز می‌کند؛ نمره، نام و عنوان دورهٔ زمان صدور ثابت می‌مانند.
++- مدرک دو‌زبانه شامل عنوان‌ها و متن فارسی/انگلیسی، نمره، تاریخ شمسی/میلادی، شناسه و QR است.
++- نام شخص و عنوان دوره همان زبان ثبت‌شده را حفظ می‌کنند و خودکار ترجمه نمی‌شوند.
++- چاپ / ذخیره PDF از پنجرهٔ چاپ مرورگر انجام می‌شود.
++
++۷. /dashboard/certificates — گواهی‌نامه‌های من
++فقط مدارک حساب واردشده نمایش داده می‌شوند؛ لینک مشاهده و چاپ دارند.
++
++۸. /certificates و /certificates/ID — استعلام عمومی
++- با شناسه یا QR بدون ورود نتیجهٔ اعتبار قابل مشاهده است.
++- اطلاعات عمومی شامل نام دارنده، دوره، نمره و تاریخ است؛ موبایل و ایمیل نمایش داده نمی‌شود.
++- شناسه تصادفی است و صفحه برای نمایه‌سازی موتور جست‌وجو علامت noindex دارد.
++- لینک استعلام در فوتر قرار گرفته است.
++
++۹. /admin/certificates — مدیریت مدارک
++- فهرست مدارک و وضعیت اعتبار؛ مشاهده و ابطال با تأیید مدیر.
++- ابطال به دانش‌آموز اعلان می‌دهد و در استعلام عمومی فوراً دیده می‌شود.
++- لغو ثبت‌نام هم اعتبار عمومی مدرک را از بین می‌برد.
++- ابطال دائمی است و در این مرحله گزینهٔ احیا/صدور مجدد مدرک باطل‌شده وجود ندارد.
++
++اعتبارسنجی انجام‌شده
++- ۳۶۹ تست موفق شامل دسترسی نقش‌ها، تخفیف، خرید رایگان، وضعیت پیامک، نام حساب و شرایط مدرک.
++- Prisma validate و generate، TypeScript و Build موفق.
++- Lint بدون خطا؛ ۱۷ هشدار قبلی باقی است.
++- مرورگر در عرض‌های ۳۹۰ و ۱۴۴۰: فرم تخفیف فارسی، ارسال دستی، پترن، خرید با کد، نام پس از OTP و نمایش QR بررسی شد.
++- تست مرورگر با داده و پاسخ شبکهٔ شبیه‌سازی‌شده انجام شد. پیامک واقعی، پرداخت واقعی و اجرای migration روی PostgreSQL شما در این محیط تست نشده‌اند.
++
++ادامهٔ پروژه
++تنظیم و تست واقعی سرویس پیامک، درگاه، ذخیره‌سازی ویدئو در پارس‌پک و استقرار نهایی باقی است.
++فایل Progress_Stage_Tracker.xlsx با حفظ مراحل قبلی به‌روز شده است.
+diff --git a/app/admin/certificates/page.tsx b/app/admin/certificates/page.tsx
+new file mode 100644
+index 0000000..9f35fcb
+--- /dev/null
++++ b/app/admin/certificates/page.tsx
+@@ -0,0 +1,11 @@
++import Link from 'next/link';
++import {redirect} from 'next/navigation';
++import {getManagementSession} from '@/lib/management-session';
++import {prisma} from '@/lib/prisma';
++import {RevokeCertificate} from '@/components/assessment/certificate-actions';
++export default async function Certificates({searchParams}:{searchParams:Promise<{page?:string}>}){
++ if((await getManagementSession())?.role!=='ADMIN')redirect('/login');
++ const query=await searchParams;const page=Math.floor(Math.max(1,Math.min(10000,Number(query.page)||1)));
++ const rows=await prisma.certificate.findMany({orderBy:{issuedAt:'desc'},skip:(page-1)*30,take:31,include:{enrollment:{select:{status:true}}}});
++ return <main className="mx-auto max-w-6xl space-y-6 p-6"><h1 className="text-2xl font-bold">گواهی‌نامه‌های صادرشده</h1><p className="text-sm leading-8">صدور از کارنامهٔ نهایی دانش‌آموز انجام می‌شود. گواهی تصویر ثابت نمره و نام در زمان صدور است. ابطال توسط مدیر یا لغو ثبت‌نام، استعلام را نامعتبر می‌کند.</p><section className="assessment-card space-y-4">{rows.slice(0,30).map(c=><article key={c.id} className="flex flex-wrap items-center justify-between gap-4 rounded-xl border p-4"><div><h2 className="font-bold">{c.studentName} · {c.courseTitle}</h2><p className="mt-2 text-sm">نمره: {c.score.toLocaleString('fa-IR')} · {c.revokedAt||c.enrollment.status==='CANCELLED'?'نامعتبر':'معتبر'}</p></div><div className="flex flex-wrap gap-3"><Link className="panel-action" href={`/certificates/${c.id}`}>مشاهده و استعلام</Link>{!c.revokedAt&&<RevokeCertificate id={c.id}/>}</div></article>)}{!rows.length&&<p>هنوز گواهی صادر نشده است.</p>}</section><nav className="flex gap-3">{page>1&&<Link className="panel-action" href={`?page=${page-1}`}>قبل</Link>}{rows.length>30&&<Link className="panel-action" href={`?page=${page+1}`}>بعد</Link>}</nav></main>;
++}
+diff --git a/app/admin/coupons/page.tsx b/app/admin/coupons/page.tsx
+new file mode 100644
+index 0000000..6136548
+--- /dev/null
++++ b/app/admin/coupons/page.tsx
+@@ -0,0 +1,9 @@
++import {redirect} from 'next/navigation';
++import {getManagementSession} from '@/lib/management-session';
++import {prisma} from '@/lib/prisma';
++import {CouponForm} from '@/components/communication/admin-tools';
++export default async function Coupons(){
++ if((await getManagementSession())?.role!=='ADMIN')redirect('/login');
++ const [courses,codes]=await Promise.all([prisma.course.findMany({where:{demoBatchId:null},select:{id:true,title:true},orderBy:{title:'asc'}}),prisma.discountCode.findMany({orderBy:{createdAt:'desc'}})]);
++ return <main className="mx-auto max-w-6xl space-y-6 p-6"><h1 className="text-2xl font-bold">کدهای تخفیف</h1><div className="grid items-start gap-6 md:grid-cols-2"><section className="assessment-card"><h2 className="assessment-heading mb-5">ایجاد یا ویرایش کد</h2><CouponForm courses={courses}/></section><section className="assessment-card space-y-3"><h2 className="assessment-heading">کدهای ثبت‌شده</h2>{codes.map(c=><article className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4" key={c.code}><bdi className="font-bold">{c.code}</bdi><p className="mt-2 text-sm leading-7">{c.percent.toLocaleString('fa-IR')}٪ · {c.active?'فعال':'غیرفعال'} · {c.courseId?courses.find(x=>x.id===c.courseId)?.title||'دوره حذف شده':'همهٔ دوره‌ها'}</p></article>)}{!codes.length&&<p>هنوز کدی ثبت نشده است.</p>}</section></div></main>;
++}
+diff --git a/app/admin/sms/page.tsx b/app/admin/sms/page.tsx
+new file mode 100644
+index 0000000..f971465
+--- /dev/null
++++ b/app/admin/sms/page.tsx
+@@ -0,0 +1,17 @@
++import Link from 'next/link';
++import {redirect} from 'next/navigation';
++import {getManagementSession} from '@/lib/management-session';
++import {prisma} from '@/lib/prisma';
++import {SmsForm,SmsRunner} from '@/components/communication/admin-tools';
++import StartSmsControl from '@/components/course/start-sms-control';
++export default async function SmsPage({searchParams}:{searchParams:Promise<{page?:string;campaign?:string;after?:string}>}){
++ if((await getManagementSession())?.role!=='ADMIN')redirect('/login');
++ const query=await searchParams;const page=Math.max(1,Math.min(10000,Number(query.page)||1));
++ const [courses,campaigns,details]=await Promise.all([
++ prisma.course.findMany({where:{demoBatchId:null,status:'PUBLISHED',deliveryStatus:'ONGOING',interests:{some:{}}},select:{id:true,title:true,_count:{select:{interests:true}}},orderBy:{updatedAt:'desc'}}),
++ prisma.smsCampaign.findMany({orderBy:{createdAt:'desc'},skip:(Math.floor(page)-1)*20,take:21,include:{_count:{select:{deliveries:true}}}}),
++ query.campaign?prisma.smsDelivery.findMany({where:{campaignId:query.campaign,...(query.after?{id:{gt:query.after}}:{})},orderBy:{id:'asc'},take:51}):Promise.resolve([])]);
++ const stats=query.campaign?await prisma.smsDelivery.groupBy({by:['status'],where:{campaignId:query.campaign},_count:true}):[];
++ const labels:Record<string,string>={PENDING:'در صف',SENDING:'در حال ارسال',SENT:'پذیرفته‌شده توسط سرویس',FAILED:'ردشده',UNKNOWN:'نتیجه نامشخص'};
++ return <main className="mx-auto max-w-6xl space-y-7 p-6"><header><h1 className="text-2xl font-bold">مرکز پیامک مدیر</h1><p className="mt-3 text-sm leading-8">ارسال فقط با دکمهٔ مدیر انجام می‌شود. هنگام ارسال صفحه باز بماند؛ توقف یا بستن صفحه، ادامهٔ صف را به اجرای بعدی موکول می‌کند. پذیرش سرویس به معنی رسیدن به گوشی نیست.</p><Link className="panel-action mt-3" href="/admin/coupons">مدیریت کدهای تخفیف</Link></header><section className="assessment-card"><h2 className="assessment-heading mb-5">اعلام آغاز دوره</h2><div className="space-y-4">{courses.map(c=><details className="course-chapter" key={c.id}><summary className="p-4 font-bold">{c.title} · {c._count.interests.toLocaleString('fa-IR')} متقاضی</summary><div className="p-5"><StartSmsControl courseId={c.id}/><Link className="panel-action" href={`/teacher/courses/${c.id}/interests`}>فهرست متقاضیان و گزارش ارسال</Link></div></details>)}{!courses.length&&<p>دورهٔ آغازشده با متقاضی پیش‌ثبت‌نام وجود ندارد.</p>}</div></section><div className="grid items-start gap-6 lg:grid-cols-2"><section className="assessment-card"><h2 className="assessment-heading mb-5">پیامک گروهی جدید</h2><SmsForm/></section><section className="assessment-card space-y-4"><h2 className="assessment-heading">تاریخچهٔ ارسال گروهی</h2>{campaigns.slice(0,20).map(c=><article key={c.id} className="rounded-xl border p-4"><p className="text-sm leading-7">{{ALL:'همهٔ کاربران',TEACHER:'مدرس‌ها',STUDENT:'دانش‌آموزان'}[c.audience]} · {c._count.deliveries.toLocaleString('fa-IR')} شماره · {c.createdAt.toLocaleString('fa-IR',{timeZone:'Asia/Tehran'})}</p><p className="my-2 break-words text-sm">{c.patternCode?`پترن: ${c.patternCode}`:c.message}</p><SmsRunner campaignId={c.id}/><Link scroll={false} href={`?page=${page}&campaign=${c.id}`} className="panel-action">گزارش شماره‌ها</Link></article>)}<nav className="flex gap-3">{page>1&&<Link scroll={false} href={`?page=${page-1}`} className="panel-action">قبل</Link>}{campaigns.length>20&&<Link scroll={false} href={`?page=${page+1}`} className="panel-action">بعد</Link>}</nav></section></div>{query.campaign&&<section className="assessment-card"><h2 className="assessment-heading">گزارش ارسال</h2><p className="my-4 text-sm leading-8">{stats.map(s=>`${labels[s.status]}: ${s._count.toLocaleString('fa-IR')}`).join(' · ')}</p><p className="text-xs leading-7">نتیجهٔ نامشخص را ابتدا در پنل سرویس پیامک بررسی کنید. این موارد خودکار تکرار نمی‌شوند.</p>{details.slice(0,50).map(d=><div className="flex flex-wrap items-center justify-between gap-3 border-b py-3" key={d.id}><bdi>{d.phone}</bdi><span>{labels[d.status]}</span>{['FAILED','UNKNOWN'].includes(d.status)&&<SmsRunner campaignId={d.campaignId} retryId={d.id}/>}</div>)}{details.length>50&&<Link scroll={false} className="panel-action mt-4" href={`?page=${page}&campaign=${query.campaign}&after=${details[49].id}`}>شماره‌های بعدی</Link>}</section>}</main>;
++}
+diff --git a/app/api/admin/certificates/route.ts b/app/api/admin/certificates/route.ts
+new file mode 100644
+index 0000000..766b6c6
+--- /dev/null
++++ b/app/api/admin/certificates/route.ts
+@@ -0,0 +1,7 @@
++import {adminRequest} from '@/lib/admin-request';
++import {prisma} from '@/lib/prisma';
++import {notifyUsers} from '@/lib/notifications';
++export async function POST(request:Request){
++ try{await adminRequest(request);}catch{return Response.json({message:'دسترسی ندارید.'},{status:403});}
++ try{const {id}=await request.json();if(typeof id!=='string')throw Error('شناسه نامعتبر');await prisma.$transaction(async tx=>{const c=await tx.certificate.findUniqueOrThrow({where:{id},include:{enrollment:true}});if(c.revokedAt)return;await tx.certificate.update({where:{id},data:{revokedAt:new Date()}});await notifyUsers(tx,[c.enrollment.userId],{title:'گواهی‌نامه باطل شد',body:'برای اطلاع از علت با پشتیبانی ارتباط بگیرید.',href:`/certificates/${id}`,eventKey:`certificate:${id}:revoked`});});return Response.json({success:true});}catch{return Response.json({message:'گواهی پیدا نشد.'},{status:400});}
++}
+diff --git a/app/api/admin/coupons/route.ts b/app/api/admin/coupons/route.ts
+new file mode 100644
+index 0000000..1320c87
+--- /dev/null
++++ b/app/api/admin/coupons/route.ts
+@@ -0,0 +1,11 @@
++import {z} from 'zod';
++import {adminRequest} from '@/lib/admin-request';
++import {prisma} from '@/lib/prisma';
++import {couponCode} from '@/lib/coupons';
++export async function POST(request:Request){
++ try{await adminRequest(request);}catch{return Response.json({message:'دسترسی ندارید.'},{status:403});}
++ try{const input=z.object({code:z.string(),percent:z.number().int().min(1).max(100),active:z.boolean(),courseId:z.string().max(100).nullable()}).parse(await request.json());const code=couponCode(input.code);if(!code)throw Error('کد الزامی است.');
++ if(input.courseId&&!await prisma.course.findUnique({where:{id:input.courseId}}))throw Error('دوره پیدا نشد.');
++ await prisma.discountCode.upsert({where:{code},create:{...input,code},update:{percent:input.percent,active:input.active,courseId:input.courseId}});
++ return Response.json({message:'کد تخفیف ذخیره شد.'});}catch(e){return Response.json({message:e instanceof Error?e.message:'اطلاعات نامعتبر'},{status:400});}
++}
+diff --git a/app/api/admin/sms/route.ts b/app/api/admin/sms/route.ts
+new file mode 100644
+index 0000000..c3e81ea
+--- /dev/null
++++ b/app/api/admin/sms/route.ts
+@@ -0,0 +1,13 @@
++import {adminRequest} from '@/lib/admin-request';
++import {createCampaign,processCampaign} from '@/lib/manual-sms';
++import {prisma} from '@/lib/prisma';
++export const maxDuration=60;
++export async function POST(request:Request){
++ let actor;try{actor=await adminRequest(request);}catch{return Response.json({message:'دسترسی ندارید.'},{status:403});}
++ try{const body=await request.json();
++  if(body.campaignId){if(typeof body.campaignId!=='string'||body.campaignId.length>100)throw Error('شناسه نامعتبر');
++   if(body.retryId){if(body.confirmRetry!==true||typeof body.retryId!=='string')throw Error('تأیید تلاش مجدد لازم است.');await prisma.smsDelivery.updateMany({where:{id:body.retryId,campaignId:body.campaignId,status:{in:['FAILED','UNKNOWN']}},data:{status:'PENDING'}});}
++   return Response.json(await processCampaign(body.campaignId));}
++  const campaign=await createCampaign(actor.userId,body);return Response.json({id:campaign.id});
++ }catch(e){return Response.json({message:e instanceof Error?e.message:'خطا در پیامک'},{status:400});}
++}
+diff --git a/app/api/auth/name/route.ts b/app/api/auth/name/route.ts
+new file mode 100644
+index 0000000..dd9fc71
+--- /dev/null
++++ b/app/api/auth/name/route.ts
+@@ -0,0 +1,10 @@
++import {getManagementSession} from '@/lib/management-session';
++import {prisma} from '@/lib/prisma';
++export async function POST(request:Request){
++ const actor=await getManagementSession();if(!actor)return Response.json({message:'ابتدا وارد شوید.'},{status:401});
++ if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({message:'درخواست نامعتبر'},{status:403});
++ const {name}=await request.json().catch(()=>({}));
++ if(typeof name!=='string'||name.trim().length<2||name.trim().length>80||/[\p{Cc}\p{Cf}]/u.test(name.replace(/\u200c/g,'')))return Response.json({message:'نام معتبر بین ۲ تا ۸۰ نویسه وارد کنید.'},{status:400});
++ await prisma.user.updateMany({where:{id:actor.userId,OR:[{name:null},{name:''}]},data:{name:name.trim()}});
++ return Response.json({success:true});
++}
+diff --git a/app/api/auth/otp/verify/route.ts b/app/api/auth/otp/verify/route.ts
+index a142e63..deec766 100644
+--- a/app/api/auth/otp/verify/route.ts
++++ b/app/api/auth/otp/verify/route.ts
+@@ -9,7 +9,7 @@ export async function POST(request:NextRequest){
+   const result=await verifyOtp(challenge,(await request.json()).code);
+   if('error' in result)return NextResponse.json({message:result.error,restart:result.restart},{status:400});
+   const token=await createSession({userId:result.user.id,role:result.user.role});
+-  const response=NextResponse.json({user:result.user});
++  const response=NextResponse.json({user:result.user,needsName:result.needsName});
+   response.headers.set('Cache-Control','no-store');
+   response.cookies.set('session',token,{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:604800});
+   response.cookies.set('login_challenge','',{httpOnly:true,path:'/api/auth/otp',maxAge:0});
+diff --git a/app/api/certificates/route.ts b/app/api/certificates/route.ts
+new file mode 100644
+index 0000000..d2c2105
+--- /dev/null
++++ b/app/api/certificates/route.ts
+@@ -0,0 +1,7 @@
++import {getManagementSession} from '@/lib/management-session';
++import {issueCertificate} from '@/lib/certificates';
++export async function POST(request:Request){
++ const actor=await getManagementSession();if(!actor)return Response.json({message:'ابتدا وارد شوید.'},{status:401});
++ if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({message:'درخواست نامعتبر'},{status:403});
++ try{const body=await request.json();if(typeof body.enrollmentId!=='string'||body.enrollmentId.length>100)throw Error('شناسه نامعتبر');const certificate=await issueCertificate({id:actor.userId,role:actor.role},body.enrollmentId);return Response.json({id:certificate.id});}catch(e){return Response.json({message:e instanceof Error?e.message:'صدور انجام نشد.'},{status:400});}
++}
+diff --git a/app/api/coupons/quote/route.ts b/app/api/coupons/quote/route.ts
+new file mode 100644
+index 0000000..e0c5768
+--- /dev/null
++++ b/app/api/coupons/quote/route.ts
+@@ -0,0 +1,7 @@
++import {getManagementSession} from '@/lib/management-session';
++import {prisma} from '@/lib/prisma';
++import {couponCode,couponPrice} from '@/lib/coupons';
++export async function POST(request:Request){
++ if(!await getManagementSession())return Response.json({message:'ابتدا وارد شوید.'},{status:401});
++ try{const body=await request.json();const code=couponCode(body.code);const course=await prisma.course.findFirst({where:{id:String(body.courseId),status:'PUBLISHED',deliveryStatus:{not:'UPCOMING'}}});if(!course)throw Error('دوره قابل خرید نیست.');const coupon=code?await prisma.discountCode.findUnique({where:{code}}):null;return Response.json(couponPrice(course,coupon,code));}catch(e){return Response.json({message:e instanceof Error?e.message:'کد نامعتبر'},{status:400});}
++}
+diff --git a/app/api/courses/[courseId]/start-sms/route.ts b/app/api/courses/[courseId]/start-sms/route.ts
+index 9e06c44..0ba3a48 100644
+--- a/app/api/courses/[courseId]/start-sms/route.ts
++++ b/app/api/courses/[courseId]/start-sms/route.ts
+@@ -1,13 +1,13 @@
+ import {getManagementSession} from '@/lib/management-session';
+ import {prisma} from '@/lib/prisma';
+-import {processCourseStartSms} from '@/lib/course-start-sms';
++import {processCourseStartSms,prepareCourseStart} from '@/lib/course-start-sms';
+ export const maxDuration=60;
+ export async function POST(request:Request,{params}:{params:Promise<{courseId:string}>}){
+  const actor=await getManagementSession();if(!actor)return Response.json({message:'ابتدا وارد شوید.'},{status:401});
+  const {courseId}=await params;const course=await prisma.course.findUnique({where:{id:courseId}});
+- if(!course||(actor.role!=='ADMIN'&&(actor.role!=='TEACHER'||course.teacherId!==actor.userId)))return Response.json({message:'دسترسی ندارید.'},{status:403});
++ if(!course||actor.role!=='ADMIN')return Response.json({message:'دسترسی ندارید.'},{status:403});
+  if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({message:'درخواست نامعتبر.'},{status:403});
+  const body=await request.json().catch(()=>({}));
+  if(body.retryId){if(typeof body.retryId!=='string'||body.confirmRetry!==true)return Response.json({message:'تأیید تلاش مجدد لازم است.'},{status:400});await prisma.courseStartSms.updateMany({where:{id:body.retryId,interest:{courseId},status:{in:['FAILED','UNKNOWN']}},data:{status:'PENDING',lastError:null}});}
+- return Response.json(await processCourseStartSms(courseId));
++ try{if(body.prepare===true)await prisma.$transaction(tx=>prepareCourseStart(tx,courseId,typeof body.code==='string'?body.code.trim().toUpperCase():''));return Response.json(await processCourseStartSms(courseId));}catch(error){return Response.json({message:error instanceof Error?error.message:'خطا در آماده‌سازی پیامک'},{status:400});}
+ }
+diff --git a/app/api/jobs/course-start-sms/route.ts b/app/api/jobs/course-start-sms/route.ts
+deleted file mode 100644
+index 3b0a8bc..0000000
+--- a/app/api/jobs/course-start-sms/route.ts
++++ /dev/null
+@@ -1,8 +0,0 @@
+-import {timingSafeEqual} from 'node:crypto';
+-import {processCourseStartSms} from '@/lib/course-start-sms';
+-export const maxDuration=60;
+-export async function POST(request:Request){
+- const secret=process.env.CRON_SECRET;const expected=`Bearer ${secret}`;const actual=request.headers.get('authorization')||'';
+- if(!secret||actual.length!==expected.length||!timingSafeEqual(Buffer.from(actual),Buffer.from(expected)))return Response.json({message:'Unauthorized'},{status:401});
+- return Response.json(await processCourseStartSms());
+-}
+diff --git a/app/api/payments/create/route.ts b/app/api/payments/create/route.ts
+index 348e2d4..ecf9aad 100644
+--- a/app/api/payments/create/route.ts
++++ b/app/api/payments/create/route.ts
+@@ -1,10 +1,11 @@
+-import { coursePrice } from "@/lib/course-price";
+-import { getSession } from "@/lib/auth";
++import {couponCode,couponPrice} from "@/lib/coupons";
++import {getManagementSession as getSession} from "@/lib/management-session";
+ import { prisma } from "@/lib/prisma";
+ import { requestPayment, getPaymentUrl } from "@/lib/zarinpal";
+ 
+ export async function POST(request: Request) {
+   try {
++    if(request.headers.get("origin")!==new URL(request.url).origin)return Response.json({message:"درخواست نامعتبر"},{status:403});
+     const session = await getSession();
+ 
+     if (!session) {
+@@ -16,6 +17,7 @@ export async function POST(request: Request) {
+       );
+     }
+ 
++    if(session.role==="ADMIN")return Response.json({message:"مدیر امکان خرید دوره ندارد."},{status:403});
+     const body = await request.json();
+ 
+     const courseId = body.courseId;
+@@ -58,16 +60,8 @@ export async function POST(request: Request) {
+       );
+     }
+ 
+-    const payable = coursePrice(course);
+-    if (payable <= 0) {
+-      return Response.json(
+-        {
+-          message: "این دوره رایگان است.",
+-        },
+-        { status: 400 },
+-      );
+-    }
+-
++    let code:string,percent:number,payable:number;
++    try{code=couponCode(body.code);const coupon=code?await prisma.discountCode.findUnique({where:{code}}):null;const quote=couponPrice(course,coupon,code);payable=quote.amount;percent=quote.percent;}catch(e){return Response.json({message:e instanceof Error?e.message:'کد نامعتبر'},{status:400});}
+     const existingEnrollment = await prisma.enrollment.findUnique({
+       where: {
+         userId_courseId: {
+@@ -86,6 +80,16 @@ export async function POST(request: Request) {
+       );
+     }
+ 
++    if(payable===0){
++      await prisma.$transaction(async tx=>{
++        await tx.$queryRaw`SELECT id FROM "User" WHERE id=${session.userId} FOR UPDATE`;
++        const prior=await tx.enrollment.findUnique({where:{userId_courseId:{userId:session.userId,courseId}}});
++        if(prior&&prior.status!=='CANCELLED')return;
++        await tx.enrollment.upsert({where:{userId_courseId:{userId:session.userId,courseId}},create:{userId:session.userId,courseId},update:{status:'ACTIVE'}});
++        await tx.payment.create({data:{userId:session.userId,courseId,amount:0,status:'SUCCESS',paidAt:new Date(),couponCode:code||null,couponPercent:percent,teacherShareAmount:0,teacherSharePercent:0,isTest:false}});
++      });
++      return Response.json({paymentUrl:`/courses/${course.slug}`});
++    }
+     /*
+      * اگر پرداخت PENDING قبلی داریم،
+      * دوباره Payment نساز.
+@@ -97,6 +101,7 @@ export async function POST(request: Request) {
+         courseId,
+         status: "PENDING",
+         amount: payable,
++        couponCode: code||null,
+         isTest: process.env.ZARINPAL_SANDBOX === "true",
+       },
+ 
+@@ -105,6 +110,8 @@ export async function POST(request: Request) {
+       },
+     });
+ 
++    if(existingPayment?.authority)return Response.json({success:true,paymentId:existingPayment.id,paymentUrl:getPaymentUrl(existingPayment.authority)});
++
+     const payment =
+       existingPayment ||
+       (await prisma.payment.create({
+@@ -113,6 +120,8 @@ export async function POST(request: Request) {
+           courseId,
+           isTest: process.env.ZARINPAL_SANDBOX === "true",
+           amount: payable,
++          couponCode: code||null,
++          couponPercent: percent,
+           status: "PENDING",
+         },
+       }));
+@@ -134,11 +143,11 @@ export async function POST(request: Request) {
+       mobile: user?.phone || undefined,
+     });
+ 
+-    const code = zarinpal?.data?.code;
++    const gatewayCode = zarinpal?.data?.code;
+ 
+     const authority = zarinpal?.data?.authority;
+ 
+-    if (code !== 100 && code !== 101) {
++    if (gatewayCode !== 100 && gatewayCode !== 101) {
+       console.error("ZARINPAL REQUEST:", zarinpal);
+ 
+       throw new Error("زرین‌پال درخواست پرداخت را قبول نکرد.");
+diff --git a/app/api/teacher/courses/[courseId]/route.ts b/app/api/teacher/courses/[courseId]/route.ts
+index 0f2d34c..af12cab 100644
+--- a/app/api/teacher/courses/[courseId]/route.ts
++++ b/app/api/teacher/courses/[courseId]/route.ts
+@@ -1,5 +1,4 @@
+-import {after} from 'next/server';
+-import {queueCourseStart,processCourseStartSms} from '@/lib/course-start-sms';
++import {queueCourseStart} from '@/lib/course-start-sms';
+ export const maxDuration=60;
+ import { getManagementSession } from "@/lib/management-session";
+ import { prisma } from "@/lib/prisma";
+@@ -288,8 +287,6 @@ export async function PATCH(
+         await queueCourseStart(tx,courseId);
+         return updated;
+       },{timeout:30000});
+-
+-      after(()=>processCourseStartSms(courseId).then(()=>{}));
+       return Response.json({
+         success: true,
+         course: updatedCourse,
+@@ -368,7 +365,6 @@ export async function PATCH(
+       await queueCourseStart(tx,courseId,previous.deliveryStatus);
+       return updated;
+     });
+-    after(()=>processCourseStartSms(courseId).then(()=>{}));
+     return Response.json({
+       success: true,
+       course: updatedCourse,
+diff --git a/app/certificates/[id]/page.tsx b/app/certificates/[id]/page.tsx
+new file mode 100644
+index 0000000..84c53ee
+--- /dev/null
++++ b/app/certificates/[id]/page.tsx
+@@ -0,0 +1,16 @@
++import Image from 'next/image';
++import Link from 'next/link';
++import {notFound} from 'next/navigation';
++import QRCode from 'qrcode';
++import {prisma} from '@/lib/prisma';
++import {certificateValid} from '@/lib/certificates';
++import {PrintCertificate} from '@/components/assessment/certificate-actions';
++export const dynamic='force-dynamic';
++export const metadata={title:'استعلام گواهی‌نامه',robots:{index:false,follow:false}};
++export default async function Certificate({params}:{params:Promise<{id:string}>}){
++ const {id}=await params;if(!/^[a-f0-9-]{36}$/i.test(id))notFound();
++ const c=await prisma.certificate.findUnique({where:{id},include:{enrollment:{select:{status:true}}}});if(!c)notFound();
++ const valid=certificateValid(c);const base=process.env.PUBLIC_SITE_URL?.replace(/\/$/,'');
++ const qr=base&&/^https?:\/\//.test(base)?await QRCode.toDataURL(`${base}/certificates/${c.id}`,{width:180,margin:2,errorCorrectionLevel:'M'}):null;
++ return <main className="mx-auto max-w-4xl px-4 py-10"><nav className="mb-6 flex flex-wrap gap-3 print:hidden"><Link className="panel-action" href="/certificates">استعلام مدرک دیگر</Link><Link className="panel-action" href="/dashboard">پنل کاربری</Link>{valid&&<PrintCertificate/>}</nav><article className="certificate-paper rounded-3xl border-4 border-indigo-200 bg-white p-6 text-center shadow-xl sm:p-12"><div className={`mx-auto mb-6 w-fit rounded-full px-5 py-2 text-sm font-bold ${valid?'bg-emerald-50 text-emerald-800':'bg-rose-50 text-rose-800'}`}>{valid?'گواهی معتبر است · Valid certificate':'گواهی فاقد اعتبار است · Invalid certificate'}</div><h1 className="text-3xl font-bold text-indigo-950">گواهی‌نامهٔ پایان دوره</h1><h2 lang="en" dir="ltr" className="mt-3 text-xl text-indigo-700">Certificate of Completion</h2><p className="mt-9 text-slate-500">گواهی می‌شود / This certifies that</p><p className="my-5 text-3xl font-bold">{c.studentName}</p><p className="leading-8">دورهٔ زیر را با موفقیت به پایان رسانده است.</p><p lang="en" dir="ltr" className="text-sm leading-8 text-slate-500">has successfully completed the following course.</p><h3 className="my-5 text-2xl font-bold text-indigo-800">{c.courseTitle}</h3><p className="leading-9">نمرهٔ نهایی: {c.score.toLocaleString('fa-IR')} از ۱۰۰</p><p lang="en" dir="ltr">Final score: {c.score} / 100</p><p className="mt-6 text-sm">تاریخ صدور: {c.issuedAt.toLocaleDateString('fa-IR',{timeZone:'Asia/Tehran'})}</p><p lang="en" dir="ltr" className="mt-2 text-sm">Issued: {c.issuedAt.toLocaleDateString('en-GB',{timeZone:'Asia/Tehran'})}</p>{qr?<div className="my-5 flex justify-center"><Image unoptimized src={qr} alt="QR استعلام گواهی" width={180} height={180}/></div>:<p className="my-6 text-sm text-amber-700">برای QR، مدیر باید PUBLIC_SITE_URL را با نشانی سایت تنظیم کند.</p>}<p className="mt-5 text-xs text-slate-500">شناسهٔ استعلام / Verification ID</p><bdi className="mt-2 block break-all text-sm">{c.id}</bdi><p className="mt-7 text-xs leading-7 text-slate-500">این گواهی توسط پلتفرم آموزش صادر شده و بیانگر مدرک دانشگاهی یا تأیید نهاد دولتی نیست. نام دارنده و عنوان دوره مطابق اطلاعات ثبت‌شده است.</p>{!valid&&<p className="mt-5 text-rose-700">گواهی باطل شده یا ثبت‌نام اعتبار ندارد؛ با پشتیبانی تماس بگیرید.</p>}</article></main>;
++}
+diff --git a/app/certificates/page.tsx b/app/certificates/page.tsx
+new file mode 100644
+index 0000000..c6ada62
+--- /dev/null
++++ b/app/certificates/page.tsx
+@@ -0,0 +1,3 @@
++import Link from 'next/link';
++import {redirect} from 'next/navigation';
++export default async function Verify({searchParams}:{searchParams:Promise<{code?:string}>}){const {code}=await searchParams;if(code&&/^[a-f0-9-]{36}$/i.test(code))redirect(`/certificates/${code}`);return <main className="mx-auto max-w-xl p-6 py-14"><section className="assessment-card assessment-form space-y-5"><h1 className="text-2xl font-bold">استعلام گواهی‌نامه</h1><p className="text-sm leading-8">شناسهٔ درج‌شده زیر گواهی را وارد کنید یا QR آن را اسکن کنید.</p><form className="space-y-4"><label>شناسهٔ گواهی<input name="code" dir="ltr" maxLength={36} required defaultValue={code}/></label><button className="panel-action">بررسی شناسه</button></form>{code&&<p role="alert">شناسهٔ گواهی معتبر نیست.</p>}<Link className="panel-action" href="/courses">بازگشت به دوره‌ها</Link></section></main>;}
+diff --git a/app/courses/[slug]/checkout/page.tsx b/app/courses/[slug]/checkout/page.tsx
+index 8c06a9e..c2b9b6b 100644
+--- a/app/courses/[slug]/checkout/page.tsx
++++ b/app/courses/[slug]/checkout/page.tsx
+@@ -28,6 +28,8 @@ export default async function CheckoutPage({ params }: Props) {
+     redirect(`/login?redirect=/courses/${slug}/checkout`);
+   }
+ 
++  if(session.role==="ADMIN")redirect("/admin/courses");
++
+   /*
+    * پیدا کردن دوره
+    */
+@@ -173,7 +175,7 @@ export default async function CheckoutPage({ params }: Props) {
+             />
+ 
+             <p className="mt-4 text-center text-xs leading-6 text-gray-400">
+-              با کلیک روی دکمه پرداخت، به درگاه بانکی منتقل خواهید شد.
++              با کلیک روی دکمه پرداخت، به درگاه بانکی منتقل می‌شوید؛ با تخفیف صددرصدی ثبت‌نام مستقیم انجام می‌شود.
+             </p>
+           </div>
+         </div>
+diff --git a/app/dashboard/certificates/page.tsx b/app/dashboard/certificates/page.tsx
+new file mode 100644
+index 0000000..f9fc906
+--- /dev/null
++++ b/app/dashboard/certificates/page.tsx
+@@ -0,0 +1,10 @@
++import Link from 'next/link';
++import {redirect} from 'next/navigation';
++import {getManagementSession} from '@/lib/management-session';
++import {prisma} from '@/lib/prisma';
++import {certificateValid} from '@/lib/certificates';
++export default async function MyCertificates(){
++ const actor=await getManagementSession();if(!actor)redirect('/login');if(actor.role==='ADMIN')redirect('/admin/certificates');
++ const rows=await prisma.certificate.findMany({where:{enrollment:{userId:actor.userId}},include:{enrollment:{select:{status:true}}},orderBy:{issuedAt:'desc'}});
++ return <main className="mx-auto max-w-5xl space-y-6 p-6"><h1 className="text-2xl font-bold">گواهی‌نامه‌های من</h1><p className="text-sm leading-8">پس از قبولی، از کارنامهٔ نهایی هر دوره گواهی دریافت کنید. شناسه و QR امکان استعلام نام دارنده، دوره و نمره را فراهم می‌کنند؛ فقط با افرادی که می‌خواهید مدرک را ببینند به اشتراک بگذارید.</p><div className="grid gap-5 md:grid-cols-2">{rows.map(c=><article className="assessment-card" key={c.id}><h2 className="assessment-heading">{c.courseTitle}</h2><p className="my-4 text-sm">{certificateValid(c)?'معتبر':'نامعتبر'} · نمرهٔ {c.score.toLocaleString('fa-IR')}</p><Link className="panel-action panel-action-primary" href={`/certificates/${c.id}`}>مشاهده و چاپ گواهی</Link></article>)}</div>{!rows.length&&<p className="assessment-card">هنوز گواهی صادر نشده است.</p>}<Link className="panel-action" href="/dashboard">بازگشت به دوره‌های من</Link></main>;
++}
+diff --git a/app/login/page.tsx b/app/login/page.tsx
+index c4cc237..b9392eb 100644
+--- a/app/login/page.tsx
++++ b/app/login/page.tsx
+@@ -7,13 +7,15 @@ import OtpInput from '@/components/ui/otp-input';
+ import {Spinner} from '@/components/panel/loading';
+ export default function Login(){
+  const router=useRouter();
++ const [needsName,setNeedsName]=useState(false),[name,setName]=useState('');
+  const [phone,setPhone]=useState(''),[code,setCode]=useState(''),[expires,setExpires]=useState<number|null>(null),[seconds,setSeconds]=useState(300),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+  useEffect(()=>{if(!expires)return;const tick=()=>{const left=Math.max(0,Math.ceil((expires-Date.now())/1000));setSeconds(left);if(!left){setExpires(null);setCode('');setMessage('زمان کد تمام شد؛ دوباره شماره را وارد کنید.');}};tick();const timer=setInterval(tick,1000);return()=>clearInterval(timer);},[expires]);
+  async function submit(e:FormEvent){e.preventDefault();if(busy)return;setBusy(true);setMessage('');try{
++ if(needsName){const res=await fetch('/api/auth/name',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});const data=await res.json();if(!res.ok)throw Error(data.message);const target=new URLSearchParams(window.location.search).get('redirect');router.replace(target&&target.startsWith('/')&&!target.startsWith('//')&&!target.includes('\\')?target:'/dashboard');router.refresh();return;}
+  const res=await fetch(`/api/auth/otp/${expires?'verify':'request'}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(expires?{code}:{phone})});const data=await res.json();
+  if(!res.ok){if(data.restart){setExpires(null);setCode('');}throw Error(data.message||'خطا در برقراری ارتباط');}
+  if(!expires){setCode('');setSeconds(300);setExpires(new Date(data.expiresAt).getTime());setMessage('کد ورود پیامک شد.');}
+- else{const target=new URLSearchParams(window.location.search).get('redirect');const home=data.user.role==='ADMIN'?'/admin':data.user.role==='TEACHER'?'/teacher':'/dashboard';router.replace(target&&target.startsWith('/')&&!target.startsWith('//')&&!target.includes('\\')?target:home);router.refresh();}
++ else{if(data.needsName){setExpires(null);setNeedsName(true);return;}const target=new URLSearchParams(window.location.search).get('redirect');const home=data.user.role==='ADMIN'?'/admin':data.user.role==='TEACHER'?'/teacher':'/dashboard';router.replace(target&&target.startsWith('/')&&!target.startsWith('//')&&!target.includes('\\')?target:home);router.refresh();}
+  }catch(e){setMessage(e instanceof Error?e.message:'ارتباط برقرار نشد.');}finally{setBusy(false);}}
+- return <main className="auth-page"><section className="auth-card"><header><ThemeIcon name="graduation" className="h-12 w-12"/><h1>ورود یا ثبت‌نام</h1><p>با شمارهٔ موبایل وارد فضای یادگیری شوید.</p></header><form onSubmit={submit} className="assessment-form space-y-5 p-6"><fieldset disabled={busy} className="space-y-5">{expires?<><p className="text-sm">کد ارسال‌شده به <bdi>{phone}</bdi> را وارد کنید.</p><OtpInput value={code} onChange={setCode}/><p className="text-sm text-indigo-700">زمان باقی‌مانده: {seconds.toLocaleString('fa-IR')} ثانیه</p></>:<label>شمارهٔ موبایل<input autoFocus inputMode="tel" autoComplete="tel" dir="ltr" required maxLength={16} placeholder="۰۹۱۲۳۴۵۶۷۸۹" value={phone} onChange={e=>setPhone(e.target.value)}/></label>}<button className="panel-action panel-action-primary w-full" type="submit">{busy?<Spinner small/>:<ThemeIcon name="check"/>}{expires?'تأیید کد و ورود':'تأیید و ارسال کد'}</button>{expires&&<button type="button" className="panel-action w-full" onClick={()=>{setExpires(null);setCode('');}}>اصلاح شماره / درخواست مجدد</button>}</fieldset><p role="status" className="min-h-8 text-sm leading-7 text-indigo-900">{message}</p><p className="text-xs leading-7 text-slate-500">اعتبار کد ۵ دقیقه است. با سه خطا به مرحلهٔ شماره برمی‌گردید؛ پس از ده خطای متوالی، رفع مسدودی توسط پشتیبانی لازم است.</p><Link className="panel-action" href="/courses">مشاهدهٔ دوره‌ها</Link></form></section></main>;
++ return <main className="auth-page"><section className="auth-card"><header><ThemeIcon name="graduation" className="h-12 w-12"/><h1>ورود یا ثبت‌نام</h1><p>با شمارهٔ موبایل وارد فضای یادگیری شوید.</p></header><form onSubmit={submit} className="assessment-form space-y-5 p-6"><fieldset disabled={busy} className="space-y-5">{needsName?<label>نام شما در سایت<input autoFocus required minLength={2} maxLength={80} autoComplete="name" value={name} onChange={e=>setName(e.target.value)}/></label>:expires?<><p className="text-sm">کد ارسال‌شده به <bdi>{phone}</bdi> را وارد کنید.</p><OtpInput value={code} onChange={setCode}/><p className="text-sm text-indigo-700">زمان باقی‌مانده: {seconds.toLocaleString('fa-IR')} ثانیه</p></>:<label>شمارهٔ موبایل<input autoFocus inputMode="tel" autoComplete="tel" dir="ltr" required maxLength={16} placeholder="۰۹۱۲۳۴۵۶۷۸۹" value={phone} onChange={e=>setPhone(e.target.value)}/></label>}<button className="panel-action panel-action-primary w-full" type="submit">{busy?<Spinner small/>:<ThemeIcon name="check"/>}{needsName?'ذخیرهٔ نام و ورود':expires?'تأیید کد و ورود':'تأیید و ارسال کد'}</button>{expires&&<button type="button" className="panel-action w-full" onClick={()=>{setExpires(null);setCode('');}}>اصلاح شماره / درخواست مجدد</button>}</fieldset><p role="status" className="min-h-8 text-sm leading-7 text-indigo-900">{message}</p><p className="text-xs leading-7 text-slate-500">اعتبار کد ۵ دقیقه است. با سه خطا به مرحلهٔ شماره برمی‌گردید؛ پس از ده خطای متوالی، رفع مسدودی توسط پشتیبانی لازم است.</p><Link className="panel-action" href="/courses">مشاهدهٔ دوره‌ها</Link></form></section></main>;
+ }
+diff --git a/app/teacher/courses/[courseId]/interests/page.tsx b/app/teacher/courses/[courseId]/interests/page.tsx
+index 11508dc..11c21a3 100644
+--- a/app/teacher/courses/[courseId]/interests/page.tsx
++++ b/app/teacher/courses/[courseId]/interests/page.tsx
+@@ -14,5 +14,5 @@ export default async function InterestsPage({params,searchParams}:{params:Promis
+  if(!course||(user.role!=='ADMIN'&&course.teacherId!==session.userId))notFound();
+  const count=await prisma.courseInterest.count({where:{courseId}});const pages=Math.max(1,Math.ceil(count/30));const raw=Number((await searchParams).page);const page=Number.isSafeInteger(raw)&&raw>0?Math.min(raw,pages):1;
+  const rows=await prisma.courseInterest.findMany({where:{courseId},include:{startSms:true},orderBy:[{createdAt:'desc'},{id:'asc'}],take:30,skip:(page-1)*30});
+- return <main className="mx-auto max-w-6xl px-4 py-8"><Link href={`/teacher/courses/${courseId}`} className="panel-action panel-action-indigo"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>بازگشت به دوره</Link><h1 className="my-5 text-2xl font-bold">متقاضیان {course.title}</h1><p className="mb-5 text-sm leading-8">{faDigits(count)} درخواست؛ این افراد با اطلاع‌رسانی شروع دوره موافقت کرده‌اند. شماره‌ها خوداظهاری هستند. با آغاز دورهٔ منتشرشده، پیامک شروع در صف ارسال قرار می‌گیرد. «پذیرفته‌شده» به معنی پذیرش سرویس است، نه تأیید رسیدن به گوشی.</p><StartSmsControl courseId={courseId}/><div className="overflow-x-auto rounded-2xl border bg-white"><table className="w-full text-right text-sm"><thead className="bg-slate-100"><tr><th className="p-4">نام</th><th>موبایل</th><th>زمان درخواست</th><th>پیامک شروع</th></tr></thead><tbody>{rows.map(row=><tr key={row.id} className="border-t"><td className="p-4">{row.name}</td><td><bdi>{faDigits(row.phone)}</bdi></td><td>{row.createdAt.toLocaleDateString('fa-IR',{timeZone:'Asia/Tehran'})}</td><td className="p-3">{row.startSms?({PENDING:'در صف',SENDING:'در حال ارسال',SENT:'پذیرفته‌شده توسط سرویس',FAILED:'ناموفق',UNKNOWN:'نتیجه نامشخص'}[row.startSms.status]??row.startSms.status):'هنوز آغاز نشده'}{row.startSms?.lastError&&<p className="my-2 text-xs text-rose-700">{row.startSms.lastError}</p>}{row.startSms&&['FAILED','UNKNOWN'].includes(row.startSms.status)&&<StartSmsControl courseId={courseId} retryId={row.startSms.id}/>}</td></tr>)}</tbody></table>{!rows.length&&<p className="p-5">هنوز درخواستی ثبت نشده است.</p>}</div><nav className="mt-5 flex gap-4">{page>1&&<Link scroll={false} href={`?page=${page-1}`} className="panel-action panel-action-slate"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>قبل</Link>}<span>{faDigits(page)} از {faDigits(pages)}</span>{page<pages&&<Link scroll={false} href={`?page=${page+1}`} className="panel-action panel-action-slate"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>بعد</Link>}</nav></main>;
++ return <main className="mx-auto max-w-6xl px-4 py-8"><Link href={`/teacher/courses/${courseId}`} className="panel-action panel-action-indigo"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>بازگشت به دوره</Link><h1 className="my-5 text-2xl font-bold">متقاضیان {course.title}</h1><p className="mb-5 text-sm leading-8">{faDigits(count)} درخواست؛ این افراد با اطلاع‌رسانی شروع دوره موافقت کرده‌اند. شماره‌ها خوداظهاری هستند. ارسال پیامک شروع فقط با اقدام مدیر انجام می‌شود. «پذیرفته‌شده» به معنی پذیرش سرویس است، نه تأیید رسیدن به گوشی.</p>{user.role==='ADMIN'&&<StartSmsControl courseId={courseId}/>}<div className="overflow-x-auto rounded-2xl border bg-white"><table className="w-full text-right text-sm"><thead className="bg-slate-100"><tr><th className="p-4">نام</th><th>موبایل</th><th>زمان درخواست</th><th>پیامک شروع</th></tr></thead><tbody>{rows.map(row=><tr key={row.id} className="border-t"><td className="p-4">{row.name}</td><td><bdi>{faDigits(row.phone)}</bdi></td><td>{row.createdAt.toLocaleDateString('fa-IR',{timeZone:'Asia/Tehran'})}</td><td className="p-3">{row.startSms?({PENDING:'در صف',SENDING:'در حال ارسال',SENT:'پذیرفته‌شده توسط سرویس',FAILED:'ناموفق',UNKNOWN:'نتیجه نامشخص'}[row.startSms.status]??row.startSms.status):'هنوز آغاز نشده'}{row.startSms?.lastError&&<p className="my-2 text-xs text-rose-700">{row.startSms.lastError}</p>}{user.role==='ADMIN'&&row.startSms&&['FAILED','UNKNOWN'].includes(row.startSms.status)&&<StartSmsControl courseId={courseId} retryId={row.startSms.id}/>}</td></tr>)}</tbody></table>{!rows.length&&<p className="p-5">هنوز درخواستی ثبت نشده است.</p>}</div><nav className="mt-5 flex gap-4">{page>1&&<Link scroll={false} href={`?page=${page-1}`} className="panel-action panel-action-slate"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>قبل</Link>}<span>{faDigits(page)} از {faDigits(pages)}</span>{page<pages&&<Link scroll={false} href={`?page=${page+1}`} className="panel-action panel-action-slate"><ThemeIcon name="arrow" className="me-2 h-4 w-4"/>بعد</Link>}</nav></main>;
+ }
+diff --git a/components/assessment/certificate-actions.tsx b/components/assessment/certificate-actions.tsx
+new file mode 100644
+index 0000000..90bdfff
+--- /dev/null
++++ b/components/assessment/certificate-actions.tsx
+@@ -0,0 +1,7 @@
++"use client";
++import {useState} from 'react';
++import {useRouter} from 'next/navigation';
++import ThemeIcon from '@/components/panel/theme-icon';
++export function CertificateButton({enrollmentId}:{enrollmentId:string}){const [busy,setBusy]=useState(false),[message,setMessage]=useState('');const router=useRouter();return <div className="mt-5 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-5"><h3 className="mb-3 font-bold">گواهی‌نامهٔ پایان دوره</h3><p className="mb-4 text-sm leading-8">پس از تکمیل درس‌ها، تصحیح همهٔ تمرین‌ها و کسب حداقل نمرهٔ ۶۰ در آزمون و کارنامهٔ نهایی، گواهی دو‌زبانهٔ قابل استعلام صادر می‌شود. نام و عنوان دوره به زبان ثبت‌شده نمایش داده می‌شوند.</p><button disabled={busy} className="panel-action panel-action-primary" onClick={async()=>{setBusy(true);setMessage('');try{const res=await fetch('/api/certificates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enrollmentId})});const data=await res.json();if(!res.ok)throw Error(data.message);router.push(`/certificates/${data.id}`);}catch(e){setMessage(e instanceof Error?e.message:'خطا');}finally{setBusy(false);}}}><ThemeIcon name="award" className="h-5 w-5"/>{busy?'در حال بررسی…':'دریافت گواهی‌نامه'}</button><p role="status" className="mt-3 text-sm">{message}</p></div>;}
++export function RevokeCertificate({id}:{id:string}){const router=useRouter();const [busy,setBusy]=useState(false),[message,setMessage]=useState('');return <div><button disabled={busy} className="panel-action" onClick={async()=>{if(!confirm('این گواهی باطل شود؟ این عملیات برگشت‌پذیر نیست.'))return;setBusy(true);try{const res=await fetch('/api/admin/certificates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});if(!res.ok)throw Error('ابطال انجام نشد.');router.refresh();}catch(e){setMessage(e instanceof Error?e.message:'خطا');}finally{setBusy(false);}}}>ابطال گواهی</button><p role="status">{message}</p></div>;}
++export function PrintCertificate(){return <button className="panel-action panel-action-primary print:hidden" onClick={()=>window.print()}><ThemeIcon name="award" className="h-5 w-5"/>چاپ / ذخیرهٔ PDF</button>;}
+diff --git a/components/assessment/final-report.tsx b/components/assessment/final-report.tsx
+index c49fa8c..f205c06 100644
+--- a/components/assessment/final-report.tsx
++++ b/components/assessment/final-report.tsx
+@@ -1,3 +1,4 @@
++import {CertificateButton} from '@/components/assessment/certificate-actions';
+ import {prisma} from '@/lib/prisma';
+ import {assignmentActor} from '@/lib/assignment-api';
+ import {finalMark,finishedLessons,mayManage} from '@/lib/final-assessment';
+@@ -12,5 +13,5 @@ export default async function FinalReport({enrollmentId}:{enrollmentId:string}){
+  const complete=await finishedLessons(prisma,e.courseId,e.id);
+  const score=complete&&e.status!=='CANCELLED'?finalMark(e.examAttempt?.score??null,scores,e.course.finalExam?.examWeight??50):null;
+  const isManager=mayManage(actor,e.course.teacherId);
+- return <section className="assessment-card my-6" aria-label="کارنامهٔ نهایی"><h2 className="assessment-heading"><ThemeIcon name="award"/>کارنامهٔ نهایی دوره</h2><div className="my-5 grid gap-4 sm:grid-cols-3"><div className="assessment-stat"><span>آزمون پایانی</span><strong>{e.examAttempt?.score==null?e.examAttempt?'منتظر تصحیح':'هنوز ارسال نشده':`${e.examAttempt.score.toLocaleString('fa-IR')} از ۱۰۰`}</strong></div><div className="assessment-stat"><span>تمرین‌های ارزیابی‌شده</span><strong>{scores.filter(s=>s!==null).length.toLocaleString('fa-IR')} از {scores.length.toLocaleString('fa-IR')}</strong></div><div className="assessment-stat"><span>نمرهٔ کل</span><strong>{score===null?'هنوز نهایی نشده':`${score.toLocaleString('fa-IR')} از ۱۰۰`}</strong></div></div><p className="text-sm leading-8 text-slate-600">نمرهٔ کل پس از تکمیل درس‌ها، تصحیح آزمون و نمره‌دهی همهٔ تمرین‌های منتشرشده محاسبه می‌شود. سهم آزمون {scores.length?(e.course.finalExam?.examWeight??50).toLocaleString('fa-IR'):'۱۰۰'}٪ است؛ باقی سهم به میانگین تمرین‌ها تعلق دارد. تکلیف بی‌پاسخ یا در انتظار تصحیح، صفر محسوب نمی‌شود.</p><p className="mt-2 text-xs leading-7 text-slate-500">کارنامه بر اساس محتوای منتشرشدهٔ فعلی است؛ انتشار درس یا تمرین جدید می‌تواند وضعیت تکمیل آن را تغییر دهد.</p>{e.examAttempt?.feedback&&<p className="my-4 whitespace-pre-wrap rounded-xl bg-indigo-50 p-4 text-sm leading-8">بازخورد آزمون: {e.examAttempt.feedback}</p>}<div className="my-5 space-y-3">{assignments.map(a=><div key={a.id} className="flex flex-wrap justify-between gap-3 rounded-xl border p-3 text-sm"><span>{a.title}</span><strong>{a.submissions[0]?.status==='GRADED'?`${a.submissions[0].score?.toLocaleString('fa-IR')} از ۱۰۰`:a.submissions[0]?.status==='REVISION'?'نیاز به اصلاح':a.submissions[0]?'منتظر تصحیح':'ارسال نشده'}</strong></div>)}</div><div className="grid gap-4 md:grid-cols-2"><section className="rounded-2xl bg-teal-50 p-5"><h3 className="mb-3 flex items-center gap-2 font-bold"><ThemeIcon name="message" className="h-5 w-5"/>بازخورد کلی مدرس</h3><p className="whitespace-pre-wrap text-sm leading-8">{e.finalFeedback?.teacherNote||'هنوز بازخوردی ثبت نشده است.'}</p></section><section className="rounded-2xl bg-violet-50 p-5"><h3 className="mb-3 flex items-center gap-2 font-bold"><ThemeIcon name="message" className="h-5 w-5"/>بازخورد مدیر</h3><p className="whitespace-pre-wrap text-sm leading-8">{e.finalFeedback?.adminNote||'هنوز بازخوردی ثبت نشده است.'}</p></section></div>{isManager&&<div className="mt-6"><FinalNote enrollmentId={e.id} role={actor.role} note={(actor.role==='ADMIN'?e.finalFeedback?.adminNote:e.finalFeedback?.teacherNote)||''}/></div>}{!isManager&&complete&&e.status!=='CANCELLED'&&e.course.status==='PUBLISHED'&&<section className="mt-7 border-t pt-6"><h3 className="assessment-heading mb-4"><ThemeIcon name="star"/>نظر دانش‌آموز یا والدین دربارهٔ دوره</h3><ReviewForm courseId={e.courseId} review={e.courseReview}/></section>}{isManager&&e.courseReview&&<section className="mt-6 rounded-xl bg-amber-50 p-5"><h3 className="font-bold">نظر {e.courseReview.authorType==='PARENT'?'والدین':'دانش‌آموز'} · {e.courseReview.rating.toLocaleString('fa-IR')} از ۵</h3><p className="mt-3 whitespace-pre-wrap text-sm leading-8">{e.courseReview.body}</p></section>}</section>;
++ return <section className="assessment-card my-6" aria-label="کارنامهٔ نهایی"><h2 className="assessment-heading"><ThemeIcon name="award"/>کارنامهٔ نهایی دوره</h2><div className="my-5 grid gap-4 sm:grid-cols-3"><div className="assessment-stat"><span>آزمون پایانی</span><strong>{e.examAttempt?.score==null?e.examAttempt?'منتظر تصحیح':'هنوز ارسال نشده':`${e.examAttempt.score.toLocaleString('fa-IR')} از ۱۰۰`}</strong></div><div className="assessment-stat"><span>تمرین‌های ارزیابی‌شده</span><strong>{scores.filter(s=>s!==null).length.toLocaleString('fa-IR')} از {scores.length.toLocaleString('fa-IR')}</strong></div><div className="assessment-stat"><span>نمرهٔ کل</span><strong>{score===null?'هنوز نهایی نشده':`${score.toLocaleString('fa-IR')} از ۱۰۰`}</strong></div></div><p className="text-sm leading-8 text-slate-600">نمرهٔ کل پس از تکمیل درس‌ها، تصحیح آزمون و نمره‌دهی همهٔ تمرین‌های منتشرشده محاسبه می‌شود. سهم آزمون {scores.length?(e.course.finalExam?.examWeight??50).toLocaleString('fa-IR'):'۱۰۰'}٪ است؛ باقی سهم به میانگین تمرین‌ها تعلق دارد. تکلیف بی‌پاسخ یا در انتظار تصحیح، صفر محسوب نمی‌شود.</p><p className="mt-2 text-xs leading-7 text-slate-500">کارنامه بر اساس محتوای منتشرشدهٔ فعلی است؛ انتشار درس یا تمرین جدید می‌تواند وضعیت تکمیل آن را تغییر دهد.</p>{e.examAttempt?.feedback&&<p className="my-4 whitespace-pre-wrap rounded-xl bg-indigo-50 p-4 text-sm leading-8">بازخورد آزمون: {e.examAttempt.feedback}</p>}<div className="my-5 space-y-3">{assignments.map(a=><div key={a.id} className="flex flex-wrap justify-between gap-3 rounded-xl border p-3 text-sm"><span>{a.title}</span><strong>{a.submissions[0]?.status==='GRADED'?`${a.submissions[0].score?.toLocaleString('fa-IR')} از ۱۰۰`:a.submissions[0]?.status==='REVISION'?'نیاز به اصلاح':a.submissions[0]?'منتظر تصحیح':'ارسال نشده'}</strong></div>)}</div><div className="grid gap-4 md:grid-cols-2"><section className="rounded-2xl bg-teal-50 p-5"><h3 className="mb-3 flex items-center gap-2 font-bold"><ThemeIcon name="message" className="h-5 w-5"/>بازخورد کلی مدرس</h3><p className="whitespace-pre-wrap text-sm leading-8">{e.finalFeedback?.teacherNote||'هنوز بازخوردی ثبت نشده است.'}</p></section><section className="rounded-2xl bg-violet-50 p-5"><h3 className="mb-3 flex items-center gap-2 font-bold"><ThemeIcon name="message" className="h-5 w-5"/>بازخورد مدیر</h3><p className="whitespace-pre-wrap text-sm leading-8">{e.finalFeedback?.adminNote||'هنوز بازخوردی ثبت نشده است.'}</p></section></div>{isManager&&<div className="mt-6"><FinalNote enrollmentId={e.id} role={actor.role} note={(actor.role==='ADMIN'?e.finalFeedback?.adminNote:e.finalFeedback?.teacherNote)||''}/></div>}{!isManager&&complete&&e.status!=='CANCELLED'&&e.course.status==='PUBLISHED'&&<section className="mt-7 border-t pt-6"><h3 className="assessment-heading mb-4"><ThemeIcon name="star"/>نظر دانش‌آموز یا والدین دربارهٔ دوره</h3><ReviewForm courseId={e.courseId} review={e.courseReview}/></section>}{(score!==null||isManager)&&<CertificateButton enrollmentId={e.id}/>} {isManager&&e.courseReview&&<section className="mt-6 rounded-xl bg-amber-50 p-5"><h3 className="font-bold">نظر {e.courseReview.authorType==='PARENT'?'والدین':'دانش‌آموز'} · {e.courseReview.rating.toLocaleString('fa-IR')} از ۵</h3><p className="mt-3 whitespace-pre-wrap text-sm leading-8">{e.courseReview.body}</p></section>}</section>;
+ }
+diff --git a/components/communication/admin-tools.tsx b/components/communication/admin-tools.tsx
+new file mode 100644
+index 0000000..cc7c915
+--- /dev/null
++++ b/components/communication/admin-tools.tsx
+@@ -0,0 +1,19 @@
++"use client";
++import {useEffect,useRef,useState} from 'react';
++import {useRouter} from 'next/navigation';
++import NumberInput from '@/components/ui/number-input';
++import ThemeIcon from '@/components/panel/theme-icon';
++type Course={id:string;title:string};
++async function post(url:string,body:unknown){const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await res.json();if(!res.ok)throw Error(data.message||'درخواست انجام نشد.');return data;}
++export function CouponForm({courses}:{courses:Course[]}){
++ const router=useRouter();const [busy,setBusy]=useState(false),[message,setMessage]=useState('');
++ return <form className="assessment-form space-y-4" onSubmit={async e=>{e.preventDefault();const f=new FormData(e.currentTarget);setBusy(true);try{const data=await post('/api/admin/coupons',{code:f.get('code'),percent:Number(f.get('percent')),courseId:f.get('courseId')||null,active:f.get('active')==='on'});setMessage(data.message);router.refresh();}catch(e){setMessage(e instanceof Error?e.message:'خطا');}finally{setBusy(false);}}}><fieldset disabled={busy} className="space-y-4"><label>کد تخفیف<input name="code" required dir="ltr" minLength={3} maxLength={40} pattern="[A-Za-z0-9_\-]+"/></label><label>درصد تخفیف<NumberInput name="percent" min={1} max={100} required defaultValue={10} unit="درصد"/></label><label>محدودهٔ اعتبار<select name="courseId"><option value="">همهٔ دوره‌ها</option>{courses.map(c=><option key={c.id} value={c.id}>{c.title}</option>)}</select></label><label className="flex items-center gap-2"><input name="active" type="checkbox" defaultChecked/>فعال</label><p className="text-xs leading-7">برای ویرایش یا غیرفعال‌سازی، همان کد را وارد کنید. درصد روی قیمت فعلی پس از تخفیف دوره اعمال می‌شود؛ پرداخت‌های قبلی تغییر نمی‌کنند.</p><button className="panel-action panel-action-primary"><ThemeIcon name="check" className="h-4 w-4"/>ذخیرهٔ کد</button></fieldset><p role="status">{message}</p></form>;
++}
++export function SmsRunner({campaignId,retryId}:{campaignId:string;retryId?:string}){
++ const [busy,setBusy]=useState(false),[message,setMessage]=useState('');const stop=useRef(false);const router=useRouter();useEffect(()=>()=>{stop.current=true;},[]);
++ return <div className="my-3"><div className="flex flex-wrap gap-2"><button disabled={busy} className="panel-action" onClick={async()=>{if(retryId&&!confirm('نتیجهٔ قبلی را در پنل پیامک بررسی کرده‌اید؟ ارسال مجدد ممکن است تکراری باشد.'))return;stop.current=false;setBusy(true);try{let first=true;while(!stop.current){const result=await post('/api/admin/sms',{campaignId,...(first&&retryId?{retryId,confirmRetry:true}:{})});first=false;if(!result.configured){setMessage('ابتدا تنظیمات سرویس پیامکی را وارد کنید.');break;}if(!result.processed){setMessage('صف پردازش شد؛ نتیجهٔ هر شماره را بررسی کنید.');break;}setMessage('در حال پردازش؛ صفحه را باز نگه دارید.');}}catch(e){setMessage(e instanceof Error?e.message:'خطا');}finally{setBusy(false);router.refresh();}}}><ThemeIcon name="message" className="h-4 w-4"/>{busy?'در حال ارسال…':retryId?'تلاش مجدد پس از بررسی':'ارسال / ادامهٔ ارسال'}</button>{busy&&<button className="panel-action" onClick={()=>{stop.current=true;setMessage('پس از پایان این دسته متوقف می‌شود.');}}>توقف</button>}</div><p className="mt-2 text-xs" role="status">{message}</p></div>;
++}
++export function SmsForm(){
++ const router=useRouter();const [pattern,setPattern]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('');const requestId=useRef<string|null>(null);
++ return <form className="assessment-form space-y-4" onSubmit={async e=>{e.preventDefault();const form=e.currentTarget;const f=new FormData(form);setBusy(true);try{requestId.current??=crypto.randomUUID();await post('/api/admin/sms',{requestId:requestId.current,audience:f.get('audience'),message:pattern?'':f.get('message'),patternCode:pattern?f.get('patternCode'):undefined,variables:pattern?JSON.parse(String(f.get('variables')||'{}')):{}});requestId.current=null;setMessage('فهرست گیرندگان آماده شد؛ در تاریخچه دکمهٔ ارسال را بزنید.');form.reset();router.refresh();}catch(e){setMessage(e instanceof Error?e.message:'خطا');}finally{setBusy(false);}}}><fieldset disabled={busy} className="space-y-4"><label>گیرندگان<select name="audience"><option value="ALL">همهٔ کاربران</option><option value="TEACHER">مدرس‌ها</option><option value="STUDENT">دانش‌آموزان</option></select></label><label>روش پیام<select value={pattern?'pattern':'simple'} onChange={e=>setPattern(e.target.value==='pattern')}><option value="simple">پیامک ساده</option><option value="pattern">پترن تأییدشدهٔ سرویس</option></select></label>{pattern?<><label>کد پترن<input required name="patternCode" maxLength={100} dir="ltr"/></label><label>متغیرهای پترن (JSON)<textarea name="variables" dir="ltr" defaultValue={'{"message":"شروع کلاس"}'} required/></label></>:<label>متن پیامک<textarea name="message" required maxLength={1500} rows={4}/></label>}<p className="text-xs leading-7">شماره‌های معتبر و غیرآزمایشی انتخاب می‌شوند. هر شماره در این ارسال فقط یک بار قرار می‌گیرد. هزینه و پذیرش پترن تابع پنل پیامکی شماست.</p><button className="panel-action panel-action-primary"><ThemeIcon name="users" className="h-4 w-4"/>آماده‌سازی فهرست گیرندگان</button></fieldset><p role="status">{message}</p></form>;
++}
+diff --git a/components/course/content-summary.tsx b/components/course/content-summary.tsx
+index df9a537..0f0bf8e 100644
+--- a/components/course/content-summary.tsx
++++ b/components/course/content-summary.tsx
+@@ -10,4 +10,4 @@ export default async function ContentSummary({courseId,management=false}:{course
+  const rows=[{icon:'play' as const,text:`${(seconds/3600).toLocaleString('fa-IR',{maximumFractionDigits:1})} ساعت آموزش ویدئویی`},{icon:'exam' as const,text:`${questions.toLocaleString('fa-IR')} سؤال آزمون پایانی`},{icon:'folder' as const,text:`${project.toLocaleString('fa-IR')} فایل برنامه و پروژه`},{icon:'file' as const,text:`${pdf.toLocaleString('fa-IR')} فایل PDF و جزوه`},{icon:'message' as const,text:'پرسش و پاسخ از طریق تیکت'},{icon:'award' as const,text:exam?.published?'آزمون پایانی منتشرشده':'آزمون پایانی در انتظار انتشار'}];
+  return <section className="assessment-card my-6"><h2 className="assessment-heading"><ThemeIcon name="layers"/>محتوای آموزش</h2><ul className="content-summary-grid">{rows.map(r=><li key={r.text}><ThemeIcon name={r.icon}/><span>{r.text}</span></li>)}</ul><p className="text-xs leading-7 text-slate-500">{management?'شامل پیش‌نویس‌ها؛ نمای عمومی فقط محتوای منتشرشده را می‌شمارد.':'بر اساس محتوای منتشرشده.'} زمان‌ها بر اساس مدت ثبت‌شدهٔ ویدئو هستند.</p></section>;
+ }
+-export function CertificateInfo(){return <section className="assessment-card certificate-info my-6"><h2 className="assessment-heading"><ThemeIcon name="award"/>گواهی‌نامه پایان دوره</h2><p className="mt-4 leading-8">با کسب نمره قبولی در آزمون‌ها، گواهینامه رسمی پایان دوره به دو زبان <strong>فارسی</strong> و <strong>انگلیسی</strong> به شما اعطا می‌شود که قابل استعلام در سایت می‌باشد.</p><p className="mt-3 text-xs leading-7 text-indigo-700">صدور گواهی و استعلام با QR در مرحلهٔ بعد فعال می‌شود؛ در حال حاضر گواهی صادر نمی‌شود.</p></section>;}
++export function CertificateInfo(){return <section className="assessment-card certificate-info my-6"><h2 className="assessment-heading"><ThemeIcon name="award"/>گواهی‌نامه پایان دوره</h2><p className="mt-4 leading-8">با کسب نمره قبولی در آزمون‌ها، گواهینامهٔ پایان دوره به دو زبان <strong>فارسی</strong> و <strong>انگلیسی</strong> به شما اعطا می‌شود که قابل استعلام در سایت می‌باشد.</p><p className="mt-3 text-xs leading-7 text-indigo-700">پس از تکمیل درس‌ها و تصحیح همهٔ تمرین‌ها، با نمرهٔ حداقل ۶۰ در آزمون و کارنامهٔ نهایی، گواهی از کارنامه قابل دریافت است. QR و شناسهٔ گواهی برای استعلام اعتبار استفاده می‌شوند.</p></section>;}
+diff --git a/components/course/enroll-button.tsx b/components/course/enroll-button.tsx
+index e9dbf0b..626ef25 100644
+--- a/components/course/enroll-button.tsx
++++ b/components/course/enroll-button.tsx
+@@ -14,6 +14,9 @@ type Props = {
+ export default function EnrollButton({ courseId, price, isLoggedIn }: Props) {
+   const router = useRouter();
+ 
++  const [code,setCode]=useState("");
++  const [quote,setQuote]=useState<number|null>(null);
++  const [checking,setChecking]=useState(false);
+   const [loading, setLoading] = useState(false);
+   const [error, setError] = useState("");
+ 
+@@ -62,7 +65,7 @@ export default function EnrollButton({ courseId, price, isLoggedIn }: Props) {
+           "Content-Type": "application/json",
+         },
+         body: JSON.stringify({
+-          courseId,
++          courseId,code,
+         }),
+       });
+ 
+@@ -80,12 +83,13 @@ export default function EnrollButton({ courseId, price, isLoggedIn }: Props) {
+     } catch (error) {
+       setError(error instanceof Error ? error.message : "خطایی رخ داد.");
+ 
+-      setLoading(false);
+-    }
++    } finally { setLoading(false); }
+   }
+ 
+   return (
+-    <div>
++    <div className="assessment-form space-y-3">
++      {price>0&&<div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4"><label>کد تخفیف<input dir="ltr" maxLength={40} value={code} onChange={e=>{setCode(e.target.value);setQuote(null);}} placeholder="کد تخفیف"/></label><button type="button" disabled={checking||loading} className="panel-action mt-3" onClick={async()=>{setChecking(true);setError('');try{const res=await fetch('/api/coupons/quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({courseId,code})});const data=await res.json();if(!res.ok)throw Error(data.message);setQuote(data.amount);}catch(e){setQuote(null);setError(e instanceof Error?e.message:'خطا');}finally{setChecking(false);}}}><ThemeIcon name="check" className="h-4 w-4"/>بررسی کد</button><p className="min-h-8 pt-2 text-sm">{quote!==null?`مبلغ قابل پرداخت: ${quote.toLocaleString('fa-IR')} تومان`:'کد روی قیمت فعلی دوره اعمال می‌شود.'}</p></div>}
++
+       <button
+         onClick={handleEnroll}
+         disabled={loading}
+diff --git a/components/course/start-sms-control.tsx b/components/course/start-sms-control.tsx
+index ebe55f5..4453606 100644
+--- a/components/course/start-sms-control.tsx
++++ b/components/course/start-sms-control.tsx
+@@ -1,4 +1,8 @@
+-'use client';
+-import {useState} from 'react';
++"use client";
++import {useEffect,useRef,useState} from 'react';
+ import {useRouter} from 'next/navigation';
+-export default function StartSmsControl({courseId,retryId}:{courseId:string;retryId?:string}){const [busy,setBusy]=useState(false),[message,setMessage]=useState('');const router=useRouter();return <div><button className="panel-action" disabled={busy} onClick={async()=>{if(retryId&&!confirm('پنل پیامکی را بررسی کرده‌اید؟ تلاش مجدد ممکن است پیامک تکراری بفرستد.'))return;setBusy(true);try{const res=await fetch(`/api/courses/${courseId}/start-sms`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({retryId,confirmRetry:true})});const data=await res.json();if(!res.ok)throw Error(data.message);setMessage(data.configured?`${data.processed.toLocaleString('fa-IR')} مورد پردازش شد؛ برای موارد باقی‌مانده دوباره اجرا کنید.`:'سرویس پیامکی تنظیم نشده است.');router.refresh();}catch(e){setMessage(e instanceof Error?e.message:'خطا در ارسال');}finally{setBusy(false);}}}>{busy?'در حال پردازش…':retryId?'تلاش مجدد پس از بررسی':'پردازش پیامک‌های در صف'}</button><p role="status" className="my-2 text-xs leading-6">{message}</p></div>;}
++import ThemeIcon from '@/components/panel/theme-icon';
++export default function StartSmsControl({courseId,retryId}:{courseId:string;retryId?:string}){
++ const [busy,setBusy]=useState(false),[message,setMessage]=useState(''),[code,setCode]=useState('');const stop=useRef(false);const router=useRouter();useEffect(()=>()=>{stop.current=true;},[]);
++ return <div className="assessment-form my-4 space-y-3">{!retryId&&<label>کد تخفیف اختیاری آغاز دوره<input dir="ltr" disabled={busy} maxLength={40} value={code} onChange={e=>setCode(e.target.value)}/><span className="text-xs leading-7">کد فقط در پیامک‌های جدید درج می‌شود؛ پیامک‌های قبلاً آماده‌شده تغییر نمی‌کنند.</span></label>}<div className="flex flex-wrap gap-2"><button className="panel-action panel-action-primary" disabled={busy} onClick={async()=>{if(retryId&&!confirm('پنل پیامکی را بررسی کرده‌اید؟ تلاش مجدد ممکن است پیامک تکراری بفرستد.'))return;setBusy(true);stop.current=false;try{let first=true;while(!stop.current){const res=await fetch(`/api/courses/${courseId}/start-sms`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(first?{prepare:!retryId,code,retryId,confirmRetry:true}:{})});first=false;const data=await res.json();if(!res.ok)throw Error(data.message);if(!data.configured){setMessage('سرویس پیامکی تنظیم نشده است.');break;}if(!data.processed){setMessage('پردازش صف پایان یافت؛ نتایج را بررسی کنید.');break;}setMessage('در حال ارسال؛ صفحه را باز نگه دارید.');}}catch(e){setMessage(e instanceof Error?e.message:'خطا در ارسال');}finally{setBusy(false);router.refresh();}}}><ThemeIcon name="message" className="h-4 w-4"/>{busy?'در حال پردازش…':retryId?'تلاش مجدد پس از بررسی':'اعلام آغاز دوره به متقاضیان'}</button>{busy&&<button className="panel-action" onClick={()=>{stop.current=true;setMessage('پس از پایان دستهٔ جاری متوقف می‌شود.');}}>توقف</button>}</div><p role="status" className="text-xs leading-6">{message}</p></div>;
++}
+diff --git a/components/panel/panel-shell.tsx b/components/panel/panel-shell.tsx
+index 51bb1c0..34085d9 100644
+--- a/components/panel/panel-shell.tsx
++++ b/components/panel/panel-shell.tsx
+@@ -97,6 +97,7 @@ export default async function PanelShell({ children, area }: {
+             <p className="mt-3 text-sm leading-7 text-slate-500">دوره‌ها، درس‌ها و مسیر یادگیری شما در یک جا.</p>
+           </div>
+           <nav aria-label="دسترسی سریع پایین صفحه" className="panel-actions panel-actions-wide content-center text-sm text-slate-600">
++            <Link href="/certificates" className="panel-action panel-action-slate"><ThemeIcon name="award" className="h-4 w-4"/>استعلام گواهی‌نامه</Link>
+             {navigation.map((item) => <Link key={item.href} href={item.href} className="panel-action panel-action-slate"><ThemeIcon name={relatedIcon(item.label)} className="h-4 w-4"/>{item.label}</Link>)}
+           </nav>
+         </div>
+diff --git a/components/panel/theme-icon.tsx b/components/panel/theme-icon.tsx
+index b7a1607..a614137 100644
+--- a/components/panel/theme-icon.tsx
++++ b/components/panel/theme-icon.tsx
+@@ -37,6 +37,8 @@ export default function ThemeIcon({name,className='h-6 w-6'}:{name:IconName;clas
+ }
+ 
+ export function relatedIcon(text:string):IconName{
++ if(/گواهی|مدرک|certificate/.test(text))return 'award';
++ if(/تخفیف/.test(text))return 'star';
+  if(/دوره‌های ثبت‌نام/.test(text))return 'graduation';
+  if(/همهٔ دوره‌ها/.test(text))return 'search';
+  if(/مدیریت دوره/.test(text))return 'layers';
+diff --git a/lib/admin-request.ts b/lib/admin-request.ts
+new file mode 100644
+index 0000000..387cb24
+--- /dev/null
++++ b/lib/admin-request.ts
+@@ -0,0 +1,7 @@
++import {getManagementSession} from '@/lib/management-session';
++export async function adminRequest(request:Request){
++ const actor=await getManagementSession();
++ if(actor?.role!=='ADMIN')throw Error('دسترسی فقط برای مدیر است.');
++ if(request.headers.get('origin')!==new URL(request.url).origin)throw Error('درخواست نامعتبر است.');
++ return actor;
++}
+diff --git a/lib/certificates.ts b/lib/certificates.ts
+new file mode 100644
+index 0000000..4ae7ec8
+--- /dev/null
++++ b/lib/certificates.ts
+@@ -0,0 +1,25 @@
++import {prisma} from '@/lib/prisma';
++import {finalMark,finishedLessons,mayManage,type Actor} from '@/lib/final-assessment';
++import {notifyUsers} from '@/lib/notifications';
++export const CERTIFICATE_PASS_SCORE=60;
++export async function issueCertificate(actor:Actor,enrollmentId:string){
++ return prisma.$transaction(async tx=>{
++  const original=await tx.enrollment.findUnique({where:{id:enrollmentId}});if(!original)throw Error('ثبت‌نام پیدا نشد.');
++  await tx.$queryRaw`SELECT id FROM "Course" WHERE id=${original.courseId} FOR UPDATE`;
++  await tx.$queryRaw`SELECT id FROM "Enrollment" WHERE id=${enrollmentId} FOR UPDATE`;
++  const e=await tx.enrollment.findUniqueOrThrow({where:{id:enrollmentId},include:{user:true,course:{include:{finalExam:true}},examAttempt:true,certificate:true}});
++  if(actor.id!==e.userId&&!mayManage(actor,e.course.teacherId))throw Error('دسترسی ندارید.');
++  if(e.status==='CANCELLED'||e.user.role==='ADMIN'||e.userId===e.course.teacherId||e.user.demoBatchId||e.course.demoBatchId)throw Error('ثبت‌نام معتبر لازم است.');
++  if(e.certificate){if(e.certificate.revokedAt)throw Error('گواهی توسط مدیر باطل شده است.');return e.certificate;}
++  if(e.course.status!=='PUBLISHED'||!e.course.finalExam?.published)throw Error('دوره و آزمون باید منتشرشده باشند.');
++  if(!e.user.name?.trim())throw Error('ابتدا نام خود را از بخش ورود تکمیل کنید.');
++  if(!await finishedLessons(tx,e.courseId,e.id))throw Error('همهٔ درس‌ها و ویدئوها باید تکمیل شوند.');
++  const assignments=await tx.assignment.findMany({where:{published:true,lesson:{status:'PUBLISHED',section:{courseId:e.courseId}}},include:{submissions:{where:{enrollmentId,isLatest:true},take:1}}});
++  const score=finalMark(e.examAttempt?.score??null,assignments.map(a=>a.submissions[0]?.status==='GRADED'?a.submissions[0].score:null),e.course.finalExam.examWeight);
++  if(score===null||score<CERTIFICATE_PASS_SCORE||e.examAttempt?.score==null||e.examAttempt.score<CERTIFICATE_PASS_SCORE)throw Error('نمرهٔ آزمون و نمرهٔ نهایی باید حداقل ۶۰ باشند و همهٔ تمرین‌ها تصحیح شده باشند.');
++  const certificate=await tx.certificate.create({data:{enrollmentId,studentName:e.user.name.trim(),courseTitle:e.course.title,score}});
++  await notifyUsers(tx,[e.userId],{title:'گواهی‌نامهٔ پایان دوره صادر شد',body:e.course.title,href:`/certificates/${certificate.id}`,eventKey:`certificate:${certificate.id}`});
++  return certificate;
++ },{isolationLevel:'Serializable'});
++}
++export function certificateValid(certificate:{revokedAt:Date|null;enrollment:{status:string}}){return !certificate.revokedAt&&certificate.enrollment.status!=='CANCELLED';}
+diff --git a/lib/coupons.ts b/lib/coupons.ts
+new file mode 100644
+index 0000000..3f48a35
+--- /dev/null
++++ b/lib/coupons.ts
+@@ -0,0 +1,9 @@
++import {coursePrice} from '@/lib/course-price';
++export function couponPrice(course:{id:string;price:number;discountPercent:number},coupon:{active:boolean;courseId:string|null;percent:number}|null,code:string){
++ if(code&&(!coupon||!coupon.active||(coupon.courseId&&coupon.courseId!==course.id)))throw Error('کد تخفیف نامعتبر یا غیرفعال است.');
++ // Coupon applies to the currently advertised price; amounts are whole tomans.
++ const base=coursePrice(course);const percent=code&&coupon?coupon.percent:0;
++ if(!Number.isInteger(percent)||percent<0||percent>100)throw Error('درصد تخفیف نامعتبر است.');
++ return {base,percent,amount:Math.floor(base*(100-percent)/100)};
++}
++export function couponCode(value:unknown){if(value===undefined||value==='')return '';if(typeof value!=='string'||!/^[A-Za-z0-9_-]{3,40}$/.test(value.trim()))throw Error('کد باید ۳ تا ۴۰ حرف یا عدد انگلیسی باشد.');return value.trim().toUpperCase();}
+diff --git a/lib/course-start-sms.ts b/lib/course-start-sms.ts
+index 50069cd..a25db28 100644
+--- a/lib/course-start-sms.ts
++++ b/lib/course-start-sms.ts
+@@ -1,3 +1,4 @@
++import {notifyAdmins} from '@/lib/notifications';
+ import type {Prisma} from '@prisma/client';
+ import {prisma} from '@/lib/prisma';
+ import {sendSms} from '@/lib/sms';
+@@ -8,14 +9,22 @@ export async function queueCourseStart(tx:Prisma.TransactionClient,courseId:stri
+  let course=await tx.course.findUniqueOrThrow({where:{id:courseId}});
+  if(previousDelivery&&startTransition(previousDelivery,course.deliveryStatus))course=await tx.course.update({where:{id:courseId},data:{launchSmsPending:true}});
+  if(course.status!=='PUBLISHED'||course.deliveryStatus!=='ONGOING'||!course.launchSmsPending)return 0;
++ await notifyAdmins(tx,{title:'دوره آغاز شد',body:`دورهٔ «${course.title}» آغاز شد؛ برای اطلاع‌رسانی به متقاضیان به بخش پیامک بروید.`,href:'/admin/sms',eventKey:`course-start:${courseId}`,scope:'SYSTEM'});
++ await tx.course.update({where:{id:courseId},data:{launchSmsPending:false}});
++ return 1;
++}
++export async function prepareCourseStart(tx:Prisma.TransactionClient,courseId:string,code:string){
++ await tx.$queryRaw`SELECT id FROM "Course" WHERE id=${courseId} FOR UPDATE`;
++ const course=await tx.course.findUniqueOrThrow({where:{id:courseId}});
++ if(course.status!=='PUBLISHED'||course.deliveryStatus!=='ONGOING')throw Error('دوره باید منتشرشده و در حال برگزاری باشد.');
++ const coupon=code?await tx.discountCode.findUnique({where:{code}}):null;
++ if(code&&(!coupon||!coupon.active||(coupon.courseId&&coupon.courseId!==courseId)))throw Error('کد تخفیف معتبر این دوره نیست.');
+  const interests=await tx.courseInterest.findMany({where:{courseId},select:{id:true,phone:true}});
+  const base=process.env.PUBLIC_SITE_URL?.replace(/\/$/,'');
+- const link=base&&/^https?:\/\//.test(base)?`\n${base}/courses/${encodeURIComponent(course.slug)}`:'';
+- const message=`دورهٔ «${course.title.slice(0,150)}» آغاز شد. برای مشاهده و ثبت‌نام به سایت آموزش مراجعه کنید.${link}`;
+- const result=await tx.courseStartSms.createMany({data:interests.map(i=>({interestId:i.id,phone:i.phone,message})),skipDuplicates:true});
+- await tx.course.update({where:{id:courseId},data:{launchSmsPending:false}});
+- return result.count;
++ const message=`دورهٔ «${course.title.slice(0,150)}» آغاز شد.${coupon?` کد تخفیف ${coupon.percent} درصدی: ${coupon.code}`:''}${base?`\n${base}/courses/${encodeURIComponent(course.slug)}`:''}`;
++ return tx.courseStartSms.createMany({data:interests.map(i=>({interestId:i.id,phone:i.phone,message})),skipDuplicates:true});
+ }
++
+ export async function processCourseStartSms(courseId?:string){
+  if(!process.env.FARAZ_SMS_API_KEY||!process.env.FARAZ_SMS_LINE_NUMBER)return {processed:0,configured:false};
+  // A crashed worker may already have sent the SMS. Do not retry ambiguous deliveries automatically.
+@@ -31,8 +40,7 @@ export async function processCourseStartSms(courseId?:string){
+   let phone:string;
+   try{phone=normalizePhone(job.phone);}catch{await prisma.courseStartSms.update({where:{id:job.id},data:{status:'FAILED',lastError:'شمارهٔ ثبت‌شده معتبر نیست.'}});processed++;continue;}
+   try{
+-   const pattern=process.env.FARAZ_SMS_COURSE_START_PATTERN;
+-   const result=await sendSms(pattern?{type:'pattern',phone,patternCode:pattern,variables:{[process.env.FARAZ_SMS_COURSE_START_VARIABLE||'course']:job.interest.course.title}}:{type:'simple',phone,message:job.message});
++   const result=await sendSms({type:'simple',phone,message:job.message});
+    if(String(result.status).toLowerCase()!=='success')await prisma.courseStartSms.update({where:{id:job.id},data:{status:'FAILED',lastError:'سرویس پیامکی ارسال را نپذیرفت.'}});
+    else await prisma.courseStartSms.update({where:{id:job.id},data:{status:'SENT',sentAt:new Date(),lastError:null}});
+   }catch{await prisma.courseStartSms.update({where:{id:job.id},data:{status:'UNKNOWN',lastError:'نتیجهٔ ارسال قطعی نیست؛ پیش از تلاش مجدد پنل پیامکی را بررسی کنید.'}});}
+diff --git a/lib/login-otp.ts b/lib/login-otp.ts
+index a3cc9c8..a14d589 100644
+--- a/lib/login-otp.ts
++++ b/lib/login-otp.ts
+@@ -60,6 +60,6 @@ export async function verifyOtp(challengeId:string,rawCode:unknown){
+   if(existing[0]?.demoBatchId&&process.env.NODE_ENV==='production')return {error:'حساب آزمایشی قابل ورود نیست.',restart:true};
+   const user=existing[0]??await tx.user.create({data:{phone:row.phone,role:'STUDENT'}});
+   await tx.loginOtp.update({where:{phone:row.phone},data:{digest:null,challengeId:null,expiresAt:null,attempts:0,consecutiveFailures:0}});
+-  return {user:{id:user.id,role:user.role}};
++  return {user:{id:user.id,role:user.role},needsName:!user.name?.trim()};
+  });
+ }
+diff --git a/lib/manual-sms.ts b/lib/manual-sms.ts
+new file mode 100644
+index 0000000..af5937e
+--- /dev/null
++++ b/lib/manual-sms.ts
+@@ -0,0 +1,36 @@
++import {z} from 'zod';
++import {prisma} from '@/lib/prisma';
++import {normalizePhone} from '@/lib/otp-policy';
++import {sendSms} from '@/lib/sms';
++export const smsInput=z.object({requestId:z.string().uuid(),audience:z.enum(['ALL','STUDENT','TEACHER']),message:z.string().trim().max(1500),patternCode:z.string().trim().max(100).optional(),variables:z.record(z.string().max(50),z.string().max(200)).default({})}).refine(v=>v.patternCode||v.message.length>0,{message:'متن پیام یا کد پترن لازم است.'});
++export async function createCampaign(senderId:string,raw:unknown){
++ const input=smsInput.parse(raw);
++ return prisma.$transaction(async tx=>{
++  await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`sms:${input.requestId}`}))`;
++  const prior=await tx.smsCampaign.findUnique({where:{id:input.requestId}});if(prior){if(prior.senderId!==senderId||prior.audience!==input.audience||prior.message!==input.message||prior.patternCode!==(input.patternCode||null)||JSON.stringify(prior.variables)!==JSON.stringify(input.variables))throw Error('درخواست قبلی با همین شناسه ثبت شده؛ صفحه را تازه کنید و تاریخچه را بررسی کنید.');return prior;}
++  const users=await tx.user.findMany({where:{demoBatchId:null,phone:{not:null},...(input.audience==='ALL'?{}:{role:input.audience})},select:{phone:true}});
++  const phones=new Set<string>();for(const u of users){try{phones.add(normalizePhone(u.phone));}catch{}}
++  if(!phones.size)throw Error('شمارهٔ معتبر برای این گروه وجود ندارد.');
++  const campaign=await tx.smsCampaign.create({data:{id:input.requestId,senderId,audience:input.audience,message:input.message,patternCode:input.patternCode||null,variables:input.variables}});
++  const list=[...phones];for(let i=0;i<list.length;i+=500)await tx.smsDelivery.createMany({data:list.slice(i,i+500).map(phone=>({campaignId:campaign.id,phone}))});
++  return campaign;
++ },{timeout:30000});
++}
++// Only called by an explicit administrator request, no scheduler or background hook.
++export async function processCampaign(id:string){
++ if(!process.env.FARAZ_SMS_API_KEY||!process.env.FARAZ_SMS_LINE_NUMBER)return {configured:false,processed:0};
++ const campaign=await prisma.smsCampaign.findUniqueOrThrow({where:{id}});
++ await prisma.smsDelivery.updateMany({where:{campaignId:id,status:'SENDING',claimedAt:{lt:new Date(Date.now()-300000)}},data:{status:'UNKNOWN'}});
++ let processed=0;
++ for(let n=0;n<3;n++){
++  const job=await prisma.$transaction(async tx=>{
++   const rows=await tx.$queryRaw<{id:string}[]>`SELECT id FROM "SmsDelivery" WHERE "campaignId"=${id} AND status='PENDING' ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1`;
++   return rows.length?tx.smsDelivery.update({where:{id:rows[0].id},data:{status:'SENDING',claimedAt:new Date()}}):null;
++  });
++  if(!job)break;
++  let status='UNKNOWN';
++  try{const result=await sendSms(campaign.patternCode?{type:'pattern',phone:job.phone,patternCode:campaign.patternCode,variables:campaign.variables as Record<string,string>}:{type:'simple',phone:job.phone,message:campaign.message});status=String(result.status).toLowerCase()==='success'?'SENT':'FAILED';}catch{}
++  await prisma.smsDelivery.update({where:{id:job.id},data:{status,...(status==='SENT'?{sentAt:new Date()}:{})}});processed++;
++ }
++ return {configured:true,processed};
++}
+diff --git a/lib/panel-navigation.ts b/lib/panel-navigation.ts
+index d8db8e2..2401012 100644
+--- a/lib/panel-navigation.ts
++++ b/lib/panel-navigation.ts
+@@ -3,11 +3,11 @@ export function panelNavigation(role?: string): NavItem[] {
+   if (role === "ADMIN") return [
+     {href:"/admin",label:"پنل مدیر"}, {href:"/admin/courses",label:"دوره‌ها و پیشرفت"},
+     {href:"/admin/users",label:"کاربران"}, {href:"/admin/finance",label:"مالی کل"}, {href:"/admin/settlements",label:"تسویه و بازپرداخت"},
+-    {href:"/tickets",label:"تیکت‌ها"}, {href:"/admin/notifications",label:"ارسال اعلان"},
++    {href:"/tickets",label:"تیکت‌ها"}, {href:"/admin/notifications",label:"ارسال اعلان"}, {href:"/admin/sms",label:"مرکز پیامک"}, {href:"/admin/coupons",label:"کدهای تخفیف"}, {href:"/admin/certificates",label:"گواهی‌نامه‌ها"},
+   ];
+   return [
+     ...(role === "TEACHER" ? [{href:"/teacher",label:"مدیریت دوره‌های من"},{href:"/teacher/finance",label:"درآمد دوره‌های من"}] : []),
+-    ...(role ? [{href:"/dashboard",label:"دوره‌های ثبت‌نام‌شده"},{href:"/payments",label:"سوابق پرداخت من"}] : []),
++    ...(role ? [{href:"/dashboard",label:"دوره‌های ثبت‌نام‌شده"},{href:"/payments",label:"سوابق پرداخت من"},{href:"/dashboard/certificates",label:"گواهی‌نامه‌های من"}] : []),
+     ...(role ? [{href:"/tickets",label:"تیکت‌های من"}] : []),
+     {href:"/courses",label:"همهٔ دوره‌ها"},
+   ];
+diff --git a/package-lock.json b/package-lock.json
+index 8c315b9..230a1fb 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -15,6 +15,7 @@
+         "jose": "^6.2.10",
+         "next": "16.3.3",
+         "prisma": "^6.19.3",
++        "qrcode": "^1.5.4",
+         "react": "19.2.8",
+         "react-dom": "19.2.8",
+         "zod": "^4.4.3"
+@@ -23,6 +24,7 @@
+         "@tailwindcss/postcss": "^4",
+         "@types/bcryptjs": "^2.4.6",
+         "@types/node": "^20",
++        "@types/qrcode": "^1.5.6",
+         "@types/react": "^19",
+         "@types/react-dom": "^19",
+         "eslint": "^9",
+@@ -1761,6 +1763,16 @@
+         "undici-types": "~6.21.0"
+       }
+     },
++    "node_modules/@types/qrcode": {
++      "version": "1.5.6",
++      "resolved": "https://registry.npmjs.org/@types/qrcode/-/qrcode-1.5.6.tgz",
++      "integrity": "sha512-te7NQcV2BOvdj2b1hCAHzAoMNuj65kNBMz0KBaxM6c3VGBOhU0dURQKOtH8CFNI/dsKkwlv32p26qYQTWoB5bw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@types/node": "*"
++      }
++    },
+     "node_modules/@types/react": {
+       "version": "19.2.18",
+       "resolved": "https://registry.npmjs.org/@types/react/-/react-19.2.18.tgz",
+@@ -2440,11 +2452,19 @@
+         "url": "https://github.com/sponsors/epoberezkin"
+       }
+     },
++    "node_modules/ansi-regex": {
++      "version": "5.0.1",
++      "resolved": "https://registry.npmjs.org/ansi-regex/-/ansi-regex-5.0.1.tgz",
++      "integrity": "sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==",
++      "license": "MIT",
++      "engines": {
++        "node": ">=8"
++      }
++    },
+     "node_modules/ansi-styles": {
+       "version": "4.3.0",
+       "resolved": "https://registry.npmjs.org/ansi-styles/-/ansi-styles-4.3.0.tgz",
+       "integrity": "sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg==",
+-      "dev": true,
+       "license": "MIT",
+       "dependencies": {
+         "color-convert": "^2.0.1"
+@@ -2869,6 +2889,15 @@
+         "node": ">=6"
+       }
+     },
++    "node_modules/camelcase": {
++      "version": "5.3.1",
++      "resolved": "https://registry.npmjs.org/camelcase/-/camelcase-5.3.1.tgz",
++      "integrity": "sha512-L28STB170nwWS63UjtlEOE3dldQApaJXZkOI1uMFfzf3rRuPegHaHesyee+YxQ+W6SvRDQV6UrdOdRiR153wJg==",
++      "license": "MIT",
++      "engines": {
++        "node": ">=6"
++      }
++    },
+     "node_modules/caniuse-lite": {
+       "version": "1.0.30001810",
+       "resolved": "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001810.tgz",
+@@ -2936,11 +2965,21 @@
+       "integrity": "sha512-IV3Ou0jSMzZrd3pZ48nLkT9DA7Ag1pnPzaiQhpW7c3RbcqqzvzzVu+L8gfqMp/8IM2MQtSiqaCxrrcfu8I8rMA==",
+       "license": "MIT"
+     },
++    "node_modules/cliui": {
++      "version": "6.0.0",
++      "resolved": "https://registry.npmjs.org/cliui/-/cliui-6.0.0.tgz",
++      "integrity": "sha512-t6wbgtoCXvAzst7QgXxJYqPt0usEfbgQdftEPbLL/cvv6HPE5VgvqCuAIDR0NgU52ds6rFwqrgakNLrHEjCbrQ==",
++      "license": "ISC",
++      "dependencies": {
++        "string-width": "^4.2.0",
++        "strip-ansi": "^6.0.0",
++        "wrap-ansi": "^6.2.0"
++      }
++    },
+     "node_modules/color-convert": {
+       "version": "2.0.1",
+       "resolved": "https://registry.npmjs.org/color-convert/-/color-convert-2.0.1.tgz",
+       "integrity": "sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ==",
+-      "dev": true,
+       "license": "MIT",
+       "dependencies": {
+         "color-name": "~1.1.4"
+@@ -2953,7 +2992,6 @@
+       "version": "1.1.4",
+       "resolved": "https://registry.npmjs.org/color-name/-/color-name-1.1.4.tgz",
+       "integrity": "sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==",
+-      "dev": true,
+       "license": "MIT"
+     },
+     "node_modules/concat-map": {
+@@ -3086,6 +3124,15 @@
+         }
+       }
+     },
++    "node_modules/decamelize": {
++      "version": "1.2.0",
++      "resolved": "https://registry.npmjs.org/decamelize/-/decamelize-1.2.0.tgz",
++      "integrity": "sha512-z2S+W9X73hAUUki+N+9Za2lBlun89zigOyGrsax+KUQ6wKW4ZoWpEYBkGhQjwAjjDCkWxhY0VKEhk8wzY7F5cA==",
++      "license": "MIT",
++      "engines": {
++        "node": ">=0.10.0"
++      }
++    },
+     "node_modules/deep-is": {
+       "version": "0.1.4",
+       "resolved": "https://registry.npmjs.org/deep-is/-/deep-is-0.1.4.tgz",
+@@ -3160,6 +3207,12 @@
+         "node": ">=8"
+       }
+     },
++    "node_modules/dijkstrajs": {
++      "version": "1.0.3",
++      "resolved": "https://registry.npmjs.org/dijkstrajs/-/dijkstrajs-1.0.3.tgz",
++      "integrity": "sha512-qiSlmBq9+BCdCA/L46dw8Uy93mloxsPSbwnm5yrKn2vMPiy8KyAskTF6zuV/j5BMsmOGZDPs7KjU+mjb670kfA==",
++      "license": "MIT"
++    },
+     "node_modules/doctrine": {
+       "version": "2.1.0",
+       "resolved": "https://registry.npmjs.org/doctrine/-/doctrine-2.1.0.tgz",
+@@ -4129,6 +4182,15 @@
+         "node": ">=6.9.0"
+       }
+     },
++    "node_modules/get-caller-file": {
++      "version": "2.0.5",
++      "resolved": "https://registry.npmjs.org/get-caller-file/-/get-caller-file-2.0.5.tgz",
++      "integrity": "sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==",
++      "license": "ISC",
++      "engines": {
++        "node": "6.* || 8.* || >= 10.*"
++      }
++    },
+     "node_modules/get-intrinsic": {
+       "version": "1.3.0",
+       "resolved": "https://registry.npmjs.org/get-intrinsic/-/get-intrinsic-1.3.0.tgz",
+@@ -4642,6 +4704,15 @@
+         "url": "https://github.com/sponsors/ljharb"
+       }
+     },
++    "node_modules/is-fullwidth-code-point": {
++      "version": "3.0.0",
++      "resolved": "https://registry.npmjs.org/is-fullwidth-code-point/-/is-fullwidth-code-point-3.0.0.tgz",
++      "integrity": "sha512-zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg==",
++      "license": "MIT",
++      "engines": {
++        "node": ">=8"
++      }
++    },
+     "node_modules/is-generator-function": {
+       "version": "1.1.2",
+       "resolved": "https://registry.npmjs.org/is-generator-function/-/is-generator-function-1.1.2.tgz",
+@@ -5819,6 +5890,15 @@
+         "url": "https://github.com/sponsors/sindresorhus"
+       }
+     },
++    "node_modules/p-try": {
++      "version": "2.2.0",
++      "resolved": "https://registry.npmjs.org/p-try/-/p-try-2.2.0.tgz",
++      "integrity": "sha512-R4nPAVTAU0B9D35/Gk3uJf/7XYbQcyohSKdvAxIRSNghFl4e71hVoGnBNQz9cWaXxO2I10KTC+3jMdvvoKw6dQ==",
++      "license": "MIT",
++      "engines": {
++        "node": ">=6"
++      }
++    },
+     "node_modules/parent-module": {
+       "version": "1.0.1",
+       "resolved": "https://registry.npmjs.org/parent-module/-/parent-module-1.0.1.tgz",
+@@ -5836,7 +5916,6 @@
+       "version": "4.0.0",
+       "resolved": "https://registry.npmjs.org/path-exists/-/path-exists-4.0.0.tgz",
+       "integrity": "sha512-ak9Qy5Q7jYb2Wwcey5Fpvg2KoAc/ZIhLSLOSBmRmygPsGwkVVt0fZa0qrtMz+m6tJTAHfZQ8FnmB4MG4LWy7/w==",
+-      "dev": true,
+       "license": "MIT",
+       "engines": {
+         "node": ">=8"
+@@ -5901,6 +5980,15 @@
+         "pathe": "^2.0.3"
+       }
+     },
++    "node_modules/pngjs": {
++      "version": "5.0.0",
++      "resolved": "https://registry.npmjs.org/pngjs/-/pngjs-5.0.0.tgz",
++      "integrity": "sha512-40QW5YalBNfQo5yRYmiw7Yz6TKKVr3h6970B2YE+3fQpsWcrbj1PzJgxeJ19DRQjhMbKPIuMY8rFaXc8moolVw==",
++      "license": "MIT",
++      "engines": {
++        "node": ">=10.13.0"
++      }
++    },
+     "node_modules/possible-typed-array-names": {
+       "version": "1.1.0",
+       "resolved": "https://registry.npmjs.org/possible-typed-array-names/-/possible-typed-array-names-1.1.0.tgz",
+@@ -6013,6 +6101,23 @@
+       ],
+       "license": "MIT"
+     },
++    "node_modules/qrcode": {
++      "version": "1.5.4",
++      "resolved": "https://registry.npmjs.org/qrcode/-/qrcode-1.5.4.tgz",
++      "integrity": "sha512-1ca71Zgiu6ORjHqFBDpnSMTR2ReToX4l1Au1VFLyVeBTFavzQnv5JxMFr3ukHVKpSrSA2MCk0lNJSykjUfz7Zg==",
++      "license": "MIT",
++      "dependencies": {
++        "dijkstrajs": "^1.0.1",
++        "pngjs": "^5.0.0",
++        "yargs": "^15.3.1"
++      },
++      "bin": {
++        "qrcode": "bin/qrcode"
++      },
++      "engines": {
++        "node": ">=10.13.0"
++      }
++    },
+     "node_modules/queue-microtask": {
+       "version": "1.2.3",
+       "resolved": "https://registry.npmjs.org/queue-microtask/-/queue-microtask-1.2.3.tgz",
+@@ -6129,6 +6234,21 @@
+         "url": "https://github.com/sponsors/ljharb"
+       }
+     },
++    "node_modules/require-directory": {
++      "version": "2.1.1",
++      "resolved": "https://registry.npmjs.org/require-directory/-/require-directory-2.1.1.tgz",
++      "integrity": "sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==",
++      "license": "MIT",
++      "engines": {
++        "node": ">=0.10.0"
++      }
++    },
++    "node_modules/require-main-filename": {
++      "version": "2.0.0",
++      "resolved": "https://registry.npmjs.org/require-main-filename/-/require-main-filename-2.0.0.tgz",
++      "integrity": "sha512-NKN5kMDylKuldxYLSUfrbo5Tuzh4hd+2E8NPPX02mZtn1VuREQToYe/ZdlJy+J3uCpfaiGF05e7B8W0iXbQHmg==",
++      "license": "ISC"
++    },
+     "node_modules/resolve": {
+       "version": "2.0.0-next.7",
+       "resolved": "https://registry.npmjs.org/resolve/-/resolve-2.0.0-next.7.tgz",
+@@ -6279,6 +6399,12 @@
+         "semver": "bin/semver.js"
+       }
+     },
++    "node_modules/set-blocking": {
++      "version": "2.0.0",
++      "resolved": "https://registry.npmjs.org/set-blocking/-/set-blocking-2.0.0.tgz",
++      "integrity": "sha512-KiKBS8AnWGEyLzofFfmvKwpdPzqiy16LvQfK3yv/fVH7Bj13/wl3JSR1J+rfgRE9q7xUJK4qvgS8raSOeLUehw==",
++      "license": "ISC"
++    },
+     "node_modules/set-function-length": {
+       "version": "1.2.2",
+       "resolved": "https://registry.npmjs.org/set-function-length/-/set-function-length-1.2.2.tgz",
+@@ -6520,6 +6646,26 @@
+         "node": ">= 0.4"
+       }
+     },
++    "node_modules/string-width": {
++      "version": "4.2.3",
++      "resolved": "https://registry.npmjs.org/string-width/-/string-width-4.2.3.tgz",
++      "integrity": "sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==",
++      "license": "MIT",
++      "dependencies": {
++        "emoji-regex": "^8.0.0",
++        "is-fullwidth-code-point": "^3.0.0",
++        "strip-ansi": "^6.0.1"
++      },
++      "engines": {
++        "node": ">=8"
++      }
++    },
++    "node_modules/string-width/node_modules/emoji-regex": {
++      "version": "8.0.0",
++      "resolved": "https://registry.npmjs.org/emoji-regex/-/emoji-regex-8.0.0.tgz",
++      "integrity": "sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==",
++      "license": "MIT"
++    },
+     "node_modules/string.prototype.includes": {
+       "version": "2.0.1",
+       "resolved": "https://registry.npmjs.org/string.prototype.includes/-/string.prototype.includes-2.0.1.tgz",
+@@ -6634,6 +6780,18 @@
+         "url": "https://github.com/sponsors/ljharb"
+       }
+     },
++    "node_modules/strip-ansi": {
++      "version": "6.0.1",
++      "resolved": "https://registry.npmjs.org/strip-ansi/-/strip-ansi-6.0.1.tgz",
++      "integrity": "sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==",
++      "license": "MIT",
++      "dependencies": {
++        "ansi-regex": "^5.0.1"
++      },
++      "engines": {
++        "node": ">=8"
++      }
++    },
+     "node_modules/strip-bom": {
+       "version": "3.0.0",
+       "resolved": "https://registry.npmjs.org/strip-bom/-/strip-bom-3.0.0.tgz",
+@@ -7159,6 +7317,12 @@
+         "url": "https://github.com/sponsors/ljharb"
+       }
+     },
++    "node_modules/which-module": {
++      "version": "2.0.1",
++      "resolved": "https://registry.npmjs.org/which-module/-/which-module-2.0.1.tgz",
++      "integrity": "sha512-iBdZ57RDvnOR9AGBhML2vFZf7h8vmBjhoaZqODJBFWHVtKkDmKuHai3cx5PgVMrX5YDNp27AofYbAwctSS+vhQ==",
++      "license": "ISC"
++    },
+     "node_modules/which-typed-array": {
+       "version": "1.1.22",
+       "resolved": "https://registry.npmjs.org/which-typed-array/-/which-typed-array-1.1.22.tgz",
+@@ -7191,6 +7355,26 @@
+         "node": ">=0.10.0"
+       }
+     },
++    "node_modules/wrap-ansi": {
++      "version": "6.2.0",
++      "resolved": "https://registry.npmjs.org/wrap-ansi/-/wrap-ansi-6.2.0.tgz",
++      "integrity": "sha512-r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA==",
++      "license": "MIT",
++      "dependencies": {
++        "ansi-styles": "^4.0.0",
++        "string-width": "^4.1.0",
++        "strip-ansi": "^6.0.0"
++      },
++      "engines": {
++        "node": ">=8"
++      }
++    },
++    "node_modules/y18n": {
++      "version": "4.0.3",
++      "resolved": "https://registry.npmjs.org/y18n/-/y18n-4.0.3.tgz",
++      "integrity": "sha512-JKhqTOwSrqNA1NY5lSztJ1GrBiUodLMmIZuLiDaMRJ+itFd+ABVE8XBjOvIWL+rSqNDC74LCSFmlb/U4UZ4hJQ==",
++      "license": "ISC"
++    },
+     "node_modules/yallist": {
+       "version": "3.1.1",
+       "resolved": "https://registry.npmjs.org/yallist/-/yallist-3.1.1.tgz",
+@@ -7198,6 +7382,93 @@
+       "dev": true,
+       "license": "ISC"
+     },
++    "node_modules/yargs": {
++      "version": "15.4.1",
++      "resolved": "https://registry.npmjs.org/yargs/-/yargs-15.4.1.tgz",
++      "integrity": "sha512-aePbxDmcYW++PaqBsJ+HYUFwCdv4LVvdnhBy78E57PIor8/OVvhMrADFFEDh8DHDFRv/O9i3lPhsENjO7QX0+A==",
++      "license": "MIT",
++      "dependencies": {
++        "cliui": "^6.0.0",
++        "decamelize": "^1.2.0",
++        "find-up": "^4.1.0",
++        "get-caller-file": "^2.0.1",
++        "require-directory": "^2.1.1",
++        "require-main-filename": "^2.0.0",
++        "set-blocking": "^2.0.0",
++        "string-width": "^4.2.0",
++        "which-module": "^2.0.0",
++        "y18n": "^4.0.0",
++        "yargs-parser": "^18.1.2"
++      },
++      "engines": {
++        "node": ">=8"
++      }
++    },
++    "node_modules/yargs-parser": {
++      "version": "18.1.3",
++      "resolved": "https://registry.npmjs.org/yargs-parser/-/yargs-parser-18.1.3.tgz",
++      "integrity": "sha512-o50j0JeToy/4K6OZcaQmW6lyXXKhq7csREXcDwk2omFPJEwUNOVtJKvmDr9EI1fAJZUyZcRF7kxGBWmRXudrCQ==",
++      "license": "ISC",
++      "dependencies": {
++        "camelcase": "^5.0.0",
++        "decamelize": "^1.2.0"
++      },
++      "engines": {
++        "node": ">=6"
++      }
++    },
++    "node_modules/yargs/node_modules/find-up": {
++      "version": "4.1.0",
++      "resolved": "https://registry.npmjs.org/find-up/-/find-up-4.1.0.tgz",
++      "integrity": "sha512-PpOwAdQ/YlXQ2vj8a3h8IipDuYRi3wceVQQGYWxNINccq40Anw7BlsEXCMbt1Zt+OLA6Fq9suIpIWD0OsnISlw==",
++      "license": "MIT",
++      "dependencies": {
++        "locate-path": "^5.0.0",
++        "path-exists": "^4.0.0"
++      },
++      "engines": {
++        "node": ">=8"
++      }
++    },
++    "node_modules/yargs/node_modules/locate-path": {
++      "version": "5.0.0",
++      "resolved": "https://registry.npmjs.org/locate-path/-/locate-path-5.0.0.tgz",
++      "integrity": "sha512-t7hw9pI+WvuwNJXwk5zVHpyhIqzg2qTlklJOf0mVxGSbe3Fp2VieZcduNYjaLDoy6p9uGpQEGWG87WpMKlNq8g==",
++      "license": "MIT",
++      "dependencies": {
++        "p-locate": "^4.1.0"
++      },
++      "engines": {
++        "node": ">=8"
++      }
++    },
++    "node_modules/yargs/node_modules/p-limit": {
++      "version": "2.3.0",
++      "resolved": "https://registry.npmjs.org/p-limit/-/p-limit-2.3.0.tgz",
++      "integrity": "sha512-//88mFWSJx8lxCzwdAABTJL2MyWB12+eIY7MDL2SqLmAkeKU9qxRvWuSyTjm3FUmpBEMuFfckAIqEaVGUDxb6w==",
++      "license": "MIT",
++      "dependencies": {
++        "p-try": "^2.0.0"
++      },
++      "engines": {
++        "node": ">=6"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/sindresorhus"
++      }
++    },
++    "node_modules/yargs/node_modules/p-locate": {
++      "version": "4.1.0",
++      "resolved": "https://registry.npmjs.org/p-locate/-/p-locate-4.1.0.tgz",
++      "integrity": "sha512-R79ZZ/0wAxKGu3oYMlz8jy/kbhsNrS7SKZ7PxEHBgJ5+F2mtFW2fK2cOtBh1cHYkQsbzFV7I+EoRKe6Yt0oK7A==",
++      "license": "MIT",
++      "dependencies": {
++        "p-limit": "^2.2.0"
++      },
++      "engines": {
++        "node": ">=8"
++      }
++    },
+     "node_modules/yocto-queue": {
+       "version": "0.1.0",
+       "resolved": "https://registry.npmjs.org/yocto-queue/-/yocto-queue-0.1.0.tgz",
+diff --git a/package.json b/package.json
+index e7b31f5..12cada3 100644
+--- a/package.json
++++ b/package.json
+@@ -16,6 +16,7 @@
+     "jose": "^6.2.10",
+     "next": "16.3.3",
+     "prisma": "^6.19.3",
++    "qrcode": "^1.5.4",
+     "react": "19.2.8",
+     "react-dom": "19.2.8",
+     "zod": "^4.4.3"
+@@ -24,6 +25,7 @@
+     "@tailwindcss/postcss": "^4",
+     "@types/bcryptjs": "^2.4.6",
+     "@types/node": "^20",
++    "@types/qrcode": "^1.5.6",
+     "@types/react": "^19",
+     "@types/react-dom": "^19",
+     "eslint": "^9",
+diff --git a/prisma/migrations/20260930040000_manual_sms_coupons_certificates/migration.sql b/prisma/migrations/20260930040000_manual_sms_coupons_certificates/migration.sql
+new file mode 100644
+index 0000000..0ce8304
+--- /dev/null
++++ b/prisma/migrations/20260930040000_manual_sms_coupons_certificates/migration.sql
+@@ -0,0 +1,68 @@
++-- AlterTable
++ALTER TABLE "Payment" ADD COLUMN     "couponCode" TEXT,
++ADD COLUMN     "couponPercent" INTEGER;
++
++-- CreateTable
++CREATE TABLE "DiscountCode" (
++    "code" TEXT NOT NULL,
++    "percent" INTEGER NOT NULL,
++    "courseId" TEXT,
++    "active" BOOLEAN NOT NULL DEFAULT true,
++    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
++
++    CONSTRAINT "DiscountCode_pkey" PRIMARY KEY ("code")
++);
++
++-- CreateTable
++CREATE TABLE "SmsCampaign" (
++    "id" TEXT NOT NULL,
++    "senderId" TEXT NOT NULL,
++    "audience" TEXT NOT NULL,
++    "message" TEXT NOT NULL,
++    "patternCode" TEXT,
++    "variables" JSONB NOT NULL,
++    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
++
++    CONSTRAINT "SmsCampaign_pkey" PRIMARY KEY ("id")
++);
++
++-- CreateTable
++CREATE TABLE "SmsDelivery" (
++    "id" TEXT NOT NULL,
++    "campaignId" TEXT NOT NULL,
++    "phone" TEXT NOT NULL,
++    "status" TEXT NOT NULL DEFAULT 'PENDING',
++    "claimedAt" TIMESTAMP(3),
++    "sentAt" TIMESTAMP(3),
++
++    CONSTRAINT "SmsDelivery_pkey" PRIMARY KEY ("id")
++);
++
++-- CreateTable
++CREATE TABLE "Certificate" (
++    "id" TEXT NOT NULL,
++    "enrollmentId" TEXT NOT NULL,
++    "studentName" TEXT NOT NULL,
++    "courseTitle" TEXT NOT NULL,
++    "score" DOUBLE PRECISION NOT NULL,
++    "issuedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
++    "revokedAt" TIMESTAMP(3),
++
++    CONSTRAINT "Certificate_pkey" PRIMARY KEY ("id")
++);
++
++-- CreateIndex
++CREATE INDEX "SmsDelivery_campaignId_status_idx" ON "SmsDelivery"("campaignId", "status");
++
++-- CreateIndex
++CREATE UNIQUE INDEX "SmsDelivery_campaignId_phone_key" ON "SmsDelivery"("campaignId", "phone");
++
++-- CreateIndex
++CREATE UNIQUE INDEX "Certificate_enrollmentId_key" ON "Certificate"("enrollmentId");
++
++-- AddForeignKey
++ALTER TABLE "SmsDelivery" ADD CONSTRAINT "SmsDelivery_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "SmsCampaign"("id") ON DELETE CASCADE ON UPDATE CASCADE;
++
++-- AddForeignKey
++ALTER TABLE "Certificate" ADD CONSTRAINT "Certificate_enrollmentId_fkey" FOREIGN KEY ("enrollmentId") REFERENCES "Enrollment"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
++
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index e8a7d00..3cbe73d 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -132,6 +132,7 @@ model LessonFile {
+ }
+ 
+ model Enrollment {
++  certificate Certificate?
+   examAttempt ExamAttempt?
+   finalFeedback FinalFeedback?
+   courseReview CourseReview?
+@@ -176,6 +177,8 @@ model LessonProgress {
+ }
+ 
+ model Payment {
++  couponCode String?
++  couponPercent Int?
+   id       String @id @default(cuid())
+   userId   String
+   courseId String
+@@ -495,3 +498,42 @@ model CourseStartSms {
+  lastError String?
+  @@index([status,createdAt])
+ }
++
++model DiscountCode {
++ code String @id
++ percent Int
++ courseId String?
++ active Boolean @default(true)
++ createdAt DateTime @default(now())
++}
++model SmsCampaign {
++ id String @id
++ senderId String
++ audience String
++ message String
++ patternCode String?
++ variables Json
++ deliveries SmsDelivery[]
++ createdAt DateTime @default(now())
++}
++model SmsDelivery {
++ id String @id @default(cuid())
++ campaignId String
++ campaign SmsCampaign @relation(fields:[campaignId],references:[id],onDelete:Cascade)
++ phone String
++ status String @default("PENDING")
++ claimedAt DateTime?
++ sentAt DateTime?
++ @@unique([campaignId,phone])
++ @@index([campaignId,status])
++}
++model Certificate {
++ id String @id @default(uuid())
++ enrollmentId String @unique
++ enrollment Enrollment @relation(fields:[enrollmentId],references:[id],onDelete:Restrict)
++ studentName String
++ courseTitle String
++ score Float
++ issuedAt DateTime @default(now())
++ revokedAt DateTime?
++}
+diff --git a/tests/course-followup.test.cjs b/tests/course-followup.test.cjs
+index 218fe98..b4788e2 100644
+--- a/tests/course-followup.test.cjs
++++ b/tests/course-followup.test.cjs
+@@ -59,8 +59,8 @@ test('interest requires consent and a valid contact',async()=>{
+  for(const data of [{...person,consent:false},{...person,phone:'123'}])assert.equal((await interest().run(data)).status,400);
+ });
+ for(const file of ['app/api/enrollments/route.ts','app/api/payments/create/route.ts'])test('upcoming courses cannot be bought or enrolled through '+file,async()=>{
+- const {POST}=load(file,{'@/lib/auth':{getSession:async()=>({userId:'s'})},'@/lib/prisma':{prisma:{course:{findUnique:async()=>({teacherId:'t',status:'PUBLISHED',deliveryStatus:'UPCOMING'})}}},'@/lib/zarinpal':{requestPayment:()=>assert.fail('must not contact gateway')}});
+- assert.equal((await POST(new Request('http://test/api',{method:'POST',body:JSON.stringify({courseId:'c'})}))).status,400);
++ const {POST}=load(file,{'@/lib/auth':{getSession:async()=>({userId:'s'})},'@/lib/management-session':{getManagementSession:async()=>({userId:'s',role:'STUDENT'})},'@/lib/prisma':{prisma:{course:{findUnique:async()=>({teacherId:'t',status:'PUBLISHED',deliveryStatus:'UPCOMING'})}}},'@/lib/zarinpal':{requestPayment:()=>assert.fail('must not contact gateway')}});
++ assert.equal((await POST(new Request('http://test/api',{method:'POST',headers:{origin:'http://test'},body:JSON.stringify({courseId:'c'})}))).status,400);
+ });
+ function review(initial={}) {
+  let row={id:'p',teacherId:'t',status:'PAID',amount:500,fee:10,reference:'bank-original',receivedAt:null,...initial};const audit=[];let locks=0;
+diff --git a/tests/course-launch.test.cjs b/tests/course-launch.test.cjs
+index 4144a80..fb0f08a 100644
+--- a/tests/course-launch.test.cjs
++++ b/tests/course-launch.test.cjs
+@@ -1,9 +1,9 @@
+ const test=require('node:test'),assert=require('node:assert/strict'),fs=require('fs'),path=require('path'),ts=require('typescript'),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
+ function load(file,mocks={}){const m={exports:{}};new Function('require','module','exports',ts.transpileModule(fs.readFileSync(path.join(__dirname,'..',file),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText)(n=>n in mocks?mocks[n]:n.startsWith('@/')?load(n.slice(2)+(fs.existsSync(path.join(__dirname,'..',n.slice(2)+'.tsx'))?'.tsx':'.ts'),mocks):require(n),m,m.exports);return m.exports;}
+ test('OTP accepts Persian and Arabic digits and removes non-digits',()=>{const {otpDigits}=load('components/ui/otp-input.tsx');assert.equal(otpDigits('۱٢3 ۴۵۶'),'123456');});
+-function queue(){const course={id:'c',title:'نمونه',slug:'sample',status:'PUBLISHED',deliveryStatus:'ONGOING',launchSmsPending:false};const jobs=[];const tx={course:{findUniqueOrThrow:async()=>course,update:async({data})=>Object.assign(course,data)},courseInterest:{findMany:async()=>[{id:'i',phone:'09123456789'}]},courseStartSms:{createMany:async({data,skipDuplicates})=>{assert.ok(skipDuplicates);let count=0;for(const job of data)if(!jobs.some(j=>j.interestId===job.interestId)){jobs.push(job);count++;}return {count};}}};const api=load('lib/course-start-sms.ts',{'@/lib/prisma':{prisma:{}},'@/lib/sms':{sendSms:()=>assert.fail('queue cannot send')}});return {api,tx,course,jobs};}
+-test('launch queues once per preregistration and ordinary course edits do not queue',async()=>{const s=queue();assert.equal(await s.api.queueCourseStart(s.tx,'c','ONGOING'),0);assert.equal(await s.api.queueCourseStart(s.tx,'c','UPCOMING'),1);assert.equal(await s.api.queueCourseStart(s.tx,'c','UPCOMING'),0);assert.equal(s.jobs.length,1);});
+-test('starting a draft defers SMS until publication',async()=>{const s=queue();s.course.status='DRAFT';assert.equal(await s.api.queueCourseStart(s.tx,'c','UPCOMING'),0);assert.equal(s.course.launchSmsPending,true);s.course.status='PUBLISHED';assert.equal(await s.api.queueCourseStart(s.tx,'c'),1);assert.equal(s.course.launchSmsPending,false);});
++function queue(){const course={id:'c',title:'نمونه',slug:'sample',status:'PUBLISHED',deliveryStatus:'ONGOING',launchSmsPending:false};const jobs=[];const tx={course:{findUniqueOrThrow:async()=>course,update:async({data})=>Object.assign(course,data)},courseInterest:{findMany:async()=>[{id:'i',phone:'09123456789'}]},courseStartSms:{createMany:async({data,skipDuplicates})=>{assert.ok(skipDuplicates);let count=0;for(const job of data)if(!jobs.some(j=>j.interestId===job.interestId)){jobs.push(job);count++;}return {count};}}};const api=load('lib/course-start-sms.ts',{'@/lib/prisma':{prisma:{}},'@/lib/sms':{sendSms:()=>assert.fail('queue cannot send')},'@/lib/notifications':{notifyAdmins:async()=>{}}});return {api,tx,course,jobs};}
++test('launch notifies admins without automatically queueing or sending SMS',async()=>{const s=queue();assert.equal(await s.api.queueCourseStart(s.tx,'c','ONGOING'),0);assert.equal(await s.api.queueCourseStart(s.tx,'c','UPCOMING'),1);assert.equal(await s.api.queueCourseStart(s.tx,'c'),0);assert.equal(s.jobs.length,0);});
++test('starting a draft defers admin notice until publication',async()=>{const s=queue();s.course.status='DRAFT';assert.equal(await s.api.queueCourseStart(s.tx,'c','UPCOMING'),0);assert.equal(s.course.launchSmsPending,true);s.course.status='PUBLISHED';assert.equal(await s.api.queueCourseStart(s.tx,'c'),1);assert.equal(s.course.launchSmsPending,false);});
+ test('worker claims only pending published ongoing courses and records provider acceptance',async()=>{process.env.FARAZ_SMS_API_KEY='fake';process.env.FARAZ_SMS_LINE_NUMBER='fake';const job={id:'j',phone:'09123456789',message:'شروع',interest:{course:{title:'دوره',slug:'c'}}};let queryCount=0,sent=0,updates=[];const tx={$queryRaw:async(strings)=>{assert.match(strings.join(''),/SKIP LOCKED/);assert.match(strings.join(''),/PUBLISHED/);return queryCount++===0?[{id:'j'}]:[];},courseStartSms:{update:async q=>{updates.push(q.data);return job;}}};const api=load('lib/course-start-sms.ts',{'@/lib/prisma':{prisma:{...tx,$transaction:fn=>fn(tx),courseStartSms:{...tx.courseStartSms,updateMany:async()=>{}}}},'@/lib/sms':{sendSms:async()=>{sent++;return {status:'success'};}}});assert.equal((await api.processCourseStartSms('c')).processed,1);assert.equal(sent,1);assert.equal(updates[0].status,'SENDING');assert.equal(updates[1].status,'SENT');delete process.env.FARAZ_SMS_API_KEY;delete process.env.FARAZ_SMS_LINE_NUMBER;});
+ test('missing SMS configuration leaves queue untouched',async()=>{const api=load('lib/course-start-sms.ts',{'@/lib/prisma':{prisma:{$transaction:()=>assert.fail('no claim')}},'@/lib/sms':{sendSms:()=>assert.fail('no send')}});assert.equal((await api.processCourseStartSms()).configured,false);});
+ test('catalog ribbon is based on own active/completed enrollment, not another account',async()=>{let where;const Page=load('app/courses/page.tsx',{'@/lib/auth':{getSession:async()=>({userId:'student',role:'STUDENT'})},'@/lib/prisma':{prisma:{course:{findMany:async()=>[{id:'c',slug:'course',title:'دوره',teacherId:'teacher',teacher:{name:'مدرس'},price:0,discountPercent:0,deliveryStatus:'ONGOING'}]},enrollment:{findMany:async(q)=>{where=q.where;return [{courseId:'c'}];}}}},'next/link':{default:({children,...p})=>React.createElement('a',p,children)}}).default;const html=renderToStaticMarkup(await Page());assert.match(html,/ثبت‌نام شده/);assert.equal(where.userId,'student');assert.deepEqual(where.status.in,['ACTIVE','COMPLETED']);});
+diff --git a/tests/final-assessment.test.cjs b/tests/final-assessment.test.cjs
+index 4fa5b36..e09f75d 100644
+--- a/tests/final-assessment.test.cjs
++++ b/tests/final-assessment.test.cjs
+@@ -28,7 +28,7 @@ test('exam gateway reveals start link only after completion and publication',asy
+ test('notification icons distinguish money, tickets, exams and lessons',()=>{const {relatedIcon}=load('components/panel/theme-icon.tsx');assert.equal(relatedIcon('ticket:created'),'message');assert.equal(relatedIcon('exam-grade:attempt'),'exam');assert.equal(relatedIcon('payout:paid'),'wallet');assert.equal(relatedIcon('lesson:published'),'book')});
+ for(const route of ['courses/[courseId]/exam','courses/[courseId]/exam/submit','courses/[courseId]/review','enrollments/[enrollmentId]/exam-grade','enrollments/[enrollmentId]/final-note'])test(`guest rejected by ${route}`,async()=>{const api=load(`app/api/${route}/route.ts`,{'@/lib/assignment-api':{assignmentActor:async()=>null}});const handler=api.POST||api.PUT;assert.equal((await handler(new Request('http://test'),{params:Promise.resolve({courseId:'course',enrollmentId:'enroll'})})).status,401)});
+ test('student exam page does not fetch questions when completion is missing',async()=>{const s=setup();s.state.progress=[];s.prisma.finalExam.findFirst=async()=>assert.fail('locked questions must not be queried');const Page=load('app/dashboard/courses/[courseId]/exam/page.tsx',{'@/lib/assignment-api':{assignmentActor:async()=>student},'@/lib/prisma':{prisma:s.prisma},'next/link':{default:({children,...props})=>React.createElement('a',props,children)}}).default;const html=renderToStaticMarkup(await Page({params:Promise.resolve({courseId:'course'})}));assert.match(html,/آزمون هنوز در دسترس نیست/);assert.doesNotMatch(html,/سؤال اول/)});
+-test('final report shows separate instructor and admin feedback and weighted score',async()=>{const s=setup();s.state.course.finalExam={examWeight:50};s.state.attempt={score:80,feedback:'ارزیابی آزمون'};s.prisma.enrollment.findUnique=async()=>({...s.state.enrollment,course:s.state.course,examAttempt:s.state.attempt,finalFeedback:{teacherNote:'پیام ویژهٔ مدرس',adminNote:'پیام ویژهٔ مدیر'},courseReview:null});s.prisma.assignment={findMany:async()=>[{id:'a',title:'تمرین',submissions:[{status:'GRADED',score:60}]}]};const Report=load('components/assessment/final-report.tsx',{'@/lib/assignment-api':{assignmentActor:async()=>student},'@/lib/prisma':{prisma:s.prisma},'@/components/assessment/forms':{FinalNote:()=>null,ReviewForm:()=>null}}).default;let html=renderToStaticMarkup(await Report({enrollmentId:'enroll'}));assert.match(html,/۷۰ از ۱۰۰/);assert.match(html,/پیام ویژهٔ مدرس/);assert.match(html,/پیام ویژهٔ مدیر/);s.prisma.assignment.findMany=async()=>[{id:'a',title:'تمرین',submissions:[]}];html=renderToStaticMarkup(await Report({enrollmentId:'enroll'}));assert.match(html,/هنوز نهایی نشده/);assert.doesNotMatch(html,/۷۰ از ۱۰۰/)});
++test('final report shows separate instructor and admin feedback and weighted score',async()=>{const s=setup();s.state.course.finalExam={examWeight:50};s.state.attempt={score:80,feedback:'ارزیابی آزمون'};s.prisma.enrollment.findUnique=async()=>({...s.state.enrollment,course:s.state.course,examAttempt:s.state.attempt,finalFeedback:{teacherNote:'پیام ویژهٔ مدرس',adminNote:'پیام ویژهٔ مدیر'},courseReview:null});s.prisma.assignment={findMany:async()=>[{id:'a',title:'تمرین',submissions:[{status:'GRADED',score:60}]}]};const Report=load('components/assessment/final-report.tsx',{'@/lib/assignment-api':{assignmentActor:async()=>student},'@/lib/prisma':{prisma:s.prisma},'@/components/assessment/forms':{FinalNote:()=>null,ReviewForm:()=>null},'@/components/assessment/certificate-actions':{CertificateButton:()=>null}}).default;let html=renderToStaticMarkup(await Report({enrollmentId:'enroll'}));assert.match(html,/۷۰ از ۱۰۰/);assert.match(html,/پیام ویژهٔ مدرس/);assert.match(html,/پیام ویژهٔ مدیر/);s.prisma.assignment.findMany=async()=>[{id:'a',title:'تمرین',submissions:[]}];html=renderToStaticMarkup(await Report({enrollmentId:'enroll'}));assert.match(html,/هنوز نهایی نشده/);assert.doesNotMatch(html,/۷۰ از ۱۰۰/)});
+ const mc={type:'CHOICE',prompt:'گزینهٔ صحیح کدام است؟',options:['الف','ب','ج','د'],correctOption:2};
+ test('question schemas require four unique options and a valid private key',()=>{const {questionInput}=load('lib/exam-questions.ts');assert.equal(questionInput.safeParse(mc).success,true);for(const q of [{...mc,options:['a','b']},{...mc,correctOption:4},{...mc,options:['a','a','b','c']}])assert.equal(questionInput.safeParse(q).success,false)});
+ test('legacy descriptive exams remain valid and public questions never expose keys',()=>{const {publicQuestions}=load('lib/exam-questions.ts');assert.deepEqual(publicQuestions(['سؤال قدیمی',mc]),[{type:'TEXT',prompt:'سؤال قدیمی'},{type:'CHOICE',prompt:mc.prompt,options:mc.options}]);assert.ok(!JSON.stringify(publicQuestions([mc])).includes('correctOption'))});
+diff --git a/tests/manual-commerce-certificates.test.cjs b/tests/manual-commerce-certificates.test.cjs
+new file mode 100644
+index 0000000..435614f
+--- /dev/null
++++ b/tests/manual-commerce-certificates.test.cjs
+@@ -0,0 +1,19 @@
++const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),ts=require('typescript');
++function load(file,mocks={}){const m={exports:{}};new Function('require','module','exports',ts.transpileModule(fs.readFileSync(path.join(__dirname,'..',file),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText)(n=>n in mocks?mocks[n]:n.startsWith('@/')?load(n.slice(2)+(fs.existsSync(path.join(__dirname,'..',n.slice(2)+'.tsx'))?'.tsx':'.ts'),mocks):require(n),m,m.exports);return m.exports;}
++const req=body=>new Request('http://test/api',{method:'POST',headers:{origin:'http://test','content-type':'application/json'},body:JSON.stringify(body)});
++const course={id:'c',price:1000,discountPercent:20,teacherId:'t',status:'PUBLISHED',deliveryStatus:'ONGOING',slug:'course'};
++const coupons=load('lib/coupons.ts');
++test('coupon is normalized and calculated after advertised discount',()=>{assert.equal(coupons.couponCode(' spring-20 '),'SPRING-20');assert.deepEqual(coupons.couponPrice(course,{active:true,courseId:'c',percent:25},'X'),{base:800,percent:25,amount:600});});
++for(const invalid of [null,{active:false,courseId:null,percent:10},{active:true,courseId:'other',percent:10},{active:true,courseId:null,percent:101}])test('invalid coupon is rejected '+JSON.stringify(invalid),()=>assert.throws(()=>coupons.couponPrice(course,invalid,'CODE')));
++test('100 percent coupon gives zero and absence of code preserves advertised price',()=>{assert.equal(coupons.couponPrice(course,{active:true,courseId:null,percent:100},'FREE').amount,0);assert.equal(coupons.couponPrice(course,null,'').amount,800);});
++for(const role of ['STUDENT','TEACHER'])test('non-admin cannot send course SMS: '+role,async()=>{const api=load('app/api/courses/[courseId]/start-sms/route.ts',{'@/lib/management-session':{getManagementSession:async()=>({userId:'t',role})},'@/lib/prisma':{prisma:{course:{findUnique:async()=>course}}},'@/lib/course-start-sms':{processCourseStartSms:()=>assert.fail('no send')}});assert.equal((await api.POST(req({prepare:true}),{params:Promise.resolve({courseId:'c'})})).status,403);});
++for(const route of ['sms','coupons','certificates'])test('admin mutation rejects a student: '+route,async()=>{const api=load(`app/api/admin/${route}/route.ts`,{'@/lib/management-session':{getManagementSession:async()=>({userId:'s',role:'STUDENT'})},'@/lib/prisma':{prisma:{}},'@/lib/manual-sms':{},'@/lib/notifications':{}});assert.equal((await api.POST(req({}))).status,403);});
++test('manual course preparation includes coupon and preserves sent messages',async()=>{let data;const tx={$queryRaw:async()=>{},course:{findUniqueOrThrow:async()=>({...course,title:'دوره'})},discountCode:{findUnique:async()=>({code:'START',active:true,courseId:'c',percent:30})},courseInterest:{findMany:async()=>[{id:'i',phone:'09123456789'}]},courseStartSms:{createMany:async x=>{data=x;return {count:1};}}};const api=load('lib/course-start-sms.ts',{'@/lib/prisma':{prisma:{}},'@/lib/sms':{},'@/lib/notifications':{}});await api.prepareCourseStart(tx,'c','START');assert.equal(data.skipDuplicates,true);assert.match(data.data[0].message,/START/);assert.match(data.data[0].message,/30/);});
++test('broadcast snapshots normalized unique numbers and excludes test accounts',async()=>{let scope,deliveries;const tx={$queryRaw:async()=>{},smsCampaign:{findUnique:async()=>null,create:async({data})=>data},user:{findMany:async({where})=>{scope=where;return [{phone:'09123456789'},{phone:'+989123456789'},{phone:'bad'}];}},smsDelivery:{createMany:async({data})=>{deliveries=data;}}};const api=load('lib/manual-sms.ts',{'@/lib/prisma':{prisma:{$transaction:fn=>fn(tx)}},'@/lib/sms':{}});await api.createCampaign('admin',{requestId:'00000000-0000-4000-8000-000000000000',audience:'TEACHER',message:'پیام نمونه',variables:{}});assert.equal(scope.role,'TEACHER');assert.equal(scope.demoBatchId,null);assert.equal(deliveries.length,1);assert.equal(deliveries[0].phone,'09123456789');});
++test('SMS timeout is persisted as UNKNOWN and is never blindly retried',async()=>{process.env.FARAZ_SMS_API_KEY='test';process.env.FARAZ_SMS_LINE_NUMBER='test';let claimed=false,status,calls=0;const tx={$queryRaw:async()=>{if(claimed)return [];claimed=true;return [{id:'d'}];},smsDelivery:{update:async({data})=>{status=data.status;return {id:'d',phone:'09123456789'};},updateMany:async()=>{}}};const db={...tx,smsCampaign:{findUniqueOrThrow:async()=>({message:'hello'})},$transaction:fn=>fn(tx)};const api=load('lib/manual-sms.ts',{'@/lib/prisma':{prisma:db},'@/lib/sms':{sendSms:async()=>{calls++;throw Error('timeout');}}});try{await api.processCampaign('c');assert.equal(status,'UNKNOWN');await api.processCampaign('c');assert.equal(calls,1);}finally{delete process.env.FARAZ_SMS_API_KEY;delete process.env.FARAZ_SMS_LINE_NUMBER;}});
++function certSetup(){let issued=0,notice=0;const enrollment={id:'e',courseId:'c',userId:'s',status:'ACTIVE',user:{name:'دانش‌آموز',role:'STUDENT'},course:{...course,title:'دوره',finalExam:{published:true,examWeight:50}},examAttempt:{score:80},certificate:null};const tx={$queryRaw:async()=>{},enrollment:{findUnique:async()=>enrollment,findUniqueOrThrow:async()=>enrollment},lesson:{findMany:async()=>[{id:'l',videoUrl:'video'}]},lessonProgress:{findMany:async()=>[{lessonId:'l',status:'COMPLETED',videoCompletedAt:new Date()}]},assignment:{findMany:async()=>[{submissions:[{status:'GRADED',score:60}]}]},certificate:{create:async({data})=>{issued++;return enrollment.certificate={id:'cert',...data};}}};const api=load('lib/certificates.ts',{'@/lib/prisma':{prisma:{$transaction:fn=>fn(tx)}},'@/lib/notifications':{notifyUsers:async()=>{notice++;}}});return {enrollment,tx,api,get issued(){return issued},get notice(){return notice}};}
++test('certificate has immutable score snapshot and issuance is idempotent',async()=>{const s=certSetup();const cert=await s.api.issueCertificate({id:'s',role:'STUDENT'},'e');assert.equal(cert.score,70);assert.equal(cert.studentName,'دانش‌آموز');s.enrollment.examAttempt.score=100;assert.equal((await s.api.issueCertificate({id:'s',role:'STUDENT'},'e')).score,70);assert.equal(s.issued,1);assert.equal(s.notice,1);});
++for(const scenario of ['otherStudent','otherTeacher','cancelled','missingGrade','incompleteVideo','failedExam','revoked'])test('certificate rejects '+scenario,async()=>{const s=certSetup();let actor={id:'s',role:'STUDENT'};if(scenario==='otherStudent')actor.id='other';if(scenario==='otherTeacher')actor={id:'other',role:'TEACHER'};if(scenario==='cancelled')s.enrollment.status='CANCELLED';if(scenario==='missingGrade')s.tx.assignment.findMany=async()=>[{submissions:[]}];if(scenario==='incompleteVideo')s.tx.lessonProgress.findMany=async()=>[{lessonId:'l',status:'COMPLETED',videoCompletedAt:null}];if(scenario==='failedExam')s.enrollment.examAttempt.score=50;if(scenario==='revoked')s.enrollment.certificate={revokedAt:new Date()};await assert.rejects(s.api.issueCertificate(actor,'e'));assert.equal(s.issued,0);});
++test('cancelled enrollments and revoked certificates fail public validation',()=>{const s=certSetup();assert.equal(s.api.certificateValid({revokedAt:null,enrollment:{status:'ACTIVE'}}),true);assert.equal(s.api.certificateValid({revokedAt:new Date(),enrollment:{status:'ACTIVE'}}),false);assert.equal(s.api.certificateValid({revokedAt:null,enrollment:{status:'CANCELLED'}}),false);});
++test('new user name endpoint updates only blank names, never role or existing names',async()=>{let update;const api=load('app/api/auth/name/route.ts',{'@/lib/management-session':{getManagementSession:async()=>({userId:'s',role:'STUDENT'})},'@/lib/prisma':{prisma:{user:{updateMany:async q=>{update=q;}}}}});assert.equal((await api.POST(req({name:'نام من',role:'ADMIN'}))).status,200);assert.deepEqual(update.data,{name:'نام من'});assert.equal(update.where.id,'s');assert.deepEqual(update.where.OR,[{name:null},{name:''}]);assert.equal((await api.POST(req({name:'x'}))).status,400);});
++test('100 percent checkout records zero revenue and never calls gateway',async()=>{let receipt,enrolled=0;const tx={$queryRaw:async()=>{},enrollment:{findUnique:async()=>null,upsert:async()=>{enrolled++;}},payment:{create:async({data})=>{receipt=data;}}};const db={...tx,$transaction:fn=>fn(tx),course:{findUnique:async()=>course},discountCode:{findUnique:async()=>({active:true,courseId:'c',percent:100})}};const api=load('app/api/payments/create/route.ts',{'@/lib/management-session':{getManagementSession:async()=>({userId:'s',role:'STUDENT'})},'@/lib/prisma':{prisma:db},'@/lib/zarinpal':{requestPayment:()=>assert.fail('no gateway')}});assert.equal((await api.POST(req({courseId:'c',code:'FREE',amount:9000}))).status,200);assert.equal(enrolled,1);assert.equal(receipt.amount,0);assert.equal(receipt.teacherShareAmount,0);assert.equal(receipt.couponCode,'FREE');});
+diff --git a/tests/persian-demo.test.cjs b/tests/persian-demo.test.cjs
+index c31970c..234b6f8 100644
+--- a/tests/persian-demo.test.cjs
++++ b/tests/persian-demo.test.cjs
+@@ -54,11 +54,11 @@ test('Jalali chart changes year at Tehran Nowruz and spans previous year',()=>{
+ test('payment creation uses server discount and pending amount, ignores submitted amount',async()=>{
+  let gatewayAmount;
+  const {POST}=load('app/api/payments/create/route.ts',{
+-  '@/lib/auth':{getSession:async()=>({userId:'student'})},
++  '@/lib/management-session':{getManagementSession:async()=>({userId:'student',role:'STUDENT'})},
+   '@/lib/prisma':{prisma:{course:{findUnique:async()=>({id:'c',price:1000,discountPercent:25,teacherId:'teacher',status:'PUBLISHED'})},enrollment:{findUnique:async()=>null},payment:{findFirst:async({where})=>{assert.equal(where.amount,750);return null;},create:async({data})=>{assert.equal(data.amount,750);return {id:'p',...data};},update:async()=>({})},user:{findUnique:async()=>null}}},
+   '@/lib/zarinpal':{requestPayment:async({amount})=>{gatewayAmount=amount;return {data:{code:100,authority:'a'}};},getPaymentUrl:()=>'/gateway'}
+  });
+- const res=await POST(new Request('http://test/api',{method:'POST',body:JSON.stringify({courseId:'c',amount:1})}));assert.equal(res.status,200);assert.equal(gatewayAmount,750);
++ const res=await POST(new Request('http://test/api',{method:'POST',headers:{origin:'http://test'},body:JSON.stringify({courseId:'c',amount:1})}));assert.equal(res.status,200);assert.equal(gatewayAmount,750);
+ });
+ function demo(tx){return load('lib/finance-demo.ts',{'@/lib/prisma':{prisma:{$transaction:fn=>fn(tx)}}});}
+ test('demo cannot create or delete data in production',async()=>{
+diff --git a/tests/settlements.test.cjs b/tests/settlements.test.cjs
+index 874411a..4a84397 100644
+--- a/tests/settlements.test.cjs
++++ b/tests/settlements.test.cjs
+@@ -42,7 +42,7 @@ test('unknown share is never made withdrawable',()=>{
+  const total=walletTotals([{...sale,teacherShareAmount:null}],[]);assert.equal(total.available,0);assert.equal(total.unallocated,1000);assert.equal(total.platformNet,-20);
+ });
+ test('admin navigation has no personal teaching, enrollment or payment tabs',()=>{
+- const items=panelNavigation('ADMIN');assert.deepEqual(items.map(x=>x.href),['/admin','/admin/courses','/admin/users','/admin/finance','/admin/settlements','/tickets','/admin/notifications']);
++ const items=panelNavigation('ADMIN');assert.deepEqual(items.map(x=>x.href),['/admin','/admin/courses','/admin/users','/admin/finance','/admin/settlements','/tickets','/admin/notifications','/admin/sms','/admin/coupons','/admin/certificates']);
+ });
+ for(const [role,path,active] of [['TEACHER','/teacher/finance','/teacher/finance'],['TEACHER','/teacher/courses/c','/teacher'],['ADMIN','/admin/finance','/admin/finance'],['ADMIN','/teacher/courses/c/students/e','/admin/courses'],['STUDENT','/payment/success','/payments']])test('most specific active tab for '+path,()=>{
+  assert.equal(activeNavigation(path,panelNavigation(role),role),active);
+diff --git a/tests/sms-preview-grading.test.cjs b/tests/sms-preview-grading.test.cjs
+index c26fa75..b18bb55 100644
+--- a/tests/sms-preview-grading.test.cjs
++++ b/tests/sms-preview-grading.test.cjs
+@@ -11,9 +11,9 @@ function setup(){
+  const api=load('lib/login-otp.ts',{'@/lib/prisma':{prisma:{...tx,$transaction:fn=>fn(tx)}},'@/lib/sms':{sendSms:async(p)=>{if(sendFail)throw Error('down');sent.push(p);return {status:'success'};}}});
+  return {api,get row(){return row},get users(){return users},set users(v){users=v},sent,fail(){sendFail=true},code(){return sent.at(-1).message.match(/\d{6}/)[0]},cool(){row.lastSentAt=new Date(Date.now()-61000)}};
+ }
+-test('OTP is hashed, expires in five minutes, logs in existing role and is single-use',async()=>{const s=setup();s.users=[{id:'teacher',role:'TEACHER'}];const result=await s.api.requestOtp('09123456789','ip1');assert.ok(new Date(result.expiresAt)-Date.now()>295000);assert.notEqual(s.row.digest,s.code());const ok=await s.api.verifyOtp(result.challengeId,s.code());assert.equal(ok.user.role,'TEACHER');assert.ok((await s.api.verifyOtp(result.challengeId,s.code())).restart);});
++test('OTP is hashed, expires in five minutes, logs in existing role and is single-use',async()=>{const s=setup();s.users=[{id:'teacher',role:'TEACHER',name:'نام قبلی'}];const result=await s.api.requestOtp('09123456789','ip1');assert.ok(new Date(result.expiresAt)-Date.now()>295000);assert.notEqual(s.row.digest,s.code());const ok=await s.api.verifyOtp(result.challengeId,s.code());assert.equal(ok.user.role,'TEACHER');assert.equal(ok.needsName,false);assert.ok((await s.api.verifyOtp(result.challengeId,s.code())).restart);});
+ test('three wrong answers invalidate challenge; ten across resends block phone',async()=>{const s=setup();let result=await s.api.requestOtp('09123456789','ip1');for(let n=1;n<=10;n++){const bad=await s.api.verifyOtp(result.challengeId,'000000');assert.ok(bad.error);if(n%3===0&&n<10){assert.equal(bad.restart,true);s.cool();result=await s.api.requestOtp('09123456789','ip1');assert.equal(s.row.consecutiveFailures,n);}}assert.ok(s.row.blockedAt);s.cool();await assert.rejects(s.api.requestOtp('09123456789','ip1'),/بلاک/);});
+-test('expiration cannot create account; correct code resets failure streak',async()=>{const s=setup();let result=await s.api.requestOtp('09123456789','ip1');s.row.expiresAt=new Date(0);assert.ok((await s.api.verifyOtp(result.challengeId,s.code())).restart);assert.equal(s.users.length,0);s.cool();result=await s.api.requestOtp('09123456789','ip1');await s.api.verifyOtp(result.challengeId,'000000');const ok=await s.api.verifyOtp(result.challengeId,s.code());assert.equal(ok.user.role,'STUDENT');assert.equal(s.row.consecutiveFailures,0);});
++test('expiration cannot create account; correct code resets failure streak',async()=>{const s=setup();let result=await s.api.requestOtp('09123456789','ip1');s.row.expiresAt=new Date(0);assert.ok((await s.api.verifyOtp(result.challengeId,s.code())).restart);assert.equal(s.users.length,0);s.cool();result=await s.api.requestOtp('09123456789','ip1');await s.api.verifyOtp(result.challengeId,'000000');const ok=await s.api.verifyOtp(result.challengeId,s.code());assert.equal(ok.user.role,'STUDENT');assert.equal(ok.needsName,true);assert.equal(s.row.consecutiveFailures,0);});
+ test('provider error invalidates challenge and resends respect cooldown',async()=>{const s=setup();s.fail();await assert.rejects(s.api.requestOtp('09123456789','ip1'),/ارسال/);assert.equal(s.row.digest,null);assert.equal(s.row.challengeId,null);await assert.rejects(s.api.requestOtp('09123456789','ip1'),/یک دقیقه/);});
+ test('ambiguous legacy phone accounts are not merged',async()=>{const s=setup();s.users=[{id:'a'},{id:'b'}];const result=await s.api.requestOtp('09123456789','ip1');assert.match((await s.api.verifyOtp(result.challengeId,s.code())).error,/پشتیبانی/);});
+ test('binary essay grading counts all questions equally and requires exact verdict count',()=>{const q=load('lib/exam-questions.ts');const questions=[{type:'CHOICE',prompt:'گزینه درست؟',options:['a','b','c','d'],correctOption:1},'تشریحی اول','تشریحی دوم'];assert.equal(q.scoreVerdicts(questions,['1','جواب','جواب'],[true,false]),67);assert.equal(q.scoreVerdicts(questions,['0','جواب','جواب'],[false,false]),0);assert.throws(()=>q.scoreVerdicts(questions,['1','a','b'],[true]));});
