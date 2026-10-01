@@ -1,10 +1,11 @@
-import { coursePrice } from "@/lib/course-price";
-import { getSession } from "@/lib/auth";
+import {couponCode,couponPrice} from "@/lib/coupons";
+import {getManagementSession as getSession} from "@/lib/management-session";
 import { prisma } from "@/lib/prisma";
 import { requestPayment, getPaymentUrl } from "@/lib/zarinpal";
 
 export async function POST(request: Request) {
   try {
+    if(request.headers.get("origin")!==new URL(request.url).origin)return Response.json({message:"درخواست نامعتبر"},{status:403});
     const session = await getSession();
 
     if (!session) {
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
       );
     }
 
+    if(session.role==="ADMIN")return Response.json({message:"مدیر امکان خرید دوره ندارد."},{status:403});
     const body = await request.json();
 
     const courseId = body.courseId;
@@ -58,16 +60,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const payable = coursePrice(course);
-    if (payable <= 0) {
-      return Response.json(
-        {
-          message: "این دوره رایگان است.",
-        },
-        { status: 400 },
-      );
-    }
-
+    let code:string,percent:number,payable:number;
+    try{code=couponCode(body.code);const coupon=code?await prisma.discountCode.findUnique({where:{code}}):null;const quote=couponPrice(course,coupon,code);payable=quote.amount;percent=quote.percent;}catch(e){return Response.json({message:e instanceof Error?e.message:'کد نامعتبر'},{status:400});}
     const existingEnrollment = await prisma.enrollment.findUnique({
       where: {
         userId_courseId: {
@@ -86,6 +80,16 @@ export async function POST(request: Request) {
       );
     }
 
+    if(payable===0){
+      await prisma.$transaction(async tx=>{
+        await tx.$queryRaw`SELECT id FROM "User" WHERE id=${session.userId} FOR UPDATE`;
+        const prior=await tx.enrollment.findUnique({where:{userId_courseId:{userId:session.userId,courseId}}});
+        if(prior&&prior.status!=='CANCELLED')return;
+        await tx.enrollment.upsert({where:{userId_courseId:{userId:session.userId,courseId}},create:{userId:session.userId,courseId},update:{status:'ACTIVE'}});
+        await tx.payment.create({data:{userId:session.userId,courseId,amount:0,status:'SUCCESS',paidAt:new Date(),couponCode:code||null,couponPercent:percent,teacherShareAmount:0,teacherSharePercent:0,isTest:false}});
+      });
+      return Response.json({paymentUrl:`/courses/${course.slug}`});
+    }
     /*
      * اگر پرداخت PENDING قبلی داریم،
      * دوباره Payment نساز.
@@ -97,6 +101,7 @@ export async function POST(request: Request) {
         courseId,
         status: "PENDING",
         amount: payable,
+        couponCode: code||null,
         isTest: process.env.ZARINPAL_SANDBOX === "true",
       },
 
@@ -104,6 +109,8 @@ export async function POST(request: Request) {
         createdAt: "desc",
       },
     });
+
+    if(existingPayment?.authority)return Response.json({success:true,paymentId:existingPayment.id,paymentUrl:getPaymentUrl(existingPayment.authority)});
 
     const payment =
       existingPayment ||
@@ -113,6 +120,8 @@ export async function POST(request: Request) {
           courseId,
           isTest: process.env.ZARINPAL_SANDBOX === "true",
           amount: payable,
+          couponCode: code||null,
+          couponPercent: percent,
           status: "PENDING",
         },
       }));
@@ -134,11 +143,11 @@ export async function POST(request: Request) {
       mobile: user?.phone || undefined,
     });
 
-    const code = zarinpal?.data?.code;
+    const gatewayCode = zarinpal?.data?.code;
 
     const authority = zarinpal?.data?.authority;
 
-    if (code !== 100 && code !== 101) {
+    if (gatewayCode !== 100 && gatewayCode !== 101) {
       console.error("ZARINPAL REQUEST:", zarinpal);
 
       throw new Error("زرین‌پال درخواست پرداخت را قبول نکرد.");

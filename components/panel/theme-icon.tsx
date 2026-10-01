@@ -37,6 +37,8 @@ export default function ThemeIcon({name,className='h-6 w-6'}:{name:IconName;clas
 }
 
 export function relatedIcon(text:string):IconName{
+ if(/گواهی|مدرک|certificate/.test(text))return 'award';
+ if(/تخفیف/.test(text))return 'star';
  if(/دوره‌های ثبت‌نام/.test(text))return 'graduation';
  if(/همهٔ دوره‌ها/.test(text))return 'search';
  if(/مدیریت دوره/.test(text))return 'layers';

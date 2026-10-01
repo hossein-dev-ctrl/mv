@@ -3,11 +3,11 @@ export function panelNavigation(role?: string): NavItem[] {
   if (role === "ADMIN") return [
     {href:"/admin",label:"پنل مدیر"}, {href:"/admin/courses",label:"دوره‌ها و پیشرفت"},
     {href:"/admin/users",label:"کاربران"}, {href:"/admin/finance",label:"مالی کل"}, {href:"/admin/settlements",label:"تسویه و بازپرداخت"},
-    {href:"/tickets",label:"تیکت‌ها"}, {href:"/admin/notifications",label:"ارسال اعلان"},
+    {href:"/tickets",label:"تیکت‌ها"}, {href:"/admin/notifications",label:"ارسال اعلان"}, {href:"/admin/sms",label:"مرکز پیامک"}, {href:"/admin/coupons",label:"کدهای تخفیف"}, {href:"/admin/certificates",label:"گواهی‌نامه‌ها"},
   ];
   return [
     ...(role === "TEACHER" ? [{href:"/teacher",label:"مدیریت دوره‌های من"},{href:"/teacher/finance",label:"درآمد دوره‌های من"}] : []),
-    ...(role ? [{href:"/dashboard",label:"دوره‌های ثبت‌نام‌شده"},{href:"/payments",label:"سوابق پرداخت من"}] : []),
+    ...(role ? [{href:"/dashboard",label:"دوره‌های ثبت‌نام‌شده"},{href:"/payments",label:"سوابق پرداخت من"},{href:"/dashboard/certificates",label:"گواهی‌نامه‌های من"}] : []),
     ...(role ? [{href:"/tickets",label:"تیکت‌های من"}] : []),
     {href:"/courses",label:"همهٔ دوره‌ها"},
   ];

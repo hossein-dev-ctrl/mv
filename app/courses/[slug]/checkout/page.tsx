@@ -28,6 +28,8 @@ export default async function CheckoutPage({ params }: Props) {
     redirect(`/login?redirect=/courses/${slug}/checkout`);
   }
 
+  if(session.role==="ADMIN")redirect("/admin/courses");
+
   /*
    * پیدا کردن دوره
    */
@@ -173,7 +175,7 @@ export default async function CheckoutPage({ params }: Props) {
             />
 
             <p className="mt-4 text-center text-xs leading-6 text-gray-400">
-              با کلیک روی دکمه پرداخت، به درگاه بانکی منتقل خواهید شد.
+              با کلیک روی دکمه پرداخت، به درگاه بانکی منتقل می‌شوید؛ با تخفیف صددرصدی ثبت‌نام مستقیم انجام می‌شود.
             </p>
           </div>
         </div>

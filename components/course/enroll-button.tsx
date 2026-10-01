@@ -14,6 +14,9 @@ type Props = {
 export default function EnrollButton({ courseId, price, isLoggedIn }: Props) {
   const router = useRouter();
 
+  const [code,setCode]=useState("");
+  const [quote,setQuote]=useState<number|null>(null);
+  const [checking,setChecking]=useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -62,7 +65,7 @@ export default function EnrollButton({ courseId, price, isLoggedIn }: Props) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          courseId,
+          courseId,code,
         }),
       });
 
@@ -80,12 +83,13 @@ export default function EnrollButton({ courseId, price, isLoggedIn }: Props) {
     } catch (error) {
       setError(error instanceof Error ? error.message : "خطایی رخ داد.");
 
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
   return (
-    <div>
+    <div className="assessment-form space-y-3">
+      {price>0&&<div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4"><label>کد تخفیف<input dir="ltr" maxLength={40} value={code} onChange={e=>{setCode(e.target.value);setQuote(null);}} placeholder="کد تخفیف"/></label><button type="button" disabled={checking||loading} className="panel-action mt-3" onClick={async()=>{setChecking(true);setError('');try{const res=await fetch('/api/coupons/quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({courseId,code})});const data=await res.json();if(!res.ok)throw Error(data.message);setQuote(data.amount);}catch(e){setQuote(null);setError(e instanceof Error?e.message:'خطا');}finally{setChecking(false);}}}><ThemeIcon name="check" className="h-4 w-4"/>بررسی کد</button><p className="min-h-8 pt-2 text-sm">{quote!==null?`مبلغ قابل پرداخت: ${quote.toLocaleString('fa-IR')} تومان`:'کد روی قیمت فعلی دوره اعمال می‌شود.'}</p></div>}
+
       <button
         onClick={handleEnroll}
         disabled={loading}

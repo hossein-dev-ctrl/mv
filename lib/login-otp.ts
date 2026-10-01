@@ -520,6 +520,7 @@ export async function verifyOtp(challengeId: string, rawCode: unknown) {
         id: user.id,
         role: user.role,
       },
+      needsName: !user.name?.trim(),
     };
   });
 }

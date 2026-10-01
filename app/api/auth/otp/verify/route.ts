@@ -9,7 +9,7 @@ export async function POST(request:NextRequest){
   const result=await verifyOtp(challenge,(await request.json()).code);
   if('error' in result)return NextResponse.json({message:result.error,restart:result.restart},{status:400});
   const token=await createSession({userId:result.user.id,role:result.user.role});
-  const response=NextResponse.json({user:result.user});
+  const response=NextResponse.json({user:result.user,needsName:result.needsName});
   response.headers.set('Cache-Control','no-store');
   response.cookies.set('session',token,{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:604800});
   response.cookies.set('login_challenge','',{httpOnly:true,path:'/api/auth/otp',maxAge:0});

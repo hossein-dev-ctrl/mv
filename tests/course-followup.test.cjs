@@ -59,8 +59,8 @@ test('interest requires consent and a valid contact',async()=>{
  for(const data of [{...person,consent:false},{...person,phone:'123'}])assert.equal((await interest().run(data)).status,400);
 });
 for(const file of ['app/api/enrollments/route.ts','app/api/payments/create/route.ts'])test('upcoming courses cannot be bought or enrolled through '+file,async()=>{
- const {POST}=load(file,{'@/lib/auth':{getSession:async()=>({userId:'s'})},'@/lib/prisma':{prisma:{course:{findUnique:async()=>({teacherId:'t',status:'PUBLISHED',deliveryStatus:'UPCOMING'})}}},'@/lib/zarinpal':{requestPayment:()=>assert.fail('must not contact gateway')}});
- assert.equal((await POST(new Request('http://test/api',{method:'POST',body:JSON.stringify({courseId:'c'})}))).status,400);
+ const {POST}=load(file,{'@/lib/auth':{getSession:async()=>({userId:'s'})},'@/lib/management-session':{getManagementSession:async()=>({userId:'s',role:'STUDENT'})},'@/lib/prisma':{prisma:{course:{findUnique:async()=>({teacherId:'t',status:'PUBLISHED',deliveryStatus:'UPCOMING'})}}},'@/lib/zarinpal':{requestPayment:()=>assert.fail('must not contact gateway')}});
+ assert.equal((await POST(new Request('http://test/api',{method:'POST',headers:{origin:'http://test'},body:JSON.stringify({courseId:'c'})}))).status,400);
 });
 function review(initial={}) {
  let row={id:'p',teacherId:'t',status:'PAID',amount:500,fee:10,reference:'bank-original',receivedAt:null,...initial};const audit=[];let locks=0;

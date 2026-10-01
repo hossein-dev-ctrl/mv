@@ -1,5 +1,4 @@
-import {after} from 'next/server';
-import {queueCourseStart,processCourseStartSms} from '@/lib/course-start-sms';
+import {queueCourseStart} from '@/lib/course-start-sms';
 export const maxDuration=60;
 import { getManagementSession } from "@/lib/management-session";
 import { prisma } from "@/lib/prisma";
@@ -288,8 +287,6 @@ export async function PATCH(
         await queueCourseStart(tx,courseId);
         return updated;
       },{timeout:30000});
-
-      after(()=>processCourseStartSms(courseId).then(()=>{}));
       return Response.json({
         success: true,
         course: updatedCourse,
@@ -368,7 +365,6 @@ export async function PATCH(
       await queueCourseStart(tx,courseId,previous.deliveryStatus);
       return updated;
     });
-    after(()=>processCourseStartSms(courseId).then(()=>{}));
     return Response.json({
       success: true,
       course: updatedCourse,

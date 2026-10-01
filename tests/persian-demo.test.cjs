@@ -54,11 +54,11 @@ test('Jalali chart changes year at Tehran Nowruz and spans previous year',()=>{
 test('payment creation uses server discount and pending amount, ignores submitted amount',async()=>{
  let gatewayAmount;
  const {POST}=load('app/api/payments/create/route.ts',{
-  '@/lib/auth':{getSession:async()=>({userId:'student'})},
+  '@/lib/management-session':{getManagementSession:async()=>({userId:'student',role:'STUDENT'})},
   '@/lib/prisma':{prisma:{course:{findUnique:async()=>({id:'c',price:1000,discountPercent:25,teacherId:'teacher',status:'PUBLISHED'})},enrollment:{findUnique:async()=>null},payment:{findFirst:async({where})=>{assert.equal(where.amount,750);return null;},create:async({data})=>{assert.equal(data.amount,750);return {id:'p',...data};},update:async()=>({})},user:{findUnique:async()=>null}}},
   '@/lib/zarinpal':{requestPayment:async({amount})=>{gatewayAmount=amount;return {data:{code:100,authority:'a'}};},getPaymentUrl:()=>'/gateway'}
  });
- const res=await POST(new Request('http://test/api',{method:'POST',body:JSON.stringify({courseId:'c',amount:1})}));assert.equal(res.status,200);assert.equal(gatewayAmount,750);
+ const res=await POST(new Request('http://test/api',{method:'POST',headers:{origin:'http://test'},body:JSON.stringify({courseId:'c',amount:1})}));assert.equal(res.status,200);assert.equal(gatewayAmount,750);
 });
 function demo(tx){return load('lib/finance-demo.ts',{'@/lib/prisma':{prisma:{$transaction:fn=>fn(tx)}}});}
 test('demo cannot create or delete data in production',async()=>{

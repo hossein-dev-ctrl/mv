@@ -1,11 +1,11 @@
 diff --git a/README_FA.txt b/README_FA.txt
 new file mode 100644
-index 0000000..5cc4fb5
+index 0000000..2c2ef12
 --- /dev/null
 +++ b/README_FA.txt
-@@ -0,0 +1,125 @@
+@@ -0,0 +1,134 @@
 +مرحلهٔ پیامک دستی، کد تخفیف و گواهی‌نامه
-+مبنای تغییرات: آخرین main با شناسهٔ 34d0373
++مبنای تغییرات: آخرین main با شناسهٔ bd64022
 +
 +اعمال تغییرات
 +۱. از دیتابیس خود نسخهٔ پشتیبان بگیرید و سرور توسعه را متوقف کنید.
@@ -129,6 +129,15 @@ index 0000000..5cc4fb5
 +ادامهٔ پروژه
 +تنظیم و تست واقعی سرویس پیامک، درگاه، ذخیره‌سازی ویدئو در پارس‌پک و استقرار نهایی باقی است.
 +فایل Progress_Stage_Tracker.xlsx با حفظ مراحل قبلی به‌روز شده است.
++
++اصلاح بسته بر اساس پوش جدید کاربر
++- مبنا bd64022 است؛ این بسته جایگزین بستهٔ قبلی می‌شود.
++- app/api/test-sms/route.ts، app/test/page.tsx و lib/sms.ts عیناً مطابق پوش کاربر حفظ شده‌اند و در فایل‌های جایگزین ZIP نیستند.
++- lib/login-otp.ts مطابق نسخهٔ جدید کاربر است؛ فقط needsName برای مرحلهٔ تعیین نام افزوده شده است.
++- قفل‌های OTP با $executeRaw حفظ شده‌اند؛ قفل پیامک گروهی جدید هم از همین روش استفاده می‌کند.
++- فایل changes.patch که خودتان در ریشهٔ مخزن پوش کرده‌اید دست نخورده است؛ برای اعمال این مرحله فقط patch داخل همین بستهٔ جدید را استفاده کنید.
++- migration همان migration بستهٔ قبلی است؛ اگر قبلاً آن را اجرا کرده‌اید migration تازه یا reset لازم نیست.
++- لاگ‌های تشخیصی پیامک مطابق پوش شما حفظ شده‌اند؛ ممکن است شماره و کد پیامک را ثبت کنند. پیش از انتشار عمومی، حذف اطلاعات حساس از این لاگ‌ها لازم است.
 diff --git a/app/admin/certificates/page.tsx b/app/admin/certificates/page.tsx
 new file mode 100644
 index 0000000..9f35fcb
@@ -807,20 +816,20 @@ index 50069cd..a25db28 100644
     else await prisma.courseStartSms.update({where:{id:job.id},data:{status:'SENT',sentAt:new Date(),lastError:null}});
    }catch{await prisma.courseStartSms.update({where:{id:job.id},data:{status:'UNKNOWN',lastError:'نتیجهٔ ارسال قطعی نیست؛ پیش از تلاش مجدد پنل پیامکی را بررسی کنید.'}});}
 diff --git a/lib/login-otp.ts b/lib/login-otp.ts
-index a3cc9c8..a14d589 100644
+index 8b348de..1e74560 100644
 --- a/lib/login-otp.ts
 +++ b/lib/login-otp.ts
-@@ -60,6 +60,6 @@ export async function verifyOtp(challengeId:string,rawCode:unknown){
-   if(existing[0]?.demoBatchId&&process.env.NODE_ENV==='production')return {error:'حساب آزمایشی قابل ورود نیست.',restart:true};
-   const user=existing[0]??await tx.user.create({data:{phone:row.phone,role:'STUDENT'}});
-   await tx.loginOtp.update({where:{phone:row.phone},data:{digest:null,challengeId:null,expiresAt:null,attempts:0,consecutiveFailures:0}});
--  return {user:{id:user.id,role:user.role}};
-+  return {user:{id:user.id,role:user.role},needsName:!user.name?.trim()};
-  });
+@@ -520,6 +520,7 @@ export async function verifyOtp(challengeId: string, rawCode: unknown) {
+         id: user.id,
+         role: user.role,
+       },
++      needsName: !user.name?.trim(),
+     };
+   });
  }
 diff --git a/lib/manual-sms.ts b/lib/manual-sms.ts
 new file mode 100644
-index 0000000..af5937e
+index 0000000..005f954
 --- /dev/null
 +++ b/lib/manual-sms.ts
 @@ -0,0 +1,36 @@
@@ -832,7 +841,7 @@ index 0000000..af5937e
 +export async function createCampaign(senderId:string,raw:unknown){
 + const input=smsInput.parse(raw);
 + return prisma.$transaction(async tx=>{
-+  await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`sms:${input.requestId}`}))`;
++  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`sms:${input.requestId}`})::bigint)`;
 +  const prior=await tx.smsCampaign.findUnique({where:{id:input.requestId}});if(prior){if(prior.senderId!==senderId||prior.audience!==input.audience||prior.message!==input.message||prior.patternCode!==(input.patternCode||null)||JSON.stringify(prior.variables)!==JSON.stringify(input.variables))throw Error('درخواست قبلی با همین شناسه ثبت شده؛ صفحه را تازه کنید و تاریخچه را بررسی کنید.');return prior;}
 +  const users=await tx.user.findMany({where:{demoBatchId:null,phone:{not:null},...(input.audience==='ALL'?{}:{role:input.audience})},select:{phone:true}});
 +  const phones=new Set<string>();for(const u of users){try{phones.add(normalizePhone(u.phone));}catch{}}
@@ -1528,7 +1537,7 @@ index 4fa5b36..e09f75d 100644
  test('legacy descriptive exams remain valid and public questions never expose keys',()=>{const {publicQuestions}=load('lib/exam-questions.ts');assert.deepEqual(publicQuestions(['سؤال قدیمی',mc]),[{type:'TEXT',prompt:'سؤال قدیمی'},{type:'CHOICE',prompt:mc.prompt,options:mc.options}]);assert.ok(!JSON.stringify(publicQuestions([mc])).includes('correctOption'))});
 diff --git a/tests/manual-commerce-certificates.test.cjs b/tests/manual-commerce-certificates.test.cjs
 new file mode 100644
-index 0000000..435614f
+index 0000000..1e50d66
 --- /dev/null
 +++ b/tests/manual-commerce-certificates.test.cjs
 @@ -0,0 +1,19 @@
@@ -1543,7 +1552,7 @@ index 0000000..435614f
 +for(const role of ['STUDENT','TEACHER'])test('non-admin cannot send course SMS: '+role,async()=>{const api=load('app/api/courses/[courseId]/start-sms/route.ts',{'@/lib/management-session':{getManagementSession:async()=>({userId:'t',role})},'@/lib/prisma':{prisma:{course:{findUnique:async()=>course}}},'@/lib/course-start-sms':{processCourseStartSms:()=>assert.fail('no send')}});assert.equal((await api.POST(req({prepare:true}),{params:Promise.resolve({courseId:'c'})})).status,403);});
 +for(const route of ['sms','coupons','certificates'])test('admin mutation rejects a student: '+route,async()=>{const api=load(`app/api/admin/${route}/route.ts`,{'@/lib/management-session':{getManagementSession:async()=>({userId:'s',role:'STUDENT'})},'@/lib/prisma':{prisma:{}},'@/lib/manual-sms':{},'@/lib/notifications':{}});assert.equal((await api.POST(req({}))).status,403);});
 +test('manual course preparation includes coupon and preserves sent messages',async()=>{let data;const tx={$queryRaw:async()=>{},course:{findUniqueOrThrow:async()=>({...course,title:'دوره'})},discountCode:{findUnique:async()=>({code:'START',active:true,courseId:'c',percent:30})},courseInterest:{findMany:async()=>[{id:'i',phone:'09123456789'}]},courseStartSms:{createMany:async x=>{data=x;return {count:1};}}};const api=load('lib/course-start-sms.ts',{'@/lib/prisma':{prisma:{}},'@/lib/sms':{},'@/lib/notifications':{}});await api.prepareCourseStart(tx,'c','START');assert.equal(data.skipDuplicates,true);assert.match(data.data[0].message,/START/);assert.match(data.data[0].message,/30/);});
-+test('broadcast snapshots normalized unique numbers and excludes test accounts',async()=>{let scope,deliveries;const tx={$queryRaw:async()=>{},smsCampaign:{findUnique:async()=>null,create:async({data})=>data},user:{findMany:async({where})=>{scope=where;return [{phone:'09123456789'},{phone:'+989123456789'},{phone:'bad'}];}},smsDelivery:{createMany:async({data})=>{deliveries=data;}}};const api=load('lib/manual-sms.ts',{'@/lib/prisma':{prisma:{$transaction:fn=>fn(tx)}},'@/lib/sms':{}});await api.createCampaign('admin',{requestId:'00000000-0000-4000-8000-000000000000',audience:'TEACHER',message:'پیام نمونه',variables:{}});assert.equal(scope.role,'TEACHER');assert.equal(scope.demoBatchId,null);assert.equal(deliveries.length,1);assert.equal(deliveries[0].phone,'09123456789');});
++test('broadcast snapshots normalized unique numbers and excludes test accounts',async()=>{let scope,deliveries;const tx={$executeRaw:async(strings)=>{assert.match(strings.join(''),/pg_advisory_xact_lock/);return 1;},$queryRaw:async()=>assert.fail('advisory lock must use executeRaw'),smsCampaign:{findUnique:async()=>null,create:async({data})=>data},user:{findMany:async({where})=>{scope=where;return [{phone:'09123456789'},{phone:'+989123456789'},{phone:'bad'}];}},smsDelivery:{createMany:async({data})=>{deliveries=data;}}};const api=load('lib/manual-sms.ts',{'@/lib/prisma':{prisma:{$transaction:fn=>fn(tx)}},'@/lib/sms':{}});await api.createCampaign('admin',{requestId:'00000000-0000-4000-8000-000000000000',audience:'TEACHER',message:'پیام نمونه',variables:{}});assert.equal(scope.role,'TEACHER');assert.equal(scope.demoBatchId,null);assert.equal(deliveries.length,1);assert.equal(deliveries[0].phone,'09123456789');});
 +test('SMS timeout is persisted as UNKNOWN and is never blindly retried',async()=>{process.env.FARAZ_SMS_API_KEY='test';process.env.FARAZ_SMS_LINE_NUMBER='test';let claimed=false,status,calls=0;const tx={$queryRaw:async()=>{if(claimed)return [];claimed=true;return [{id:'d'}];},smsDelivery:{update:async({data})=>{status=data.status;return {id:'d',phone:'09123456789'};},updateMany:async()=>{}}};const db={...tx,smsCampaign:{findUniqueOrThrow:async()=>({message:'hello'})},$transaction:fn=>fn(tx)};const api=load('lib/manual-sms.ts',{'@/lib/prisma':{prisma:db},'@/lib/sms':{sendSms:async()=>{calls++;throw Error('timeout');}}});try{await api.processCampaign('c');assert.equal(status,'UNKNOWN');await api.processCampaign('c');assert.equal(calls,1);}finally{delete process.env.FARAZ_SMS_API_KEY;delete process.env.FARAZ_SMS_LINE_NUMBER;}});
 +function certSetup(){let issued=0,notice=0;const enrollment={id:'e',courseId:'c',userId:'s',status:'ACTIVE',user:{name:'دانش‌آموز',role:'STUDENT'},course:{...course,title:'دوره',finalExam:{published:true,examWeight:50}},examAttempt:{score:80},certificate:null};const tx={$queryRaw:async()=>{},enrollment:{findUnique:async()=>enrollment,findUniqueOrThrow:async()=>enrollment},lesson:{findMany:async()=>[{id:'l',videoUrl:'video'}]},lessonProgress:{findMany:async()=>[{lessonId:'l',status:'COMPLETED',videoCompletedAt:new Date()}]},assignment:{findMany:async()=>[{submissions:[{status:'GRADED',score:60}]}]},certificate:{create:async({data})=>{issued++;return enrollment.certificate={id:'cert',...data};}}};const api=load('lib/certificates.ts',{'@/lib/prisma':{prisma:{$transaction:fn=>fn(tx)}},'@/lib/notifications':{notifyUsers:async()=>{notice++;}}});return {enrollment,tx,api,get issued(){return issued},get notice(){return notice}};}
 +test('certificate has immutable score snapshot and issuance is idempotent',async()=>{const s=certSetup();const cert=await s.api.issueCertificate({id:'s',role:'STUDENT'},'e');assert.equal(cert.score,70);assert.equal(cert.studentName,'دانش‌آموز');s.enrollment.examAttempt.score=100;assert.equal((await s.api.issueCertificate({id:'s',role:'STUDENT'},'e')).score,70);assert.equal(s.issued,1);assert.equal(s.notice,1);});
@@ -1583,10 +1592,15 @@ index 874411a..4a84397 100644
  for(const [role,path,active] of [['TEACHER','/teacher/finance','/teacher/finance'],['TEACHER','/teacher/courses/c','/teacher'],['ADMIN','/admin/finance','/admin/finance'],['ADMIN','/teacher/courses/c/students/e','/admin/courses'],['STUDENT','/payment/success','/payments']])test('most specific active tab for '+path,()=>{
   assert.equal(activeNavigation(path,panelNavigation(role),role),active);
 diff --git a/tests/sms-preview-grading.test.cjs b/tests/sms-preview-grading.test.cjs
-index c26fa75..b18bb55 100644
+index c26fa75..6b8dc51 100644
 --- a/tests/sms-preview-grading.test.cjs
 +++ b/tests/sms-preview-grading.test.cjs
-@@ -11,9 +11,9 @@ function setup(){
+@@ -7,13 +7,13 @@ test('OTP digest binds code to phone and challenge and redirects stay local',()=
+ function setup(){
+  let row=null,bucket=null,users=[],sent=[],sendFail=false;
+  const apply=(base,data)=>{for(const [k,v] of Object.entries(data))base[k]=v&&typeof v==='object'&&'increment'in v?(base[k]||0)+v.increment:v;return base;};
+- const tx={$queryRaw:async()=>{},otpRateBucket:{findUnique:async()=>bucket,upsert:async({create,update})=>bucket=bucket?apply(bucket,update):create},loginOtp:{findUnique:async({where})=>row&&(!where.challengeId||row.challengeId===where.challengeId)?row:null,upsert:async({create})=>row??(row={...create,attempts:0,consecutiveFailures:0,sentCount:0,windowStart:new Date()}),update:async({data})=>apply(row,data),updateMany:async({where,data})=>{if(row&&(!where.challengeId||where.challengeId===row.challengeId))apply(row,data);}},user:{findMany:async()=>users,create:async({data})=>{const user={id:'new',...data};users.push(user);return user;}}};
++ const tx={$executeRaw:async(strings)=>{assert.match(strings.join(''),/pg_advisory_xact_lock/);return 1;},$queryRaw:async()=>assert.fail('OTP advisory lock must not deserialize void'),otpRateBucket:{findUnique:async()=>bucket,upsert:async({create,update})=>bucket=bucket?apply(bucket,update):create},loginOtp:{findUnique:async({where})=>row&&(!where.challengeId||row.challengeId===where.challengeId)?row:null,upsert:async({create})=>row??(row={...create,attempts:0,consecutiveFailures:0,sentCount:0,windowStart:new Date()}),update:async({data})=>apply(row,data),updateMany:async({where,data})=>{if(row&&(!where.challengeId||where.challengeId===row.challengeId))apply(row,data);}},user:{findMany:async()=>users,create:async({data})=>{const user={id:'new',...data};users.push(user);return user;}}};
   const api=load('lib/login-otp.ts',{'@/lib/prisma':{prisma:{...tx,$transaction:fn=>fn(tx)}},'@/lib/sms':{sendSms:async(p)=>{if(sendFail)throw Error('down');sent.push(p);return {status:'success'};}}});
   return {api,get row(){return row},get users(){return users},set users(v){users=v},sent,fail(){sendFail=true},code(){return sent.at(-1).message.match(/\d{6}/)[0]},cool(){row.lastSentAt=new Date(Date.now()-61000)}};
  }

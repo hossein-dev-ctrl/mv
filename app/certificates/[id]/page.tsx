@@ -1,0 +1,16 @@
+import Image from 'next/image';
+import Link from 'next/link';
+import {notFound} from 'next/navigation';
+import QRCode from 'qrcode';
+import {prisma} from '@/lib/prisma';
+import {certificateValid} from '@/lib/certificates';
+import {PrintCertificate} from '@/components/assessment/certificate-actions';
+export const dynamic='force-dynamic';
+export const metadata={title:'استعلام گواهی‌نامه',robots:{index:false,follow:false}};
+export default async function Certificate({params}:{params:Promise<{id:string}>}){
+ const {id}=await params;if(!/^[a-f0-9-]{36}$/i.test(id))notFound();
+ const c=await prisma.certificate.findUnique({where:{id},include:{enrollment:{select:{status:true}}}});if(!c)notFound();
+ const valid=certificateValid(c);const base=process.env.PUBLIC_SITE_URL?.replace(/\/$/,'');
+ const qr=base&&/^https?:\/\//.test(base)?await QRCode.toDataURL(`${base}/certificates/${c.id}`,{width:180,margin:2,errorCorrectionLevel:'M'}):null;
+ return <main className="mx-auto max-w-4xl px-4 py-10"><nav className="mb-6 flex flex-wrap gap-3 print:hidden"><Link className="panel-action" href="/certificates">استعلام مدرک دیگر</Link><Link className="panel-action" href="/dashboard">پنل کاربری</Link>{valid&&<PrintCertificate/>}</nav><article className="certificate-paper rounded-3xl border-4 border-indigo-200 bg-white p-6 text-center shadow-xl sm:p-12"><div className={`mx-auto mb-6 w-fit rounded-full px-5 py-2 text-sm font-bold ${valid?'bg-emerald-50 text-emerald-800':'bg-rose-50 text-rose-800'}`}>{valid?'گواهی معتبر است · Valid certificate':'گواهی فاقد اعتبار است · Invalid certificate'}</div><h1 className="text-3xl font-bold text-indigo-950">گواهی‌نامهٔ پایان دوره</h1><h2 lang="en" dir="ltr" className="mt-3 text-xl text-indigo-700">Certificate of Completion</h2><p className="mt-9 text-slate-500">گواهی می‌شود / This certifies that</p><p className="my-5 text-3xl font-bold">{c.studentName}</p><p className="leading-8">دورهٔ زیر را با موفقیت به پایان رسانده است.</p><p lang="en" dir="ltr" className="text-sm leading-8 text-slate-500">has successfully completed the following course.</p><h3 className="my-5 text-2xl font-bold text-indigo-800">{c.courseTitle}</h3><p className="leading-9">نمرهٔ نهایی: {c.score.toLocaleString('fa-IR')} از ۱۰۰</p><p lang="en" dir="ltr">Final score: {c.score} / 100</p><p className="mt-6 text-sm">تاریخ صدور: {c.issuedAt.toLocaleDateString('fa-IR',{timeZone:'Asia/Tehran'})}</p><p lang="en" dir="ltr" className="mt-2 text-sm">Issued: {c.issuedAt.toLocaleDateString('en-GB',{timeZone:'Asia/Tehran'})}</p>{qr?<div className="my-5 flex justify-center"><Image unoptimized src={qr} alt="QR استعلام گواهی" width={180} height={180}/></div>:<p className="my-6 text-sm text-amber-700">برای QR، مدیر باید PUBLIC_SITE_URL را با نشانی سایت تنظیم کند.</p>}<p className="mt-5 text-xs text-slate-500">شناسهٔ استعلام / Verification ID</p><bdi className="mt-2 block break-all text-sm">{c.id}</bdi><p className="mt-7 text-xs leading-7 text-slate-500">این گواهی توسط پلتفرم آموزش صادر شده و بیانگر مدرک دانشگاهی یا تأیید نهاد دولتی نیست. نام دارنده و عنوان دوره مطابق اطلاعات ثبت‌شده است.</p>{!valid&&<p className="mt-5 text-rose-700">گواهی باطل شده یا ثبت‌نام اعتبار ندارد؛ با پشتیبانی تماس بگیرید.</p>}</article></main>;
+}

@@ -97,6 +97,7 @@ export default async function PanelShell({ children, area }: {
             <p className="mt-3 text-sm leading-7 text-slate-500">دوره‌ها، درس‌ها و مسیر یادگیری شما در یک جا.</p>
           </div>
           <nav aria-label="دسترسی سریع پایین صفحه" className="panel-actions panel-actions-wide content-center text-sm text-slate-600">
+            <Link href="/certificates" className="panel-action panel-action-slate"><ThemeIcon name="award" className="h-4 w-4"/>استعلام گواهی‌نامه</Link>
             {navigation.map((item) => <Link key={item.href} href={item.href} className="panel-action panel-action-slate"><ThemeIcon name={relatedIcon(item.label)} className="h-4 w-4"/>{item.label}</Link>)}
           </nav>
         </div>

@@ -132,6 +132,7 @@ model LessonFile {
 }
 
 model Enrollment {
+  certificate Certificate?
   examAttempt ExamAttempt?
   finalFeedback FinalFeedback?
   courseReview CourseReview?
@@ -176,6 +177,8 @@ model LessonProgress {
 }
 
 model Payment {
+  couponCode String?
+  couponPercent Int?
   id       String @id @default(cuid())
   userId   String
   courseId String
@@ -494,4 +497,43 @@ model CourseStartSms {
  sentAt DateTime?
  lastError String?
  @@index([status,createdAt])
+}
+
+model DiscountCode {
+ code String @id
+ percent Int
+ courseId String?
+ active Boolean @default(true)
+ createdAt DateTime @default(now())
+}
+model SmsCampaign {
+ id String @id
+ senderId String
+ audience String
+ message String
+ patternCode String?
+ variables Json
+ deliveries SmsDelivery[]
+ createdAt DateTime @default(now())
+}
+model SmsDelivery {
+ id String @id @default(cuid())
+ campaignId String
+ campaign SmsCampaign @relation(fields:[campaignId],references:[id],onDelete:Cascade)
+ phone String
+ status String @default("PENDING")
+ claimedAt DateTime?
+ sentAt DateTime?
+ @@unique([campaignId,phone])
+ @@index([campaignId,status])
+}
+model Certificate {
+ id String @id @default(uuid())
+ enrollmentId String @unique
+ enrollment Enrollment @relation(fields:[enrollmentId],references:[id],onDelete:Restrict)
+ studentName String
+ courseTitle String
+ score Float
+ issuedAt DateTime @default(now())
+ revokedAt DateTime?
 }
