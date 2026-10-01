@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function CoursesPage() {
   const session = await getSession();
   const courses = await prisma.course.findMany({
-    where: { status: "PUBLISHED" },
+    where: { status: "PUBLISHED", ...(process.env.NODE_ENV!=="development"?{teacher:{testOwnerId:null}}:{}) },
     orderBy: { createdAt: "desc" },
     select: {
       deliveryStatus:true, id: true, slug: true, title: true, shortDescription: true,

@@ -9,6 +9,8 @@ export async function POST() {
     path: "/",
   });
 
+  cookieStore.set("dev_test_admin", "", {httpOnly:true,expires:new Date(0),path:"/"});
+
   return Response.json({
     success: true,
     message: "با موفقیت خارج شدید",

@@ -1,3 +1,4 @@
+import {allowTestSession} from '@/lib/dev-test-policy';
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
@@ -19,6 +20,7 @@ async function getSession(request: NextRequest) {
   try {
     const { payload } = await jwtVerify(token, secretKey);
 
+    if(!allowTestSession(payload.testMode))return null;
     return payload as {
       userId: string;
       role: "STUDENT" | "TEACHER" | "ADMIN";

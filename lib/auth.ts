@@ -1,3 +1,4 @@
+import {allowTestSession} from '@/lib/dev-test-policy';
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
@@ -12,6 +13,7 @@ const secretKey = new TextEncoder().encode(secret);
 export type UserRole = "STUDENT" | "TEACHER" | "ADMIN";
 
 export type SessionPayload = {
+  testMode?: boolean;
   userId: string;
   role: UserRole;
 };
@@ -20,7 +22,7 @@ export async function createSession(payload: SessionPayload) {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime(payload.testMode?"2h":"7d")
     .sign(secretKey);
 }
 
@@ -28,6 +30,7 @@ export async function verifySession(token: string) {
   try {
     const { payload } = await jwtVerify(token, secretKey);
 
+    if(!allowTestSession(payload.testMode))return null;
     return payload as unknown as SessionPayload;
   } catch {
     return null;

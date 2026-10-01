@@ -1,4 +1,7 @@
 
+import {devTestOwner} from '@/lib/dev-test-accounts';
+import {devTestingEnabled} from '@/lib/dev-test-policy';
+import {TestAccountAction} from '@/components/panel/dev-test-controls';
 import ThemeIcon,{relatedIcon} from '@/components/panel/theme-icon';
 import Link from "next/link";
 import Navigation from "@/components/panel/navigation";
@@ -52,6 +55,8 @@ export default async function PanelShell({ children, area }: {
 
   const name = user?.name?.trim() || user?.email || user?.phone || "کاربر";
   const navigation = panelNavigation(user?.role);
+  if(user?.role==='ADMIN'&&devTestingEnabled())navigation.push({href:'/admin/testing',label:'آزمایش نقش‌ها'});
+  const testOwner=session?.testMode?await devTestOwner():null;
 
   return (
     <div dir="rtl" className="platform-shell flex min-h-screen flex-col">
@@ -87,6 +92,7 @@ export default async function PanelShell({ children, area }: {
 
       <div id="panel-content" tabIndex={-1} className="flex-1 outline-none [&>main]:min-h-0">
         {user?.demoBatchId && <p className="bg-amber-100 p-4 text-center text-sm">حساب آزمایشی؛ مبالغ این حساب واقعی نیست و نباید انتقال بانکی انجام شود.</p>}
+        {testOwner&&<aside className="flex flex-wrap items-center justify-between gap-4 border-b border-amber-200 bg-amber-50 px-6 py-4"><p className="text-sm leading-7">حالت آزمایشی: {name} · {user?roles[user.role]:''}. تغییرات در دیتابیس توسعه ذخیره می‌شوند.</p><TestAccountAction action="restore" label="بازگشت به مدیر اصلی"/></aside>}
         {children}
       </div>
 

@@ -62,6 +62,7 @@ export async function POST(request: Request) {
 
     let code:string,percent:number,payable:number;
     try{code=couponCode(body.code);const coupon=code?await prisma.discountCode.findUnique({where:{code}}):null;const quote=couponPrice(course,coupon,code);payable=quote.amount;percent=quote.percent;}catch(e){return Response.json({message:e instanceof Error?e.message:'کد نامعتبر'},{status:400});}
+    if(session.testMode&&payable>0&&process.env.ZARINPAL_SANDBOX!=='true')return Response.json({message:'پرداخت واقعی با حساب آزمایشی مجاز نیست؛ حالت Sandbox را فعال کنید.'},{status:403});
     const existingEnrollment = await prisma.enrollment.findUnique({
       where: {
         userId_courseId: {

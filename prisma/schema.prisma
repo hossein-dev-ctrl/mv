@@ -44,6 +44,8 @@ enum PaymentStatus {
 }
 
 model User {
+  testOwnerId String?
+  @@index([testOwnerId])
   notifications Notification[]
   ticketsCreated Ticket[] @relation("TicketCreator")
   ticketsReceived Ticket[] @relation("TicketRecipient")
@@ -69,6 +71,8 @@ model User {
 }
 
 model Course {
+  certificateTemplateId String?
+  certificateTemplate CertificateTemplate? @relation(fields:[certificateTemplateId],references:[id],onDelete:SetNull)
   launchSmsPending Boolean @default(false)
   prerequisites Json @default("[]")
   finalExam FinalExam?
@@ -528,6 +532,8 @@ model SmsDelivery {
  @@index([campaignId,status])
 }
 model Certificate {
+ templateSnapshot Json?
+ isTest Boolean @default(false)
  id String @id @default(uuid())
  enrollmentId String @unique
  enrollment Enrollment @relation(fields:[enrollmentId],references:[id],onDelete:Restrict)
@@ -536,4 +542,18 @@ model Certificate {
  score Float
  issuedAt DateTime @default(now())
  revokedAt DateTime?
+}
+
+model CertificateTemplate {
+ id String @id @default(cuid())
+ name String
+ style String @default("CLASSIC")
+ accent String @default("#4338ca")
+ issuer String
+ issuerEn String
+ signatory String
+ active Boolean @default(true)
+ courses Course[]
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
 }

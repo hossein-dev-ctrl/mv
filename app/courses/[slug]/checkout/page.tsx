@@ -37,6 +37,7 @@ export default async function CheckoutPage({ params }: Props) {
   const course = await prisma.course.findUnique({
     where: {
       slug,
+      ...(process.env.NODE_ENV!=="development"?{teacher:{testOwnerId:null}}:{}),
     },
 
     select: {

@@ -8,9 +8,10 @@ export async function getManagementSession(): Promise<SessionPayload | null> {
   if (!session) return null;
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { role: true, demoBatchId: true },
+    select: { role: true, demoBatchId: true, testOwnerId:true },
   });
   if (!user || user.role !== session.role ||
       (user.demoBatchId && process.env.NODE_ENV === "production")) return null;
-  return { userId: session.userId, role: user.role };
+  if(user.testOwnerId&&!session.testMode)return null;
+  return { ...session,userId: session.userId, role: user.role };
 }
